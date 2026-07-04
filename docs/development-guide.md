@@ -14,24 +14,31 @@ Read order for new contributors:
 
 ## Design Preview Workflow
 
-Use `design/*.html` as visual frames before changing production UI.
+Use `design/*.html` as interactive visual frames before changing production UI.
 
 Rules:
 
 - Each `.html` file in `design/` represents one screen or game phase.
-- Put layout, CSS, sample state, and quick UI ideas directly in the frame file.
+- Put layout, CSS, local demo state, and quick UI ideas directly in the frame file.
+- Put a `DESIGN FRAME SPEC` comment at the top of every design HTML file. It must describe the screen purpose, visible controls, feature list, button workflow, and production mapping.
+- Make the frame interactive enough to test that screen's main action.
+- Use descriptive classes, `data-*` attributes, function names, and comments so implementers can understand the intended production behavior from the HTML file.
+- Add comments around major CSS class groups, HTML feature blocks, and JS handler functions.
 - Do not import production React code from `apps/web`.
-- Do not put game rules, multiplayer behavior, or server logic in design files.
+- Do not put real game rules, multiplayer behavior, or server logic in design files.
+- Fake local state is allowed only when it demonstrates UI behavior.
 - After a design is approved, implement it in `apps/web` using the existing React components.
 - Update this guide or `docs/system-architecture.md` only when the design workflow or production UI ownership changes.
 
 Recommended flow:
 
 1. Pick the relevant frame from `design/README.md`.
-2. Edit that `.html` frame until the screen direction feels right.
-3. Review it in a browser as a static file.
-4. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
-5. Add or update tests only for production behavior, not for the sandbox file.
+2. Edit that `.html` frame until the screen direction and interaction feel right.
+3. Review it in a browser as an interactive demo.
+4. Read the frame comments/function names to map behavior into production.
+5. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
+6. Replace local demo state with real core/server state.
+7. Add or update tests only for production behavior, not for the sandbox file.
 
 ## Local Development
 

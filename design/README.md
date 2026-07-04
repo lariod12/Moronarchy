@@ -2,7 +2,9 @@
 
 This folder is for design review before production implementation.
 
-Each `.html` file is one standalone frame. Edit a frame directly, review it in a browser, then port approved UI ideas into `apps/web`.
+Each `.html` file is one standalone interactive frame. Edit a frame directly, review and click/test it in a browser, then port approved UI ideas and behavior into `apps/web`.
+
+The frame files are not production code, but they should be useful implementation references. A developer should be able to open one frame, interact with the screen, read the class names/functions/inline notes, and understand what production React components and moves need to do.
 
 ## Frames
 
@@ -22,6 +24,192 @@ Each `.html` file is one standalone frame. Edit a frame directly, review it in a
 ## Rules
 
 - Keep frames black and white until the flow is approved.
-- Keep this folder design-only. No game rules, multiplayer logic, or production React imports.
-- It is okay for frame HTML to contain rough sample data.
+- Keep this folder design-only. No production React imports, no server imports, no boardgame.io runtime.
+- Frame JavaScript may contain fake local state only to demonstrate screen behavior.
+- It is okay for frame HTML to contain rough sample data when it explains the interaction.
+- Each frame should be interactive enough to test that screen's main action.
+- Do not copy visible annotation/callout text from source design images into the UI. Treat arrows, red marks, and explanatory bubbles as design notes only.
 - Production code in `apps/web` should be updated only after a frame is approved.
+
+## Interactive Frame Standard
+
+Every frame should include:
+
+- A `DESIGN FRAME SPEC` comment at the top of the HTML file.
+- A visible mobile wireframe UI.
+- Real clickable controls for that screen.
+- Local demo state in the same HTML file.
+- Named functions that describe the intended production behavior.
+- Class names that map naturally to future React components.
+- Short HTML or JS comments for implementation notes when behavior is not obvious.
+
+## Required Top-Of-File Spec
+
+Put this comment immediately after `<!doctype html>` in every design frame.
+
+The goal: a developer should understand the design, controls, features, and workflow by reading the first comment before reading CSS/HTML/JS.
+
+Template:
+
+```html
+<!--
+  DESIGN FRAME SPEC
+  Frame: 00-frame-file-name
+  Screen purpose:
+    What this screen does in the game flow.
+
+  Visual design:
+    Main layout, sketch/wireframe direction, and important visual rules.
+    Mention that visible annotation text from source images is not copied into UI.
+
+  Visible controls:
+    Inputs: N
+      1. Input name - purpose and condition.
+    Buttons: N
+      1. Button name - purpose and condition.
+
+  Interactive features:
+    - Feature behavior visible in the HTML demo.
+    - State change after input/click.
+
+  Button workflow:
+    Initial state.
+    Enabled/disabled conditions.
+    What happens after click.
+
+  Production mapping:
+    Target page/component in apps/web.
+    Core/server/API move this action maps to.
+    What fake local state should be replaced with in production.
+-->
+```
+
+Keep this comment detailed. It is the quick handoff for whoever implements the approved frame into React.
+
+Recommended class naming:
+
+```text
+screen-[frame-name]
+frame-header
+frame-board
+frame-hud
+frame-action-panel
+state-[meaning]
+is-[condition]
+```
+
+Recommended function naming:
+
+```text
+initializeFrame()
+renderFrame()
+updateFrameState()
+handleCreateRoom()
+handleJoinRoom()
+handleRollDice()
+handleBuyLand()
+handleUpgradeLand()
+handleSkipAction()
+```
+
+Use names that describe the user action, not only the visual effect.
+
+## Class And Function Comments
+
+Inside each HTML file, add comments around major class groups and functions:
+
+```css
+/* Root mobile frame. Production equivalent: GamePage shell. */
+.phone {}
+
+/* State styling: data-phase is controlled by renderFrame(). */
+.phone[data-phase="rolling"] {}
+```
+
+```html
+<!--
+  Feature: tile action panel.
+  Production: maps to ActionPanel.tsx.
+  Contract: Buy is enabled only on empty owned-by-null land.
+-->
+<section class="frame-action-panel"></section>
+```
+
+```js
+function handleBuyLand() {
+  /*
+    Production action:
+    - call boardgame.io move buyLand()
+    - server validates owner/coin/phase
+    - UI returns to waiting or next turn state
+  */
+}
+```
+
+Use comments to explain structure and behavior. Do not put these explanations as visible text in the UI.
+
+## Implementation Notes Inside HTML
+
+Use comments or `data-*` attributes to explain how the frame maps to production:
+
+```html
+<!-- Production: maps to HomePage create-room flow. -->
+<button class="create-room-button" data-action="create-room">Create</button>
+```
+
+```js
+function handleCreateRoom() {
+  // Production: call lobby API, then navigate to /room/:roomId.
+}
+```
+
+Good notes explain:
+
+- Which production page/component owns this UI.
+- Which user action is being demonstrated.
+- Which core/server move or API call the action maps to.
+- What state changes should happen after interaction.
+- What conditions enable/disable a control.
+
+Avoid long explanations in visible UI. Put implementation guidance in comments, function names, and `data-*` attributes.
+
+When a source image contains annotation text, move that meaning into non-visible HTML/JS comments if it helps implementation. The rendered frame should show only the actual player-facing UI.
+
+## Interaction Expectations By Frame
+
+1. `01-welcome-create-join.html`
+   - Typing name enables the single primary button as Create.
+   - Typing room code switches the same primary button to Join.
+   - Do not add a second Join button.
+2. `02-room-lobby.html`
+   - Player slots should show ready/waiting states.
+   - Start should only feel available when enough players exist.
+3. `03-game-starting.html`
+   - Countdown should be represented.
+4. `04-main-board-waiting-turn.html`
+   - Controls should be disabled or clearly waiting.
+5. `05-main-board-your-turn.html`
+   - Roll action should be clickable.
+6. `06-dice-rolling-move.html`
+   - Dice result and movement state should be visible.
+7. `07-empty-land-action.html`
+   - Buy and Skip should be clickable.
+8. `08-own-land-upgrade.html`
+   - Upgrade and Skip should be clickable.
+9. `09-rival-land-payment.html`
+   - Fee payment result should be shown.
+10. `10-start-bonus-level-up.html`
+   - Bonus and level-up result should be shown.
+11. `11-defeated-bankruptcy.html`
+   - Defeated state and continue watching action should be shown.
+12. `12-game-over-result.html`
+   - Ranking and return-to-lobby action should be shown.
+
+## Production Porting Workflow
+
+1. Confirm the frame behavior by opening the `.html` file in a browser.
+2. Read comments, `data-action`, and JS function names.
+3. Identify the target production page/component in `apps/web`.
+4. Move approved structure/styles into React components.
+5. Replace local fake state with real server/core state.
+6. Add tests only in production code, not for these design frames.

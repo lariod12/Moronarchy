@@ -20,8 +20,8 @@ apps/
 packages/
   core/       Shared pure TypeScript game rules
 design/
-  *.html      One standalone UI frame per screen or game phase
-  README.md   Design frame list and review rules
+  *.html      One interactive UI frame per screen or game phase
+  README.md   Design frame list, interaction rules, and porting notes
 docs/
   game-rules.md
   system-architecture.md
@@ -38,9 +38,9 @@ docs/
 
 ## Design Preview
 
-Use `design/*.html` for quick UI exploration before touching production React code.
+Use `design/*.html` for quick interactive UI exploration before touching production React code.
 
-The design folder is intentionally simple: each standalone HTML file is one screen/frame with layout, CSS, sample state, and visual ideas. Approved designs can later be implemented in `apps/web`.
+The design folder is intentionally simple: each standalone HTML file is one screen/frame with layout, CSS, local demo state, function names, and interaction notes. Approved designs can later be implemented in `apps/web`.
 
 ## Prerequisites
 
