@@ -23,12 +23,12 @@
     - Typing Name enables the primary button as Create.
     - Typing Join room changes data-flow from create to join.
     - Typing Join room changes the same primary button label from Create to Join.
-    - Clicking the primary button marks demo submission with Created or Joined text.
+    - Clicking the primary button navigates to the room lobby frame.
 
   Button workflow:
     Empty Name + empty Room: button disabled, label Create.
-    Name filled + empty Room: button enabled, label Create, click maps to create-room.
-    Name filled + Room filled: button enabled, label Join, click maps to join-room.
+    Name filled + empty Room: button enabled, label Create, click -> 02-room-lobby.html.
+    Name filled + Room filled: button enabled, label Join, click -> 02-room-lobby.html.
 
   Production mapping:
     Page/component target: apps/web HomePage create/join area.
@@ -297,8 +297,7 @@
         playerName: "",
         roomCode: "",
         createdRoomCode: "R001",
-        lastAction: "idle",
-        submittedFlow: null
+        lastAction: "idle"
       };
 
       /*
@@ -335,7 +334,6 @@
         */
         frameState.playerName = frameElements.playerNameInput.value.trim();
         frameState.roomCode = frameElements.roomCodeInput.value.trim().toUpperCase();
-        frameState.submittedFlow = null;
         renderFrame();
       }
 
@@ -358,16 +356,6 @@
         frameElements.root.dataset.canSubmit = String(canSubmit);
         frameElements.primaryFlowButton.disabled = !canSubmit;
         frameElements.playerNamePreview.textContent = hasName ? frameState.playerName : "Player Name";
-
-        if (frameState.submittedFlow === "create") {
-          frameElements.primaryFlowButton.textContent = "Created";
-          return;
-        }
-
-        if (frameState.submittedFlow === "join") {
-          frameElements.primaryFlowButton.textContent = "Joined";
-          return;
-        }
 
         frameElements.primaryFlowButton.textContent = activeFlow === "join" ? "Join" : "Create";
       }
@@ -392,14 +380,17 @@
 
       function handleCreateRoom() {
         /*
-          Production action:
-          - call lobby create API
-          - receive roomId/match setup
-          - navigate to /room/:roomId
+        Production action:
+        - call lobby create API
+        - receive roomId/match setup
+        - navigate to /room/:roomId
         */
         frameState.lastAction = "create-room";
-        frameState.submittedFlow = "create";
-        renderFrame();
+        navigateToFrame("02-room-lobby.html", {
+          flow: "create",
+          player: frameState.playerName,
+          room: frameState.createdRoomCode
+        });
       }
 
       function handleJoinRoom() {
@@ -407,11 +398,24 @@
           Production action:
           - validate room code
           - call lobby join API
-          - navigate to /room/:roomId
+        - navigate to /room/:roomId
         */
         frameState.lastAction = "join-room";
-        frameState.submittedFlow = "join";
-        renderFrame();
+        navigateToFrame("02-room-lobby.html", {
+          flow: "join",
+          player: frameState.playerName,
+          room: frameState.roomCode
+        });
+      }
+
+      function navigateToFrame(fileName, params = {}) {
+        /*
+          Prototype navigation:
+          - design-only page transition using query string
+          - production should use React Router navigation instead
+        */
+        const query = new URLSearchParams(params).toString();
+        window.location.href = query ? `${fileName}?${query}` : fileName;
       }
 
       initializeFrame();

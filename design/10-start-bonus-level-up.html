@@ -1,4 +1,28 @@
 <!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: 10-start-bonus-level-up
+  Screen purpose:
+    Reward result when player passes or lands on Start and completes a lap.
+
+  Visual design:
+    Board highlights Start tile and center reward card shows coin/level result.
+
+  Visible controls:
+    Inputs: 0
+    Buttons: 1
+      1. Continue - returns to waiting turn.
+
+  Interactive features:
+    - Continue confirms reward result and advances prototype flow.
+
+  Button workflow:
+    Continue -> 04-main-board-waiting-turn.html
+
+  Production mapping:
+    Page/component target: GamePage reward/level-up feedback.
+    Reward data should come from core movement/lap resolution.
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -10,7 +34,7 @@
       .top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:34px;margin-bottom:8px}.tag,.panel{background:var(--paper);border:2px solid var(--ink);font-weight:800}.tag{display:inline-grid;place-items:center;min-height:25px;padding:2px 8px;font-size:13px;transform:rotate(-1deg)}.tag.center{justify-self:center;transform:rotate(1deg)}.tag.right{justify-self:end}
       .board{position:relative;display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);width:100%;aspect-ratio:1;gap:6px;padding:8px;border:3px solid var(--ink)}.tile{position:relative;display:grid;place-items:center;border:2px solid var(--ink);font-size:12px;font-weight:800}.tile.dim{background:var(--shade)}.tile.dark{background:var(--dark);color:var(--paper)}.tile.start{background:var(--shade);outline:5px double var(--ink);outline-offset:1px}.tile small{position:absolute;right:2px;bottom:1px;font-size:7px}.token{position:absolute;top:-5px;right:-5px;width:10px;height:10px;background:var(--ink);border:1px solid var(--paper);border-radius:50%}
       .center-stage{grid-column:3/10;grid-row:3/10;display:grid;place-items:center}.reward{display:grid;gap:7px;min-width:200px;padding:12px;border:3px solid var(--ink);background:var(--paper);text-align:center;transform:rotate(1deg)}.reward b{font-size:18px}.reward strong{font-size:30px}.badge-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.badge{border:2px solid var(--ink);padding:4px;background:var(--wash)}
-      .hud{display:grid;grid-template-columns:112px 1fr;gap:5px;min-height:82px;margin-top:8px}.player-card{display:grid;grid-template-rows:22px 1fr}.player-name{display:grid;place-items:center;border-bottom:2px solid var(--ink);font-size:12px}.avatar{justify-self:center;align-self:center;width:42px;height:42px;background:var(--ink);border-radius:50%}.stats{display:grid;grid-template-rows:repeat(3,1fr)}.stat-row{display:grid;grid-template-columns:1fr 42px;align-items:center;border-bottom:2px solid var(--ink);font-size:12px}.stat-row:last-child{border-bottom:0}.stat-row span{padding-left:7px}.stat-row strong{display:grid;place-items:center;height:100%;border-left:2px solid var(--ink)}
+      .hud{display:grid;grid-template-columns:112px 1fr;gap:5px;min-height:82px;margin-top:8px}.player-card{display:grid;grid-template-rows:22px 1fr}.player-name{display:grid;place-items:center;border-bottom:2px solid var(--ink);font-size:12px}.avatar{justify-self:center;align-self:center;width:42px;height:42px;background:var(--ink);border-radius:50%}.stats{display:grid;grid-template-rows:repeat(3,1fr)}.stat-row{display:grid;grid-template-columns:1fr 42px;align-items:center;border-bottom:2px solid var(--ink);font-size:12px}.stat-row:last-child{border-bottom:0}.stat-row span{padding-left:7px}.stat-row strong{display:grid;place-items:center;height:100%;border-left:2px solid var(--ink)}.continue{width:160px;min-height:34px;margin:8px auto 0;background:var(--paper);border:3px solid var(--ink);font:inherit;font-weight:800}
     </style>
   </head>
   <body>
@@ -18,11 +42,59 @@
       <header class="top"><span class="tag">Round 8</span><span class="tag center">R001</span><span class="tag right">Map</span></header>
       <section class="board" data-board><div class="center-stage"><div class="reward"><b>Passed Start</b><div class="badge-row"><span class="badge">+50 coin</span><span class="badge">Level 2</span></div><strong>Lap complete</strong></div></div></section>
       <footer class="hud"><section class="panel player-card"><div class="player-name">Player Name</div><div class="avatar"></div></section><section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>250</strong></div><div class="stat-row"><span>level:</span><strong>2</strong></div></section></footer>
+      <button class="continue" data-nav="04-main-board-waiting-turn.html">Continue</button>
     </main>
     <script>
-      const board=document.querySelector("[data-board]");const owned=new Map([[5,"dim"],[8,"dim"],[12,"dark"],[27,"dim"],[39,"dark"]]);const tokens=new Set([1,16,31]);
-      function pos(id){if(id===1)return{c:11,r:1};if(id>=2&&id<=10)return{c:11,r:id};if(id===11)return{c:11,r:11};if(id>=12&&id<=21)return{c:22-id,r:11};if(id>=22&&id<=30)return{c:1,r:32-id};return{c:id-30,r:1};}
-      for(let id=1;id<=40;id++){const p=pos(id);const tile=document.createElement("div");tile.className=`tile ${owned.get(id)??""} ${id===1?"start":""}`;tile.style.gridColumn=p.c;tile.style.gridRow=p.r;tile.innerHTML=`<span>${String(id).padStart(2,"0")}</span>${id===1?"<small>START</small>":""}${tokens.has(id)?'<i class="token"></i>':""}`;board.appendChild(tile);}
+      const frameState = {
+        startTile: 1,
+        bonusCoin: 50,
+        newLevel: 2,
+        ownedTiles: new Map([[5, "dim"], [8, "dim"], [12, "dark"], [27, "dim"], [39, "dark"]]),
+        tokenTiles: new Set([1, 16, 31])
+      };
+
+      const frameElements = {
+        board: document.querySelector("[data-board]"),
+        continueButton: document.querySelector("[data-nav='04-main-board-waiting-turn.html']")
+      };
+
+      function initializeFrame() {
+        /*
+          Production:
+          - reward is emitted by core movement resolution
+          - UI can show this as a short result panel before ending the turn
+        */
+        renderBoard();
+        frameElements.continueButton.addEventListener("click", () => navigateToFrame("04-main-board-waiting-turn.html"));
+      }
+
+      function renderBoard() {
+        for (let id = 1; id <= 40; id += 1) {
+          const position = getTileGridPosition(id);
+          const isStart = id === frameState.startTile;
+          const tile = document.createElement("div");
+          tile.className = `tile ${frameState.ownedTiles.get(id) ?? ""} ${isStart ? "start" : ""}`;
+          tile.style.gridColumn = position.column;
+          tile.style.gridRow = position.row;
+          tile.innerHTML = `<span>${String(id).padStart(2, "0")}</span>${isStart ? "<small>START</small>" : ""}${frameState.tokenTiles.has(id) ? '<i class="token"></i>' : ""}`;
+          frameElements.board.appendChild(tile);
+        }
+      }
+
+      function getTileGridPosition(id) {
+        if (id === 1) return { column: 11, row: 1 };
+        if (id >= 2 && id <= 10) return { column: 11, row: id };
+        if (id === 11) return { column: 11, row: 11 };
+        if (id >= 12 && id <= 21) return { column: 22 - id, row: 11 };
+        if (id >= 22 && id <= 30) return { column: 1, row: 32 - id };
+        return { column: id - 30, row: 1 };
+      }
+
+      function navigateToFrame(fileName) {
+        window.location.href = fileName;
+      }
+
+      initializeFrame();
     </script>
   </body>
 </html>

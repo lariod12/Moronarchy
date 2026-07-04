@@ -14,15 +14,20 @@ Read order for new contributors:
 
 ## Design Preview Workflow
 
-Use `design/*.html` as interactive visual frames before changing production UI.
+Use `design/index.html` and `design/*.html` as interactive visual frames before changing production UI.
 
 Rules:
 
 - Each `.html` file in `design/` represents one screen or game phase.
+- `design/index.html` is the review hub and should link to every frame.
 - Put layout, CSS, local demo state, and quick UI ideas directly in the frame file.
 - Put a `DESIGN FRAME SPEC` comment at the top of every design HTML file. It must describe the screen purpose, visible controls, feature list, button workflow, and production mapping.
 - Make the frame interactive enough to test that screen's main action.
 - Use descriptive classes, `data-*` attributes, function names, and comments so implementers can understand the intended production behavior from the HTML file.
+- Use `data-nav` for buttons or links that move to another design frame.
+- Use `data-action` for local prototype actions or fake versions of future game/server moves.
+- Use `data-modal-open`, `data-modal-close`, and `data-modal` for popup behavior inside the same frame.
+- Use `data-bind` for sample state that frame JavaScript renders.
 - Add comments around major CSS class groups, HTML feature blocks, and JS handler functions.
 - Do not import production React code from `apps/web`.
 - Do not put real game rules, multiplayer behavior, or server logic in design files.
@@ -32,13 +37,15 @@ Rules:
 
 Recommended flow:
 
-1. Pick the relevant frame from `design/README.md`.
-2. Edit that `.html` frame until the screen direction and interaction feel right.
-3. Review it in a browser as an interactive demo.
-4. Read the frame comments/function names to map behavior into production.
-5. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
-6. Replace local demo state with real core/server state.
-7. Add or update tests only for production behavior, not for the sandbox file.
+1. Open `design/index.html` to see the full prototype map.
+2. Pick the relevant frame from `design/README.md`.
+3. Edit that `.html` frame until the screen direction and interaction feel right.
+4. Review it in a browser as an interactive demo.
+5. Click through linked frames to confirm the flow feels consistent.
+6. Read the frame comments/function names to map behavior into production.
+7. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
+8. Replace local demo state with real core/server state.
+9. Add or update tests only for production behavior, not for the sandbox file.
 
 ## Local Development
 

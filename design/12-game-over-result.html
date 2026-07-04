@@ -1,4 +1,32 @@
 <!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: 12-game-over-result
+  Screen purpose:
+    Final match result screen after one king wins or the round limit resolves.
+
+  Visual design:
+    Mobile wireframe with top status bar, large winner crown block, ranking table,
+    and one bottom return button. Keep visible UI black and white; source-image
+    annotations should remain in comments only.
+
+  Visible controls:
+    Inputs: 0
+    Buttons: 1
+      1. Back to Lobby - returns to the room lobby for rematch or exit decisions.
+
+  Interactive features:
+    - Return button navigates back to the room lobby prototype.
+    - Ranking is static sample data in this frame.
+
+  Button workflow:
+    Back to Lobby -> 02-room-lobby.html
+
+  Production mapping:
+    Page/component target: ResultPage or GameResultOverlay in apps/web.
+    Server/core source: winnerId, defeated players, total value tiebreaker.
+    Replace sample ranking with real final match state.
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -23,7 +51,26 @@
         <div class="row"><b>3</b><b>Player 3</b><span>-</span><span>-</span><span>-</span></div>
         <div class="row"><b>4</b><b>Player 4</b><span>-</span><span>-</span><span>-</span></div>
       </section>
-      <button class="button">Back to Lobby</button>
+      <!-- Production: maps to result screen exit/rematch path. -->
+      <button class="button" data-nav="02-room-lobby.html">Back to Lobby</button>
     </main>
+    <script>
+      function initializeFrame() {
+        /*
+          Prototype navigation:
+          - keep this file standalone
+          - use data-nav to show which production route this button represents
+        */
+        document.querySelector("[data-nav]").addEventListener("click", (event) => {
+          navigateToFrame(event.currentTarget.dataset.nav);
+        });
+      }
+
+      function navigateToFrame(fileName) {
+        window.location.href = fileName;
+      }
+
+      initializeFrame();
+    </script>
   </body>
 </html>

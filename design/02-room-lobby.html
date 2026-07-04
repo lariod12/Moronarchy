@@ -1,4 +1,33 @@
 <!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: 02-room-lobby
+  Screen purpose:
+    Waiting room after Create or Join. Shows room code, player slots, ready/waiting states, and starts match.
+
+  Visual design:
+    Black/white room card with four player slots. No annotation text is rendered.
+
+  Visible controls:
+    Inputs: 0
+    Buttons: 2
+      1. Back - returns to 01-welcome-create-join.html.
+      2. Start Game - navigates to 03-game-starting.html when enough players are present.
+
+  Interactive features:
+    - Reads optional query params from frame 01: player, room, flow.
+    - Displays player name in Player 1 slot when present.
+    - Start Game advances to the countdown frame.
+
+  Button workflow:
+    Back -> 01-welcome-create-join.html
+    Start Game -> 03-game-starting.html
+
+  Production mapping:
+    Page/component target: apps/web RoomPage.
+    Start action maps to room host starting a boardgame.io match.
+    Fake local lobby slots should be replaced by server match/room state.
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -32,22 +61,72 @@
   <body>
     <main class="phone">
       <header class="top">
-        <span class="tag">Back</span>
-        <span class="tag center">R001</span>
+        <button class="tag" data-nav="01-welcome-create-join.html">Back</button>
+        <span class="tag center" data-bind="room-code">R001</span>
         <span class="tag right">Share</span>
       </header>
       <section class="room-card">
         <h1>Waiting for creating room</h1>
-        <div class="code"><span>Room Code</span><strong>R001</strong></div>
+        <div class="code"><span>Room Code</span><strong data-bind="room-code">R001</strong></div>
         <div class="players">
-          <div class="slot"><b>Player 1</b><div class="avatar"></div><small>Ready</small></div>
+          <div class="slot"><b data-bind="player-one-name">Player 1</b><div class="avatar"></div><small>Ready</small></div>
           <div class="slot"><b>Player 2</b><div class="avatar"></div><small>Ready</small></div>
           <div class="slot wait"><b>Player 3</b><div class="avatar"></div><small>Waiting</small></div>
           <div class="slot wait"><b>Player 4</b><div class="avatar"></div><small>Waiting</small></div>
         </div>
-        <button class="button">Start Game</button>
+        <button class="button" data-action="start-game">Start Game</button>
         <div class="hint">Minimum 2 kings. Maximum 4 kings.</div>
       </section>
     </main>
+    <script>
+      const frameState = {
+        roomCode: "R001",
+        playerName: "Player 1",
+        readyPlayers: 2
+      };
+
+      const frameElements = {
+        roomCodeLabels: document.querySelectorAll("[data-bind='room-code']"),
+        playerOneName: document.querySelector("[data-bind='player-one-name']"),
+        startButton: document.querySelector("[data-action='start-game']"),
+        backButton: document.querySelector("[data-nav='01-welcome-create-join.html']")
+      };
+
+      function initializeFrame() {
+        /*
+          Production: RoomPage receives room/player state from server.
+          This frame reads query params only to make prototype navigation feel continuous.
+        */
+        const params = new URLSearchParams(window.location.search);
+        frameState.roomCode = params.get("room") || frameState.roomCode;
+        frameState.playerName = params.get("player") || frameState.playerName;
+        frameElements.startButton.addEventListener("click", handleStartGame);
+        frameElements.backButton.addEventListener("click", () => navigateToFrame("01-welcome-create-join.html"));
+        renderFrame();
+      }
+
+      function renderFrame() {
+        frameElements.roomCodeLabels.forEach((item) => {
+          item.textContent = frameState.roomCode;
+        });
+        frameElements.playerOneName.textContent = frameState.playerName;
+        frameElements.startButton.disabled = frameState.readyPlayers < 2;
+      }
+
+      function handleStartGame() {
+        /*
+          Production action: host sends start-game request, server creates match, client navigates to game route.
+        */
+        if (frameElements.startButton.disabled) return;
+        navigateToFrame("03-game-starting.html", { room: frameState.roomCode });
+      }
+
+      function navigateToFrame(fileName, params = {}) {
+        const query = new URLSearchParams(params).toString();
+        window.location.href = query ? `${fileName}?${query}` : fileName;
+      }
+
+      initializeFrame();
+    </script>
   </body>
 </html>

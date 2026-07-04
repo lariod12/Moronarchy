@@ -1,4 +1,33 @@
 <!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: 04-main-board-waiting-turn
+  Screen purpose:
+    Main board while another king is playing. Player can inspect status, open king menu, or wait for turn.
+
+  Visual design:
+    40-tile board, centered waiting card, bottom HUD. Black/white sketch only.
+
+  Visible controls:
+    Inputs: 0
+    Buttons: 3
+      1. Back - returns to 02-room-lobby.html.
+      2. Waiting card - prototype shortcut to 05-main-board-your-turn.html.
+      3. Crown button - opens a local status popup.
+
+  Interactive features:
+    - Waiting card simulates the turn changing to the current player.
+    - Crown button opens/closes a player status modal.
+
+  Button workflow:
+    Back -> 02-room-lobby.html
+    Waiting card -> 05-main-board-your-turn.html
+    Crown -> open status popup; Close -> hide popup
+
+  Production mapping:
+    Page/component target: GamePage and PlayerHud.
+    Waiting state should come from boardgame.io currentPlayer, not local JS.
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -22,7 +51,7 @@
       .tile small { position:absolute; right:2px; bottom:1px; font-size:7px; }
       .token { position:absolute; top:-5px; right:-5px; width:10px; height:10px; background:var(--ink); border:1px solid var(--paper); border-radius:50%; }
       .center-stage { grid-column:3/10; grid-row:3/10; display:grid; place-items:center; }
-      .wait-card { display:grid; gap:6px; min-width:170px; padding:10px; text-align:center; border:2px solid var(--ink); background:var(--wash); transform:rotate(-1deg); }
+      .wait-card { display:grid; gap:6px; min-width:170px; padding:10px; color:var(--ink); text-align:center; border:2px solid var(--ink); background:var(--wash); font:inherit; transform:rotate(-1deg); }
       .wait-card span { font-size:12px; }
       .dice { width:42px; height:42px; justify-self:center; background:var(--paper); border:3px solid var(--ink); border-radius:6px; }
       .hud { display:grid; grid-template-columns:112px 1fr 72px 72px; gap:5px; min-height:82px; margin-top:8px; }
@@ -36,6 +65,10 @@
       .stat-row strong { display:grid; place-items:center; height:100%; border-left:2px solid var(--ink); }
       .big { display:grid; place-items:center; font-size:34px; }
       .crown { width:48px; height:32px; background:var(--ink); clip-path:polygon(0 100%,0 32%,20% 58%,35% 0,50% 54%,68% 0,83% 58%,100% 32%,100% 100%); }
+      .modal[hidden] { display:none; }
+      .modal { position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.34); }
+      .modal-card { display:grid; gap:8px; width:260px; padding:14px; background:var(--paper); border:3px solid var(--ink); text-align:center; }
+      .modal-card button { min-height:34px; background:var(--paper); border:2px solid var(--ink); font:inherit; font-weight:800; }
     </style>
   </head>
   <body>
@@ -43,19 +76,92 @@
       <header class="top"><span class="tag">Round 1</span><span class="tag center">R001</span><span class="tag right">Map</span></header>
       <section class="board" data-board>
         <div class="center-stage">
-          <div class="wait-card"><strong>Waiting turn</strong><span>Player 2 is rolling dice</span><div class="dice"></div></div>
+          <button class="wait-card" data-action="simulate-your-turn"><strong>Waiting turn</strong><span>Player 2 is rolling dice</span><div class="dice"></div></button>
         </div>
       </section>
       <footer class="hud">
         <section class="panel player-card"><div class="player-name">Player Name</div><div class="avatar"></div></section>
         <section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>100</strong></div><div class="stat-row"><span>level:</span><strong>1</strong></div></section>
-        <button class="panel big">&larr;</button><button class="panel big"><span class="crown"></span></button>
+        <button class="panel big" data-nav="02-room-lobby.html">&larr;</button><button class="panel big" data-modal-open="king-status-modal"><span class="crown"></span></button>
       </footer>
+      <section class="modal" data-modal="king-status-modal" hidden>
+        <div class="modal-card">
+          <strong>King Status</strong>
+          <span>Health 100 / Coin 100 / Level 1</span>
+          <button data-modal-close="king-status-modal">Close</button>
+        </div>
+      </section>
     </main>
     <script>
-      const board=document.querySelector("[data-board]");const owned=new Map([[5,"dim"],[8,"dim"],[12,"dark"],[27,"dim"],[39,"dark"]]);const active=new Set([5,8,12,27,39]);const tokens=new Set([1,11,16,31]);
-      function pos(id){if(id===1)return{c:11,r:1};if(id>=2&&id<=10)return{c:11,r:id};if(id===11)return{c:11,r:11};if(id>=12&&id<=21)return{c:22-id,r:11};if(id>=22&&id<=30)return{c:1,r:32-id};return{c:id-30,r:1};}
-      for(let id=1;id<=40;id++){const p=pos(id);const tile=document.createElement("div");tile.className=`tile ${owned.get(id)??""} ${active.has(id)?"active":""}`;tile.style.gridColumn=p.c;tile.style.gridRow=p.r;tile.innerHTML=`<span>${String(id).padStart(2,"0")}</span>${active.has(id)?"<small>P1</small>":""}${tokens.has(id)?'<i class="token"></i>':""}`;board.appendChild(tile);}
+      const frameState = {
+        ownedTiles: new Map([[5, "dim"], [8, "dim"], [12, "dark"], [27, "dim"], [39, "dark"]]),
+        activeTiles: new Set([5, 8, 12, 27, 39]),
+        tokenTiles: new Set([1, 11, 16, 31])
+      };
+
+      const frameElements = {
+        board: document.querySelector("[data-board]"),
+        waitButton: document.querySelector("[data-action='simulate-your-turn']"),
+        backButton: document.querySelector("[data-nav='02-room-lobby.html']"),
+        openStatusButton: document.querySelector("[data-modal-open='king-status-modal']"),
+        closeStatusButton: document.querySelector("[data-modal-close='king-status-modal']")
+      };
+
+      function initializeFrame() {
+        /*
+          Production:
+          - waiting state comes from boardgame.io currentPlayer
+          - this shortcut lets the reviewer jump into the next phase without a server
+        */
+        renderBoard();
+        frameElements.waitButton.addEventListener("click", handleSimulateYourTurn);
+        frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
+        frameElements.openStatusButton.addEventListener("click", () => openModal("king-status-modal"));
+        frameElements.closeStatusButton.addEventListener("click", () => closeModal("king-status-modal"));
+      }
+
+      function renderBoard() {
+        for (let id = 1; id <= 40; id += 1) {
+          const position = getTileGridPosition(id);
+          const tile = document.createElement("div");
+          tile.className = `tile ${frameState.ownedTiles.get(id) ?? ""} ${frameState.activeTiles.has(id) ? "active" : ""}`;
+          tile.style.gridColumn = position.column;
+          tile.style.gridRow = position.row;
+          tile.innerHTML = `<span>${String(id).padStart(2, "0")}</span>${frameState.activeTiles.has(id) ? "<small>P1</small>" : ""}${frameState.tokenTiles.has(id) ? '<i class="token"></i>' : ""}`;
+          frameElements.board.appendChild(tile);
+        }
+      }
+
+      function getTileGridPosition(id) {
+        /*
+          Production equivalent: tile-layout helper maps 40 monopoly-style tiles
+          onto an 11x11 perimeter grid.
+        */
+        if (id === 1) return { column: 11, row: 1 };
+        if (id >= 2 && id <= 10) return { column: 11, row: id };
+        if (id === 11) return { column: 11, row: 11 };
+        if (id >= 12 && id <= 21) return { column: 22 - id, row: 11 };
+        if (id >= 22 && id <= 30) return { column: 1, row: 32 - id };
+        return { column: id - 30, row: 1 };
+      }
+
+      function handleSimulateYourTurn() {
+        navigateToFrame("05-main-board-your-turn.html");
+      }
+
+      function navigateToFrame(fileName) {
+        window.location.href = fileName;
+      }
+
+      function openModal(id) {
+        document.querySelector(`[data-modal='${id}']`).hidden = false;
+      }
+
+      function closeModal(id) {
+        document.querySelector(`[data-modal='${id}']`).hidden = true;
+      }
+
+      initializeFrame();
     </script>
   </body>
 </html>

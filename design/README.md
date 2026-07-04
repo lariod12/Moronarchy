@@ -2,12 +2,13 @@
 
 This folder is for design review before production implementation.
 
-Each `.html` file is one standalone interactive frame. Edit a frame directly, review and click/test it in a browser, then port approved UI ideas and behavior into `apps/web`.
+Start from `index.html` to review the full click-through prototype. Each numbered `.html` file is also a standalone interactive frame. Edit a frame directly, review and click/test it in a browser, then port approved UI ideas and behavior into `apps/web`.
 
 The frame files are not production code, but they should be useful implementation references. A developer should be able to open one frame, interact with the screen, read the class names/functions/inline notes, and understand what production React components and moves need to do.
 
 ## Frames
 
+- `index.html` - prototype hub for reviewers and developers.
 1. `01-welcome-create-join.html` - welcome, player name, create/join room.
 2. `02-room-lobby.html` - room lobby and player slots.
 3. `03-game-starting.html` - game starting countdown.
@@ -42,6 +43,70 @@ Every frame should include:
 - Named functions that describe the intended production behavior.
 - Class names that map naturally to future React components.
 - Short HTML or JS comments for implementation notes when behavior is not obvious.
+
+## Prototype Flow Contract
+
+Design frames use normal HTML navigation plus tiny local JavaScript. Do not add a router, build step, shared bundle, or production imports.
+
+Use these attributes consistently:
+
+```html
+<button data-nav="02-room-lobby.html">Back</button>
+<button data-action="roll-dice">Tap to Roll</button>
+<button data-modal-open="buy-result-modal">Buy</button>
+<section data-modal="buy-result-modal" hidden></section>
+<button data-modal-close="buy-result-modal">Close</button>
+<span data-bind="room-code">R001</span>
+```
+
+- `data-nav` means this control moves to another design frame file.
+- `data-action` means this control performs a local demo action or represents a future server move.
+- `data-modal-open` and `data-modal-close` mean popup behavior inside the same frame.
+- `data-modal` names the popup block being opened or closed.
+- `data-bind` marks sample UI state that JavaScript updates.
+
+Preferred JavaScript shape:
+
+```js
+const frameState = {};
+const frameElements = {};
+
+function initializeFrame() {}
+function renderFrame() {}
+function handleUserAction() {}
+function navigateToFrame(fileName, params = {}) {}
+```
+
+Keep logic simple and visible in the same file. The goal is UI/UX validation, not production architecture.
+
+## Current Click-Through Flow
+
+The main happy path is:
+
+```text
+index.html
+  -> 01-welcome-create-join.html
+  -> 02-room-lobby.html
+  -> 03-game-starting.html
+  -> 05-main-board-your-turn.html
+  -> 06-dice-rolling-move.html
+  -> 07-empty-land-action.html
+  -> 04-main-board-waiting-turn.html
+```
+
+Optional branch frames:
+
+```text
+04-main-board-waiting-turn.html -> 05-main-board-your-turn.html
+06-dice-rolling-move.html      -> 07-empty-land-action.html
+08-own-land-upgrade.html       -> 04-main-board-waiting-turn.html
+09-rival-land-payment.html     -> 04-main-board-waiting-turn.html
+10-start-bonus-level-up.html   -> 04-main-board-waiting-turn.html
+11-defeated-bankruptcy.html    -> 04-main-board-waiting-turn.html
+12-game-over-result.html       -> 02-room-lobby.html
+```
+
+When a new frame is added, update this flow map and link it from `index.html`.
 
 ## Required Top-Of-File Spec
 
@@ -207,7 +272,7 @@ When a source image contains annotation text, move that meaning into non-visible
 
 ## Production Porting Workflow
 
-1. Confirm the frame behavior by opening the `.html` file in a browser.
+1. Confirm the frame behavior by opening `design/index.html` or the target `.html` file in a browser.
 2. Read comments, `data-action`, and JS function names.
 3. Identify the target production page/component in `apps/web`.
 4. Move approved structure/styles into React components.

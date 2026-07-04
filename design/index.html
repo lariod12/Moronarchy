@@ -1,0 +1,152 @@
+<!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: index
+  Screen purpose:
+    Prototype hub for reviewing and testing Moronarchy design frames.
+
+  Visual design:
+    Black/white index board with links to each standalone HTML frame.
+    This page is not a game screen. It is a reviewer/developer navigation tool.
+
+  Visible controls:
+    Inputs: 0
+    Buttons/links: 13
+      1. Start prototype - opens 01-welcome-create-join.html.
+      2-13. Frame links - open each named design frame.
+
+  Interactive features:
+    - Click a frame link to open that standalone prototype screen.
+    - Use this hub to test the end-to-end design flow and jump between screens.
+
+  Button workflow:
+    Start prototype -> 01-welcome-create-join.html
+    Any frame link -> matching frame file
+
+  Production mapping:
+    No production mapping. This is design-only navigation for reviewers.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Moronarchy Design Prototype Hub</title>
+    <style>
+      :root {
+        --ink: #050505;
+        --paper: #ffffff;
+        --wash: #eeeeee;
+        --shade: #d8d8d8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 22px;
+        color: var(--ink);
+        background: #f3f3f3;
+        font-family: "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
+      }
+
+      .hub-shell {
+        width: min(100%, 920px);
+        margin: 0 auto;
+        padding: 18px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.16);
+      }
+
+      .hub-header {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 3px solid var(--ink);
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      p {
+        max-width: 68ch;
+        font-size: 14px;
+      }
+
+      .start-link,
+      .frame-link {
+        display: grid;
+        align-items: center;
+        min-height: 42px;
+        padding: 8px 10px;
+        color: var(--ink);
+        background: var(--paper);
+        border: 2px solid var(--ink);
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .start-link {
+        width: min(100%, 280px);
+        margin-bottom: 16px;
+        background: var(--shade);
+        outline: 3px solid var(--ink);
+        outline-offset: 2px;
+        text-align: center;
+      }
+
+      .frame-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px;
+      }
+
+      .frame-link small {
+        display: block;
+        margin-top: 3px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="hub-shell screen-prototype-hub">
+      <header class="hub-header">
+        <h1>Moronarchy Design Prototype</h1>
+        <p>
+          Design-only hub. Open frames here, click through prototype flows, then port approved behavior into production React.
+        </p>
+      </header>
+
+      <a class="start-link" data-nav="01-welcome-create-join.html" href="01-welcome-create-join.html">
+        Start prototype
+      </a>
+
+      <nav class="frame-grid" aria-label="Design frame list">
+        <a class="frame-link" href="01-welcome-create-join.html">01 Welcome Create Join <small>Entry flow</small></a>
+        <a class="frame-link" href="02-room-lobby.html">02 Room Lobby <small>Players and start</small></a>
+        <a class="frame-link" href="03-game-starting.html">03 Game Starting <small>Countdown</small></a>
+        <a class="frame-link" href="04-main-board-waiting-turn.html">04 Waiting Turn <small>Passive board state</small></a>
+        <a class="frame-link" href="05-main-board-your-turn.html">05 Your Turn <small>Roll entry</small></a>
+        <a class="frame-link" href="06-dice-rolling-move.html">06 Dice Rolling Move <small>Movement transition</small></a>
+        <a class="frame-link" href="07-empty-land-action.html">07 Empty Land Action <small>Buy or skip</small></a>
+        <a class="frame-link" href="08-own-land-upgrade.html">08 Own Land Upgrade <small>Upgrade or skip</small></a>
+        <a class="frame-link" href="09-rival-land-payment.html">09 Rival Land Payment <small>Forced fee</small></a>
+        <a class="frame-link" href="10-start-bonus-level-up.html">10 Start Bonus Level Up <small>Reward state</small></a>
+        <a class="frame-link" href="11-defeated-bankruptcy.html">11 Defeated Bankruptcy <small>Loss state</small></a>
+        <a class="frame-link" href="12-game-over-result.html">12 Game Over Result <small>Winner summary</small></a>
+      </nav>
+    </main>
+  </body>
+</html>

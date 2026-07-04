@@ -1,4 +1,33 @@
 <!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: 05-main-board-your-turn
+  Screen purpose:
+    Main board when it is the current player's turn and the next action is rolling dice.
+
+  Visual design:
+    40-tile board with central dice and one clear Tap to Roll action.
+
+  Visible controls:
+    Inputs: 0
+    Buttons: 3
+      1. Tap to Roll - navigates to 06-dice-rolling-move.html.
+      2. Back - returns to 02-room-lobby.html.
+      3. Crown - opens local king status popup.
+
+  Interactive features:
+    - Roll button demonstrates the transition into dice/move animation.
+    - Crown opens/closes a local HUD detail popup.
+
+  Button workflow:
+    Tap to Roll -> 06-dice-rolling-move.html
+    Back -> 02-room-lobby.html
+    Crown -> status modal
+
+  Production mapping:
+    Page/component target: GamePage and ActionPanel rolling phase.
+    Roll action maps to boardgame.io move rollDice().
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -28,7 +57,7 @@
       .pip:nth-child(1){top:9px;left:9px}.pip:nth-child(2){top:9px;right:9px}.pip:nth-child(3){top:23px;left:23px}.pip:nth-child(4){bottom:9px;left:9px}.pip:nth-child(5){bottom:9px;right:9px}
       .speech { position:absolute; top:-24px; right:-48px; min-width:44px; min-height:28px; display:grid; place-items:center; background:var(--paper); border:2px solid var(--ink); border-radius:50%; font-size:13px; font-weight:800; transform:rotate(-10deg); }
       .speech:after { content:""; position:absolute; left:5px; bottom:-10px; width:14px; height:12px; background:var(--paper); border-right:2px solid var(--ink); border-bottom:2px solid var(--ink); transform:rotate(35deg); }
-      .roll { min-height:25px; padding:2px 9px; font-size:12px; transform:rotate(-1deg); }
+      .roll { min-height:25px; padding:2px 9px; font:inherit; font-size:12px; transform:rotate(-1deg); }
       .hud { display:grid; grid-template-columns:112px 1fr 72px 72px; gap:5px; min-height:82px; margin-top:8px; }
       .player-card { display:grid; grid-template-rows:22px 1fr; }
       .player-name { display:grid; place-items:center; border-bottom:2px solid var(--ink); font-size:12px; }
@@ -40,6 +69,7 @@
       .stat-row strong { display:grid; place-items:center; height:100%; border-left:2px solid var(--ink); }
       .big { display:grid; place-items:center; font-size:34px; }
       .crown { width:48px; height:32px; background:var(--ink); clip-path:polygon(0 100%,0 32%,20% 58%,35% 0,50% 54%,68% 0,83% 58%,100% 32%,100% 100%); }
+      .modal[hidden]{display:none}.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.34)}.modal-card{display:grid;gap:8px;width:260px;padding:14px;background:var(--paper);border:3px solid var(--ink);text-align:center}.modal-card button{min-height:34px;background:var(--paper);border:2px solid var(--ink);font:inherit;font-weight:800}
     </style>
   </head>
   <body>
@@ -47,19 +77,82 @@
       <header class="top"><span class="tag">Round 1</span><span class="tag center">R001</span><span class="tag right">Map</span></header>
       <section class="board" data-board>
         <div class="center-stage">
-          <div class="dice-wrap"><div class="speech">?</div><div class="dice"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div><button class="roll">Tap to Roll</button></div>
+          <div class="dice-wrap"><div class="speech">?</div><div class="dice"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div><button class="roll" data-action="roll-dice">Tap to Roll</button></div>
         </div>
       </section>
       <footer class="hud">
         <section class="panel player-card"><div class="player-name">Player Name</div><div class="avatar"></div></section>
         <section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>100</strong></div><div class="stat-row"><span>level:</span><strong>1</strong></div></section>
-        <button class="panel big">&larr;</button><button class="panel big"><span class="crown"></span></button>
+        <button class="panel big" data-nav="02-room-lobby.html">&larr;</button><button class="panel big" data-modal-open="king-status-modal"><span class="crown"></span></button>
       </footer>
+      <section class="modal" data-modal="king-status-modal" hidden><div class="modal-card"><strong>Your King</strong><span>Ready to roll. Coin 100 / Level 1</span><button data-modal-close="king-status-modal">Close</button></div></section>
     </main>
     <script>
-      const board=document.querySelector("[data-board]");const owned=new Map([[5,"dim"],[8,"dim"],[12,"dark"],[27,"dim"],[39,"dark"]]);const active=new Set([5,8,12,27,39]);const tokens=new Set([1,11,16,31]);
-      function pos(id){if(id===1)return{c:11,r:1};if(id>=2&&id<=10)return{c:11,r:id};if(id===11)return{c:11,r:11};if(id>=12&&id<=21)return{c:22-id,r:11};if(id>=22&&id<=30)return{c:1,r:32-id};return{c:id-30,r:1};}
-      for(let id=1;id<=40;id++){const p=pos(id);const tile=document.createElement("div");tile.className=`tile ${owned.get(id)??""} ${active.has(id)?"active":""}`;tile.style.gridColumn=p.c;tile.style.gridRow=p.r;tile.innerHTML=`<span>${String(id).padStart(2,"0")}</span>${active.has(id)?"<small>P1</small>":""}${tokens.has(id)?'<i class="token"></i>':""}`;board.appendChild(tile);}
+      const frameState = {
+        ownedTiles: new Map([[5, "dim"], [8, "dim"], [12, "dark"], [27, "dim"], [39, "dark"]]),
+        activeTiles: new Set([5, 8, 12, 27, 39]),
+        tokenTiles: new Set([1, 11, 16, 31])
+      };
+
+      const frameElements = {
+        board: document.querySelector("[data-board]"),
+        rollButton: document.querySelector("[data-action='roll-dice']"),
+        backButton: document.querySelector("[data-nav='02-room-lobby.html']"),
+        openStatusButton: document.querySelector("[data-modal-open='king-status-modal']"),
+        closeStatusButton: document.querySelector("[data-modal-close='king-status-modal']")
+      };
+
+      function initializeFrame() {
+        /*
+          Production:
+          - roll button should call boardgame.io move rollDice()
+          - dice result must come from the server, never from client random()
+        */
+        renderBoard();
+        frameElements.rollButton.addEventListener("click", handleRollDice);
+        frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
+        frameElements.openStatusButton.addEventListener("click", () => openModal("king-status-modal"));
+        frameElements.closeStatusButton.addEventListener("click", () => closeModal("king-status-modal"));
+      }
+
+      function renderBoard() {
+        for (let id = 1; id <= 40; id += 1) {
+          const position = getTileGridPosition(id);
+          const tile = document.createElement("div");
+          tile.className = `tile ${frameState.ownedTiles.get(id) ?? ""} ${frameState.activeTiles.has(id) ? "active" : ""}`;
+          tile.style.gridColumn = position.column;
+          tile.style.gridRow = position.row;
+          tile.innerHTML = `<span>${String(id).padStart(2, "0")}</span>${frameState.activeTiles.has(id) ? "<small>P1</small>" : ""}${frameState.tokenTiles.has(id) ? '<i class="token"></i>' : ""}`;
+          frameElements.board.appendChild(tile);
+        }
+      }
+
+      function getTileGridPosition(id) {
+        if (id === 1) return { column: 11, row: 1 };
+        if (id >= 2 && id <= 10) return { column: 11, row: id };
+        if (id === 11) return { column: 11, row: 11 };
+        if (id >= 12 && id <= 21) return { column: 22 - id, row: 11 };
+        if (id >= 22 && id <= 30) return { column: 1, row: 32 - id };
+        return { column: id - 30, row: 1 };
+      }
+
+      function handleRollDice() {
+        navigateToFrame("06-dice-rolling-move.html");
+      }
+
+      function navigateToFrame(fileName) {
+        window.location.href = fileName;
+      }
+
+      function openModal(id) {
+        document.querySelector(`[data-modal='${id}']`).hidden = false;
+      }
+
+      function closeModal(id) {
+        document.querySelector(`[data-modal='${id}']`).hidden = true;
+      }
+
+      initializeFrame();
     </script>
   </body>
 </html>

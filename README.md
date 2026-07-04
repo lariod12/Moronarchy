@@ -20,6 +20,7 @@ apps/
 packages/
   core/       Shared pure TypeScript game rules
 design/
+  index.html  Interactive prototype hub
   *.html      One interactive UI frame per screen or game phase
   README.md   Design frame list, interaction rules, and porting notes
 docs/
@@ -38,9 +39,9 @@ docs/
 
 ## Design Preview
 
-Use `design/*.html` for quick interactive UI exploration before touching production React code.
+Use `design/index.html` and `design/*.html` for quick interactive UI exploration before touching production React code.
 
-The design folder is intentionally simple: each standalone HTML file is one screen/frame with layout, CSS, local demo state, function names, and interaction notes. Approved designs can later be implemented in `apps/web`.
+The design folder is intentionally simple: `index.html` is the click-through prototype hub, and each standalone HTML file is one screen/frame with layout, CSS, local demo state, function names, and interaction notes. Approved designs can later be implemented in `apps/web`.
 
 ## Prerequisites
 

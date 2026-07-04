@@ -1,4 +1,28 @@
 <!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: 11-defeated-bankruptcy
+  Screen purpose:
+    Defeated state when a king's coin reaches 0 after forced rent/payment.
+
+  Visual design:
+    Large sad face card, bankrupt message, summary stats, and one continue-watching button.
+
+  Visible controls:
+    Inputs: 0
+    Buttons: 1
+      1. Watch Remaining Kings - returns to waiting board state.
+
+  Interactive features:
+    - Button lets tester continue prototype as spectator.
+
+  Button workflow:
+    Watch Remaining Kings -> 04-main-board-waiting-turn.html
+
+  Production mapping:
+    Page/component target: GamePage defeated overlay/result state.
+    Production should keep defeated player in spectator mode until game over.
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -23,7 +47,24 @@
           <div class="stats"><div class="stat">coin 0</div><div class="stat">land 3</div><div class="stat">level 2</div></div>
         </div>
       </section>
-      <button class="button">Watch Remaining Kings</button>
+      <button class="button" data-nav="04-main-board-waiting-turn.html">Watch Remaining Kings</button>
     </main>
+    <script>
+      function initializeFrame() {
+        /*
+          Production: this action keeps the player connected as spectator.
+          Prototype: return to waiting board state.
+        */
+        document.querySelector("[data-nav]").addEventListener("click", (event) => {
+          navigateToFrame(event.currentTarget.dataset.nav);
+        });
+      }
+
+      function navigateToFrame(fileName) {
+        window.location.href = fileName;
+      }
+
+      initializeFrame();
+    </script>
   </body>
 </html>

@@ -1,4 +1,30 @@
 <!doctype html>
+<!--
+  DESIGN FRAME SPEC
+  Frame: 03-game-starting
+  Screen purpose:
+    Transitional countdown after lobby host starts the match.
+
+  Visual design:
+    Dimmed lobby background with centered Game Starting modal and large countdown number.
+
+  Visible controls:
+    Inputs: 0
+    Buttons: 1
+      1. Countdown modal - click to advance countdown in the prototype.
+
+  Interactive features:
+    - Countdown starts at 3.
+    - Clicking the modal decrements countdown.
+    - After 1, prototype navigates to 05-main-board-your-turn.html.
+
+  Button workflow:
+    Countdown modal click: 3 -> 2 -> 1 -> 05-main-board-your-turn.html
+
+  Production mapping:
+    Page/component target: Game starting overlay before GamePage.
+    Production should use real server/match ready state, not click countdown.
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -21,7 +47,7 @@
       .panel { min-height:112px; display:grid; place-items:center; }
       .avatar { width:50px; height:50px; background:var(--ink); border-radius:50%; box-shadow:0 34px 0 -12px var(--ink); }
       .overlay { position:absolute; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.38); }
-      .modal { width:250px; min-height:128px; display:grid; place-items:center; gap:8px; padding:14px; background:var(--paper); border:3px solid var(--ink); text-align:center; }
+      .modal { width:250px; min-height:128px; display:grid; place-items:center; gap:8px; padding:14px; background:var(--paper); border:3px solid var(--ink); text-align:center; font:inherit; }
       .modal strong { font-size:22px; }
       .modal span { font-size:44px; line-height:1; font-weight:900; }
     </style>
@@ -30,7 +56,7 @@
     <main class="phone">
       <header class="top">
         <span class="tag">Room</span>
-        <span class="tag center">R001</span>
+        <span class="tag center" data-bind="room-code">R001</span>
         <span class="tag right">2 / 4</span>
       </header>
       <section class="mock-board">
@@ -43,11 +69,55 @@
         <div class="panel"><div class="avatar"></div></div>
       </section>
       <div class="overlay">
-        <section class="modal">
+        <button class="modal" data-action="advance-countdown">
           <strong>Game Starting</strong>
-          <span>3</span>
-        </section>
+          <span data-bind="countdown">3</span>
+        </button>
       </div>
     </main>
+    <script>
+      const frameState = {
+        countdown: 3,
+        roomCode: "R001"
+      };
+
+      const frameElements = {
+        roomCode: document.querySelector("[data-bind='room-code']"),
+        countdown: document.querySelector("[data-bind='countdown']"),
+        advanceButton: document.querySelector("[data-action='advance-countdown']")
+      };
+
+      function initializeFrame() {
+        /*
+          Production: countdown should be driven by match start state or a timed transition.
+          Prototype: click the modal to advance without waiting.
+        */
+        const params = new URLSearchParams(window.location.search);
+        frameState.roomCode = params.get("room") || frameState.roomCode;
+        frameElements.advanceButton.addEventListener("click", handleAdvanceCountdown);
+        renderFrame();
+      }
+
+      function renderFrame() {
+        frameElements.roomCode.textContent = frameState.roomCode;
+        frameElements.countdown.textContent = String(frameState.countdown);
+      }
+
+      function handleAdvanceCountdown() {
+        if (frameState.countdown <= 1) {
+          navigateToFrame("05-main-board-your-turn.html", { room: frameState.roomCode });
+          return;
+        }
+        frameState.countdown -= 1;
+        renderFrame();
+      }
+
+      function navigateToFrame(fileName, params = {}) {
+        const query = new URLSearchParams(params).toString();
+        window.location.href = query ? `${fileName}?${query}` : fileName;
+      }
+
+      initializeFrame();
+    </script>
   </body>
 </html>
