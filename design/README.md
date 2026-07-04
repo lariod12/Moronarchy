@@ -69,6 +69,33 @@ Example:
 <article class="player-card is-you"></article>
 ```
 
+## Scene Interaction Rule
+
+Scene containers must not be draggable.
+
+In design HTML, this usually means the main screen container, such as `.phone.screen-room-lobby`, `.phone` for game board frames, or the future production scene shell. Dragging the scene container must not move the whole scene, drag the phone frame, or accidentally scroll the page through the scene.
+
+Allowed interactions must be explicit inner regions only:
+
+- Buttons can be clicked/tapped.
+- Inputs can be focused and typed into.
+- Modals can open/close.
+- Dedicated scroll regions such as `chat-scroll` can scroll internally.
+- Board/game elements can animate or respond to intentional actions.
+
+When a frame needs inner scrolling, create a named inner container and document it in the HTML:
+
+```html
+<!--
+  Design decision:
+  The scene container is not draggable.
+  Only .chat-scroll can scroll internally.
+-->
+<main class="phone screen-room-lobby"></main>
+```
+
+Do not solve scene dragging by collapsing or distorting the layout. Keep the scene layout stable and block drag only at the interaction layer.
+
 ## Prototype Flow Contract
 
 Design frames use normal HTML navigation plus tiny local JavaScript. Do not add a router, build step, shared bundle, or production imports.

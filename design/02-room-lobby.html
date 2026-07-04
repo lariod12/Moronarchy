@@ -16,7 +16,7 @@
     Inputs: 1
       1. Chat message input - appears inside the Chat popup.
     Buttons: 5
-      1. Chat - opens local chat popup.
+      1. Chat/Cancel - opens local chat popup while not ready; cancels ready state while ready.
       2. Ready/Start - first click marks current player ready; second click advances prototype to countdown.
       3. Send - appends chat text to the bottom lobby log.
       4. Close - closes chat popup.
@@ -27,11 +27,15 @@
     - Player 1 card displays only "Player 1"; ownership is shown by the `player-card is-you`
       background treatment, not by visible "(You)" text.
     - Chat popup can append demo messages to the chat log.
+    - Sending chat updates Player 1 speech bubble with the latest message preview.
+    - Speech bubble preview is capped; long messages end with "...".
+    - After sending chat, the speech bubble auto-hides after 3 seconds if no newer message is sent.
     - Ready button changes Player 1 speech bubble and becomes Start for prototype navigation.
 
   Button workflow:
     Chat -> open chat popup -> Send adds log line; Close/backdrop hides popup.
-    Ready -> Player 1 becomes ready, bubble says "Ready!" and button text changes to Start.
+    Ready -> Player 1 becomes ready, bubble says "Ready!", Chat becomes Cancel, Ready becomes Start.
+    Cancel -> returns to not-ready state, Cancel becomes Chat, Start becomes Ready.
     Start -> 03-game-starting.html with room query param.
 
   Production mapping:
@@ -74,6 +78,12 @@
 
       button {
         cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      input {
+        touch-action: manipulation;
+        user-select: text;
       }
 
       .phone {
@@ -88,7 +98,16 @@
         background: var(--paper);
         border: 3px solid var(--ink);
         box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.16);
+        overscroll-behavior: none;
+        touch-action: none;
+        user-select: none;
       }
+
+      /*
+        Design decision:
+        The lobby phone frame must not be draggable.
+        Only explicit inner controls are interactive: chat-scroll, buttons, and chat input.
+      */
 
       .room-code-tab {
         position: absolute;
@@ -172,14 +191,15 @@
 
       .speech-bubble {
         position: absolute;
-        right: 8px;
-        top: 23px;
+        right: 5px;
+        top: 27px;
         z-index: 3;
         display: grid;
         place-items: center;
-        max-width: 84px;
-        min-height: 24px;
+        width: 84px;
+        height: 28px;
         padding: 3px 8px;
+        overflow: visible;
         background: var(--paper);
         border: 2px solid var(--ink);
         border-radius: 999px;
@@ -189,17 +209,50 @@
         text-align: center;
       }
 
+      .speech-bubble[hidden] {
+        display: none;
+      }
+
+      .speech-text {
+        display: block;
+        max-width: 68px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /*
+        Design decision:
+        Speech bubble has a fixed size and fixed position.
+        Text changes must not resize or move the bubble.
+        Bubble tail must look connected to the bubble body.
+        Do not use overflow:hidden on .speech-bubble because it clips the tail.
+        Text overflow is clipped by .speech-text instead.
+        Message length is also limited in JS by formatSpeechBubbleText().
+        Tail shape below is user-approved from the design screenshot.
+        Use a black tail layer and a white inner tail layer instead of a rotated
+        square border, which made the tail look visually detached.
+      */
+      .speech-bubble::before {
+        content: "";
+        position: absolute;
+        left: 13px;
+        bottom: -14px;
+        width: 15px;
+        height: 13px;
+        background: var(--ink);
+        clip-path: polygon(20% 0, 88% 0, 27% 59%);
+      }
+
       .speech-bubble::after {
         content: "";
         position: absolute;
-        left: 8px;
-        bottom: -7px;
+        left: 15px;
+        bottom: -6px;
         width: 12px;
-        height: 10px;
+        height: 9px;
         background: var(--paper);
-        border-right: 2px solid var(--ink);
-        border-bottom: 2px solid var(--ink);
-        transform: rotate(35deg);
+        clip-path: polygon(0 0, 100% 0, 34% 100%);
       }
 
       .player-card:nth-child(2n) .speech-bubble {
@@ -210,25 +263,28 @@
         Design decision:
         Current user is identified by the is-you background only.
         Do not add visible "(You)" text to the player name tab.
+        Approved current-player background: #d0d0d0.
       */
       .player-card.is-you {
-        background: var(--wash);
+        background: #d0d0d0;
       }
 
-      .player-card.is-ready .player-name-tab {
-        background: var(--shade);
-      }
+      /*
+        Design decision:
+        Ready state must not change .player-name-tab background.
+        The lobby uses the Ready/Start button state only.
+      */
 
       .lobby-footer {
         display: grid;
-        grid-template-rows: minmax(92px, auto) 58px;
+        grid-template-rows: 112px 58px;
         gap: 8px;
-        min-height: 158px;
+        height: 178px;
       }
 
       .chat-log {
         position: relative;
-        min-height: 92px;
+        height: 112px;
         padding: 6px 18px 6px 6px;
         overflow: hidden;
         background: var(--paper);
@@ -236,6 +292,27 @@
         font-size: 12px;
         font-weight: 800;
         line-height: 1.18;
+      }
+
+      /*
+        Design decision:
+        Chat log has a fixed height and auto-scrolls internally.
+        New messages must not increase the lobby footer height.
+      */
+      .chat-scroll {
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 2px;
+        scrollbar-width: none;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        user-select: text;
+      }
+
+      .chat-scroll::-webkit-scrollbar {
+        width: 0;
+        height: 0;
       }
 
       .chat-lines {
@@ -250,6 +327,7 @@
         bottom: 3px;
         width: 11px;
         border-left: 2px solid var(--ink);
+        background: var(--paper);
       }
 
       .scroll-rail::before,
@@ -272,10 +350,10 @@
 
       .scroll-thumb {
         position: absolute;
-        top: 17px;
+        top: 31px;
         right: 2px;
         width: 6px;
-        height: 29px;
+        height: 36px;
         background: var(--ink);
       }
 
@@ -334,6 +412,8 @@
         border: 3px solid var(--ink);
         font-size: 16px;
         outline: 0;
+        touch-action: manipulation;
+        user-select: text;
       }
 
       .chat-dialog-actions {
@@ -375,13 +455,13 @@
       <section class="lobby-grid" aria-label="Room players">
         <article class="player-card is-you" data-player-slot="1">
           <div class="player-name-tab" data-bind="player-one-name">Player 1</div>
-          <div class="speech-bubble" data-bind="player-one-bubble">Do something ..</div>
+          <div class="speech-bubble" data-bind="player-one-bubble-shell"><span class="speech-text" data-bind="player-one-bubble">Do something ..</span></div>
           <div class="player-avatar" aria-hidden="true"></div>
         </article>
 
         <article class="player-card" data-player-slot="2">
           <div class="player-name-tab">Player 2</div>
-          <div class="speech-bubble">don't leave me..</div>
+          <div class="speech-bubble"><span class="speech-text">don't leave me..</span></div>
           <div class="player-avatar" aria-hidden="true"></div>
         </article>
 
@@ -412,11 +492,13 @@
       -->
       <footer class="lobby-footer">
         <section class="chat-log" aria-label="Lobby chat log">
-          <div class="chat-lines" data-bind="chat-lines"></div>
+          <div class="chat-scroll" data-bind="chat-scroll">
+            <div class="chat-lines" data-bind="chat-lines"></div>
+          </div>
           <span class="scroll-rail" aria-hidden="true"><i class="scroll-thumb"></i></span>
         </section>
         <div class="footer-actions">
-          <button class="lobby-action" data-modal-open="chat-modal">Chat</button>
+          <button class="lobby-action" data-action="chat-or-cancel">Chat</button>
           <button class="lobby-action is-primary" data-action="toggle-ready">Ready</button>
         </div>
       </footer>
@@ -445,6 +527,10 @@
         playerDisplayName: "Player 1",
         enteredName: "",
         isReady: false,
+        latestPlayerMessage: "Do something ..",
+        speechBubbleMaxLength: 22,
+        speechBubbleAutoClearMs: 3000,
+        speechBubbleClearTimerId: null,
         chatLines: [
           "Player 1: Do something",
           "Player 1: don't leave me alone",
@@ -457,12 +543,14 @@
         roomCode: document.querySelector("[data-bind='room-code']"),
         playerOneCard: document.querySelector("[data-player-slot='1']"),
         playerOneName: document.querySelector("[data-bind='player-one-name']"),
+        playerOneBubbleShell: document.querySelector("[data-bind='player-one-bubble-shell']"),
         playerOneBubble: document.querySelector("[data-bind='player-one-bubble']"),
+        chatScroll: document.querySelector("[data-bind='chat-scroll']"),
         chatLines: document.querySelector("[data-bind='chat-lines']"),
         chatInput: document.querySelector("[data-bind='chat-input']"),
         readyButton: document.querySelector("[data-action='toggle-ready']"),
         chatForm: document.querySelector("[data-action='send-chat-form']"),
-        chatOpenButton: document.querySelector("[data-modal-open='chat-modal']"),
+        chatActionButton: document.querySelector("[data-action='chat-or-cancel']"),
         chatCloseButton: document.querySelector("[data-modal-close='chat-modal']"),
         chatModal: document.querySelector("[data-modal='chat-modal']")
       };
@@ -477,22 +565,69 @@
         frameState.enteredName = params.get("player") || "";
 
         frameElements.readyButton.addEventListener("click", handleReadyAction);
-        frameElements.chatOpenButton.addEventListener("click", () => openModal("chat-modal"));
+        frameElements.chatActionButton.addEventListener("click", handleChatOrCancel);
         frameElements.chatCloseButton.addEventListener("click", () => closeModal("chat-modal"));
         frameElements.chatModal.addEventListener("click", handleChatBackdropClick);
         frameElements.chatForm.addEventListener("submit", handleSendChat);
+        frameElements.root.addEventListener("wheel", preventPhoneDrag, { passive: false });
+        frameElements.root.addEventListener("touchmove", preventPhoneDrag, { passive: false });
 
         renderFrame();
+      }
+
+      function preventPhoneDrag(event) {
+        /*
+          Design decision:
+          Dragging the phone frame must not move the page or the whole lobby.
+          Allow scrolling only inside the chat log and allow normal form/button gestures.
+        */
+        const allowedInteractiveRegion = event.target.closest(
+          "[data-bind='chat-scroll'], .chat-dialog, button, input"
+        );
+
+        if (!allowedInteractiveRegion) {
+          event.preventDefault();
+        }
       }
 
       function renderFrame() {
         frameElements.root.dataset.readyState = frameState.isReady ? "ready" : "idle";
         frameElements.roomCode.textContent = frameState.roomCode;
         frameElements.playerOneName.textContent = frameState.playerDisplayName;
-        frameElements.playerOneBubble.textContent = frameState.isReady ? "Ready!" : "Do something ..";
+        const speechBubbleText = frameState.isReady
+          ? "Ready!"
+          : formatSpeechBubbleText(frameState.latestPlayerMessage);
+        frameElements.playerOneBubble.textContent = speechBubbleText;
+        frameElements.playerOneBubbleShell.hidden = speechBubbleText.length === 0;
         frameElements.playerOneCard.classList.toggle("is-ready", frameState.isReady);
+        frameElements.chatActionButton.textContent = frameState.isReady ? "Cancel" : "Chat";
         frameElements.readyButton.textContent = frameState.isReady ? "Start" : "Ready";
         frameElements.chatLines.innerHTML = frameState.chatLines.map((line) => `<span>${line}</span>`).join("");
+        scrollChatLogToBottom();
+      }
+
+      function scrollChatLogToBottom() {
+        /*
+          Design decision:
+          Chat log should auto-scroll to the newest message.
+          The visual scrollbar is custom, while the real scroll container is .chat-scroll.
+        */
+        frameElements.chatScroll.scrollTop = frameElements.chatScroll.scrollHeight;
+      }
+
+      function handleChatOrCancel() {
+        /*
+          Design decision:
+          While not ready, the left button opens chat.
+          While ready, the same button becomes Cancel and cannot open chat.
+          Cancel returns the player to not-ready state.
+        */
+        if (frameState.isReady) {
+          handleCancelReady();
+          return;
+        }
+
+        openModal("chat-modal");
       }
 
       function handleReadyAction() {
@@ -511,6 +646,23 @@
         renderFrame();
       }
 
+      function handleCancelReady() {
+        /*
+          Production action:
+          - maps to a future room-ready cancel/unready event
+          - restores chat access and changes Start back to Ready
+        */
+        frameState.isReady = false;
+        frameState.latestPlayerMessage = "";
+
+        if (frameState.speechBubbleClearTimerId) {
+          window.clearTimeout(frameState.speechBubbleClearTimerId);
+          frameState.speechBubbleClearTimerId = null;
+        }
+
+        renderFrame();
+      }
+
       function handleSendChat(event) {
         /*
           Production action: send message to lobby websocket or room event stream.
@@ -519,9 +671,42 @@
         const message = frameElements.chatInput.value.trim();
         if (!message) return;
         frameState.chatLines.push(`${frameState.playerDisplayName}: ${message}`);
+        frameState.latestPlayerMessage = message;
         frameElements.chatInput.value = "";
         closeModal("chat-modal");
+        scheduleSpeechBubbleAutoClear();
         renderFrame();
+      }
+
+      function scheduleSpeechBubbleAutoClear() {
+        /*
+          Design decision:
+          A sent chat message appears above the player as a short speech preview,
+          then the whole speech bubble hides after 3 seconds if no newer message is sent.
+          New sends reset the timer, so only the latest message can clear itself.
+        */
+        if (frameState.speechBubbleClearTimerId) {
+          window.clearTimeout(frameState.speechBubbleClearTimerId);
+        }
+
+        frameState.speechBubbleClearTimerId = window.setTimeout(() => {
+          frameState.latestPlayerMessage = "";
+          frameState.speechBubbleClearTimerId = null;
+          renderFrame();
+        }, frameState.speechBubbleAutoClearMs);
+      }
+
+      function formatSpeechBubbleText(message) {
+        /*
+          Design decision:
+          Speech bubble shows only a short preview of the latest chat message.
+          Chat log keeps the full message; bubble truncates with "..." to avoid overflow.
+        */
+        if (message.length <= frameState.speechBubbleMaxLength) {
+          return message;
+        }
+
+        return `${message.slice(0, frameState.speechBubbleMaxLength).trim()}...`;
       }
 
       function handleChatBackdropClick(event) {

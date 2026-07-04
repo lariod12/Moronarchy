@@ -30,6 +30,8 @@ Rules:
 - Use `data-modal-open`, `data-modal-close`, and `data-modal` for popup behavior inside the same frame.
 - Use `data-bind` for sample state that frame JavaScript renders.
 - Add comments around major CSS class groups, HTML feature blocks, and JS handler functions.
+- Do not let a scene container be draggable. The main scene shell, such as `.phone.screen-room-lobby` or the game board scene container, should not move/drag/scroll as a whole. Only explicit inner regions like chat logs, modals, buttons, inputs, or board actions should handle interaction.
+- If a scene needs scroll behavior, put it in a named inner region and document that region in the HTML comments. Do not fix scene dragging by collapsing or distorting the whole layout.
 - Do not import production React code from `apps/web`.
 - Do not put real game rules, multiplayer behavior, or server logic in design files.
 - Fake local state is allowed only when it demonstrates UI behavior.
