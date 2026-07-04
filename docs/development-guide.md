@@ -32,6 +32,7 @@ Rules:
 - Add comments around major CSS class groups, HTML feature blocks, and JS handler functions.
 - Do not let a scene container be draggable. The main scene shell, such as `.phone.screen-room-lobby` or the game board scene container, should not move/drag/scroll as a whole. Only explicit inner regions like chat logs, modals, buttons, inputs, or board actions should handle interaction.
 - If a scene needs scroll behavior, put it in a named inner region and document that region in the HTML comments. Do not fix scene dragging by collapsing or distorting the whole layout.
+- For any UI/layout change, verify the rendered frame visually in a browser or screenshot before marking the work done. DOM checks and computed-style assertions are useful, but they do not replace looking at the actual UI.
 - Do not import production React code from `apps/web`.
 - Do not put real game rules, multiplayer behavior, or server logic in design files.
 - Fake local state is allowed only when it demonstrates UI behavior.
@@ -45,10 +46,29 @@ Recommended flow:
 3. Edit that `.html` frame until the screen direction and interaction feel right.
 4. Review it in a browser as an interactive demo.
 5. Click through linked frames to confirm the flow feels consistent.
-6. Read the frame comments/function names to map behavior into production.
-7. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
-8. Replace local demo state with real core/server state.
-9. Add or update tests only for production behavior, not for the sandbox file.
+6. For touch, drag, scroll, or viewport-sensitive changes, run `pnpm design:mobile` and test the frame on a real phone using the printed LAN URL.
+7. Read the frame comments/function names to map behavior into production.
+8. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
+9. Replace local demo state with real core/server state.
+10. Add or update tests only for production behavior, not for the sandbox file.
+
+Mobile design server:
+
+```bash
+pnpm design:mobile
+```
+
+Windows direct launcher:
+
+```text
+start-design-mobile.bat
+```
+
+Default port is `8088`. To use another port, run:
+
+```bat
+start-design-mobile.bat 8090
+```
 
 ## Local Development
 

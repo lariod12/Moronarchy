@@ -96,6 +96,55 @@ When a frame needs inner scrolling, create a named inner container and document 
 
 Do not solve scene dragging by collapsing or distorting the layout. Keep the scene layout stable and block drag only at the interaction layer.
 
+## Visual Verification Rule
+
+UI design tasks are not complete until the changed frame is visually checked.
+
+For every design HTML change that affects layout, spacing, position, visibility, or animation:
+
+1. Open or screenshot the actual frame in a browser.
+2. Inspect the rendered image, not only DOM/computed CSS.
+3. Fix visible issues such as cropped tabs, collapsed cards, overflowing text, broken tails, or unexpected scroll.
+4. Only then report the task as done.
+
+Automated assertions can support this, but they do not replace looking at the rendered UI.
+
+## Real Mobile Testing
+
+Use a real phone for touch and viewport checks whenever a design change affects dragging, scrolling, hit targets, mobile layout, or speech/chat behavior.
+
+Start the LAN design server from the project root:
+
+```bash
+pnpm design:mobile
+```
+
+Alternative on Windows:
+
+```text
+start-design-mobile.bat
+```
+
+The script serves the `design/` folder with Vite on `0.0.0.0:8088` and prints phone URLs like:
+
+```text
+http://192.168.1.6:8088/
+http://192.168.1.6:8088/02-room-lobby.html
+```
+
+Keep the command window open while testing. Stop it with `Ctrl+C`.
+
+If the phone cannot open the page:
+
+- Make sure phone and PC are on the same Wi-Fi.
+- Allow Node/Vite through Windows Firewall if prompted.
+- Re-run the script after changing networks, because the LAN IP may change.
+- Use a custom port if 8088 is busy:
+
+```bat
+start-design-mobile.bat 8090
+```
+
 ## Prototype Flow Contract
 
 Design frames use normal HTML navigation plus tiny local JavaScript. Do not add a router, build step, shared bundle, or production imports.

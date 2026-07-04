@@ -43,6 +43,20 @@ Use `design/index.html` and `design/*.html` for quick interactive UI exploration
 
 The design folder is intentionally simple: `index.html` is the click-through prototype hub, and each standalone HTML file is one screen/frame with layout, CSS, local demo state, function names, and interaction notes. Approved designs can later be implemented in `apps/web`.
 
+For real mobile-device UI testing, run:
+
+```bash
+pnpm design:mobile
+```
+
+Or double-click:
+
+```text
+start-design-mobile.bat
+```
+
+Keep the terminal window open, then open the printed LAN URL on a phone connected to the same Wi-Fi.
+
 ## Prerequisites
 
 - Node.js 24+
@@ -84,6 +98,7 @@ For public deployment, put the server behind a real reverse proxy or platform ra
 pnpm dev          # Build core, then run web + server together
 pnpm dev:web      # Run only the web app
 pnpm dev:server   # Run only the multiplayer server
+pnpm design:mobile # Serve design/*.html on LAN for real phone testing
 pnpm build        # Build core, server, and web
 pnpm test         # Run all tests
 pnpm typecheck    # Typecheck all packages
