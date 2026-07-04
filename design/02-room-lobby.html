@@ -27,24 +27,27 @@
     - Reads optional query params from frame 01: player, room, flow.
     - Player 1 card displays only "Player 1"; ownership is shown by the `player-card is-you`
       background treatment, not by visible "(You)" text.
+    - Prototype assumes Player 1 is the host and Player 2 is the other active player.
+      Player 2 is already ready in the mock state, so once Player 1 becomes ready the host can start.
     - Chat popup can append demo messages to the chat log.
     - Sending chat updates Player 1 speech bubble with the latest message preview.
     - Speech bubble preview is capped; long messages end with "...".
     - After sending chat, the speech bubble auto-hides after 3 seconds if no newer message is sent.
-    - Ready button changes Player 1 speech bubble and becomes Start for prototype navigation.
+    - Ready button changes Player 1 speech bubble and becomes Start only when every active player is ready.
+    - Start opens a centered countdown popup inside the lobby, then the prototype moves to the first board screen.
     - In this prototype, Player 1 is the default host and shows the approved dashed host border.
       Production should show this host border on the room creator's player card for every user.
 
   Button workflow:
     Chat -> open chat popup -> Send adds log line; Close/backdrop hides popup.
-    Ready -> Player 1 becomes ready, bubble says "Ready!", Chat becomes Cancel, Ready becomes Start.
-    Cancel -> returns to not-ready state, writes cancel status to chat log, Cancel becomes Chat, Start becomes Ready.
-    Start -> 03-game-starting.html with room query param.
+    Ready -> Player 1 becomes ready, bubble says "Ready!", Chat becomes Cancel, button becomes Start only if every active player is ready and current player is host.
+    Cancel -> returns to not-ready state, writes cancel status to chat log, Cancel becomes Chat, Start/Waiting becomes Ready.
+    Start -> open Game Starting countdown popup -> auto-count 3, 2, 1 -> 05-main-board-your-turn.html.
 
   Production mapping:
     Page/component target: apps/web RoomPage.
     Chat maps to lobby chat state or future websocket room messages.
-    Ready maps to room readiness state; Start maps to host/server match start.
+    Ready maps to room readiness state; Start maps to host/server match start after server confirms every player is ready.
     The MVP rules still support 2-4 players; slots 5-6 are visual placeholders for future expansion.
 -->
 <html lang="en">
@@ -465,6 +468,43 @@
         font-weight: 900;
       }
 
+      .start-modal[hidden] {
+        display: none;
+      }
+
+      .start-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.38);
+      }
+
+      .start-dialog {
+        display: grid;
+        place-items: center;
+        gap: 12px;
+        width: min(100%, 280px);
+        min-height: 160px;
+        padding: 18px 14px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        text-align: center;
+      }
+
+      .start-dialog strong {
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .start-countdown {
+        font-size: 56px;
+        line-height: 1;
+        font-weight: 900;
+      }
+
       @media (max-width: 430px) {
         body {
           padding: 0;
@@ -495,9 +535,15 @@
           <div class="player-avatar" aria-hidden="true"></div>
         </article>
 
+        <!--
+          Design decision:
+          Player 2 is the demo second active player and is already ready.
+          This keeps the host-start flow testable: once Player 1 clicks Ready,
+          the room is fully ready and Start becomes available.
+        -->
         <article class="player-card" data-player-slot="2">
           <div class="player-name-tab">Player 2</div>
-          <div class="speech-bubble"><span class="speech-text">don't leave me..</span></div>
+          <div class="speech-bubble"><span class="speech-text">Ready!</span></div>
           <div class="player-avatar" aria-hidden="true"></div>
         </article>
 
@@ -557,16 +603,36 @@
       </form>
     </section>
 
+    <!--
+      Design decision:
+      Match start countdown happens in-place inside the lobby before route change.
+      Only the host may trigger it, and only after all active players are ready.
+    -->
+    <section class="start-modal" data-modal="start-modal" hidden>
+      <div class="start-dialog" aria-live="polite" aria-label="Game starting countdown">
+        <strong>Game Starting</strong>
+        <span class="start-countdown" data-bind="start-countdown">3</span>
+      </div>
+    </section>
+
     <script>
       const frameState = {
         roomCode: "R001",
         playerDisplayName: "Player 1",
         enteredName: "",
         isReady: false,
+        currentPlayerSlot: 1,
+        hostPlayerSlot: 1,
+        activePlayerSlots: [1, 2],
+        readyPlayerSlots: new Set([2]),
         latestPlayerMessage: "Do something ..",
         speechBubbleMaxLength: 22,
         speechBubbleAutoClearMs: 3000,
         speechBubbleClearTimerId: null,
+        startCountdownSeconds: 3,
+        startCountdownValue: 3,
+        startCountdownTimerId: null,
+        isStartCountdownOpen: false,
         chatLines: [
           "Player 1: Do something",
           "Player 1: don't leave me alone",
@@ -588,7 +654,9 @@
         chatForm: document.querySelector("[data-action='send-chat-form']"),
         chatActionButton: document.querySelector("[data-action='chat-or-cancel']"),
         chatCloseButton: document.querySelector("[data-modal-close='chat-modal']"),
-        chatModal: document.querySelector("[data-modal='chat-modal']")
+        chatModal: document.querySelector("[data-modal='chat-modal']"),
+        startModal: document.querySelector("[data-modal='start-modal']"),
+        startCountdown: document.querySelector("[data-bind='start-countdown']")
       };
 
       function initializeFrame() {
@@ -627,6 +695,10 @@
       }
 
       function renderFrame() {
+        const allActivePlayersReady = areAllActivePlayersReady();
+        const currentPlayerIsHost = frameState.currentPlayerSlot === frameState.hostPlayerSlot;
+        const canHostStart = currentPlayerIsHost && allActivePlayersReady;
+
         frameElements.root.dataset.readyState = frameState.isReady ? "ready" : "idle";
         frameElements.roomCode.textContent = frameState.roomCode;
         frameElements.playerOneName.textContent = frameState.playerDisplayName;
@@ -637,9 +709,18 @@
         frameElements.playerOneBubbleShell.hidden = speechBubbleText.length === 0;
         frameElements.playerOneCard.classList.toggle("is-ready", frameState.isReady);
         frameElements.chatActionButton.textContent = frameState.isReady ? "Cancel" : "Chat";
-        frameElements.readyButton.textContent = frameState.isReady ? "Start" : "Ready";
+        frameElements.chatActionButton.disabled = frameState.isStartCountdownOpen;
+        frameElements.readyButton.textContent = frameState.isReady
+          ? (canHostStart ? "Start" : "Waiting")
+          : "Ready";
+        frameElements.readyButton.disabled = frameState.isStartCountdownOpen || (frameState.isReady && !canHostStart);
+        frameElements.startCountdown.textContent = String(frameState.startCountdownValue);
         frameElements.chatLines.innerHTML = frameState.chatLines.map((line) => `<span>${line}</span>`).join("");
         scrollChatLogToBottom();
+      }
+
+      function areAllActivePlayersReady() {
+        return frameState.activePlayerSlots.every((slot) => frameState.readyPlayerSlots.has(slot));
       }
 
       function scrollChatLogToBottom() {
@@ -670,14 +751,24 @@
         /*
           Production action:
           - first state maps to ready-room/player-ready server state
-          - host can start match only when the room is eligible
+          - only the host can start the match
+          - start is allowed only after every active player is ready
         */
         if (frameState.isReady) {
-          navigateToFrame("03-game-starting.html", { room: frameState.roomCode });
+          if (frameState.currentPlayerSlot !== frameState.hostPlayerSlot) {
+            return;
+          }
+
+          if (!areAllActivePlayersReady()) {
+            return;
+          }
+
+          openStartCountdown();
           return;
         }
 
         frameState.isReady = true;
+        frameState.readyPlayerSlots.add(frameState.currentPlayerSlot);
         frameState.chatLines.push(`${frameState.playerDisplayName}: ready`);
         renderFrame();
       }
@@ -689,6 +780,7 @@
           - restores chat access and changes Start back to Ready
         */
         frameState.isReady = false;
+        frameState.readyPlayerSlots.delete(frameState.currentPlayerSlot);
         frameState.latestPlayerMessage = "";
         frameState.chatLines.push(`${frameState.playerDisplayName}: cancel ready`);
 
@@ -698,6 +790,38 @@
         }
 
         renderFrame();
+      }
+
+      function openStartCountdown() {
+        /*
+          Design decision:
+          Start does not leave the lobby immediately.
+          The host sees an in-place "Game Starting" countdown modal first,
+          then the route changes to the first board frame.
+        */
+        if (frameState.startCountdownTimerId) {
+          window.clearInterval(frameState.startCountdownTimerId);
+        }
+
+        frameState.isStartCountdownOpen = true;
+        frameState.startCountdownValue = frameState.startCountdownSeconds;
+        frameElements.startModal.hidden = false;
+        renderFrame();
+
+        frameState.startCountdownTimerId = window.setInterval(() => {
+          frameState.startCountdownValue -= 1;
+
+          if (frameState.startCountdownValue <= 0) {
+            window.clearInterval(frameState.startCountdownTimerId);
+            frameState.startCountdownTimerId = null;
+            frameState.isStartCountdownOpen = false;
+            frameElements.startModal.hidden = true;
+            navigateToFrame("05-main-board-your-turn.html", { room: frameState.roomCode });
+            return;
+          }
+
+          renderFrame();
+        }, 1000);
       }
 
       function handleSendChat(event) {
@@ -754,7 +878,9 @@
 
       function openModal(id) {
         document.querySelector(`[data-modal='${id}']`).hidden = false;
-        frameElements.chatInput.focus();
+        if (id === "chat-modal") {
+          frameElements.chatInput.focus();
+        }
       }
 
       function closeModal(id) {
