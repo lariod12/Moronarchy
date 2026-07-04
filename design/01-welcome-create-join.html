@@ -10,6 +10,17 @@
     Black/white sketch wireframe based on the original Welcome KingDoom mockup.
     No visible annotation/callout text from source images is rendered in the UI.
     The player-facing screen contains title tab, preview card, two text inputs, and one centered primary button.
+    The preview profile card owns about 70% of the available screen body; the form/action panel uses
+    the remaining lower area so the mobile screen does not feel empty below the Create/Join action.
+    The form group matches the source wireframe: two compact input rows, then one centered button
+    aligned to the whole form block rather than only to the right-side input column.
+    The scene container height is fixed; making inputs/buttons larger must never stretch the phone
+    frame or make the whole scene draggable.
+    On real mobile Safari/Zalo in-app browser, the title tab must sit below the notch/status bar
+    and remain fully visible. Use an explicit mobile notch clearance because env(safe-area-inset-top)
+    is not reliable in every in-app browser.
+    The bottom border should hug the bottom of the visible scene on phones; use a fixed mobile
+    scene container instead of relying on document height/scroll.
 
   Visible controls:
     Inputs: 2
@@ -42,24 +53,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>01 Welcome Create Join</title>
     <style>
-      :root {
+      button, input {
+        font: inherit;
+      }
+
+      button {
+        color: var(--ink);
+        appearance: none;
+        -webkit-appearance: none;
+        -webkit-text-fill-color: currentColor;
+      }
+:root {
         /* Design tokens: keep frame black/white until this flow is approved. */
         --ink: #050505;
         --paper: #ffffff;
         --wash: #eeeeee;
         --shade: #d8d8d8;
+        --safe-top: env(safe-area-inset-top, 0px);
+        --mobile-notch-clearance: max(44px, var(--safe-top));
       }
 
       * {
         box-sizing: border-box;
       }
 
+      html {
+        min-height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+
       body {
         display: grid;
         place-items: start center;
-        min-height: 100vh;
+        height: 100vh;
         margin: 0;
         padding: 18px;
+        overflow: hidden;
+        overscroll-behavior: none;
         color: var(--ink);
         background: #f3f3f3;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -77,9 +108,18 @@
       /* Root mobile frame. Production equivalent: HomePage shell/phone container. */
       .phone {
         position: relative;
+        display: grid;
+        grid-template-rows: minmax(330px, 7fr) minmax(154px, 3fr);
+        align-content: stretch;
+        gap: 18px;
         width: min(100%, 390px);
-        min-height: 596px;
+        height: 596px;
         padding: 86px 12px 26px;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-drag: none;
         background: var(--paper);
         border: 3px solid var(--ink);
         box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.16);
@@ -117,11 +157,16 @@
         transform: rotate(0.5deg);
       }
 
-      /* Player preview area. Production should bind this to the entered king name/avatar. */
+      /*
+        Player preview area.
+        Design decision: this card should visually occupy about 70% of the screen body.
+        Production should preserve the same weight so the welcome screen feels filled on tall phones.
+      */
       .profile-card {
         display: grid;
         grid-template-rows: 78px 1fr;
-        min-height: 230px;
+        min-height: 0;
+        height: 100%;
         border: 3px solid var(--ink);
       }
 
@@ -167,21 +212,27 @@
         border-radius: 60px 60px 8px 8px;
       }
 
-      /* Form grid: two inputs + one primary button. No second Join button. */
+      /*
+        Form grid: two inputs + one primary button. No second Join button.
+        Design decision: this panel lives in the lower 30% area instead of floating mid-screen.
+        Design decision: the primary button is centered under the full form group, matching the
+        original wireframe red-box position.
+      */
       .form-flow {
         position: relative;
+        align-self: start;
         display: grid;
         grid-template-columns: 82px 1fr;
-        gap: 8px 8px;
+        gap: 10px 8px;
         width: 264px;
-        margin: 16px auto 0;
+        margin: 0 auto;
       }
 
       .label-box,
       .input-box,
       /* Single action button. Text switches between Create and Join. */
       .primary-flow-button {
-        min-height: 28px;
+        min-height: 44px;
         background: var(--paper);
         border: 3px solid var(--ink);
         font-weight: 800;
@@ -196,10 +247,11 @@
 
       .input-box {
         width: 100%;
-        padding: 2px 8px;
+        padding: 8px 8px;
         outline: 0;
         font-size: 16px;
         transform: rotate(0.5deg);
+        user-select: text;
       }
 
       .join-room-label {
@@ -209,12 +261,12 @@
       }
 
       .primary-flow-button {
-        grid-column: 2;
-        width: 150px;
+        grid-column: 1 / -1;
+        width: 174px;
         justify-self: center;
-        min-height: 30px;
-        margin-top: 18px;
-        font-size: 13px;
+        min-height: 48px;
+        margin-top: 20px;
+        font-size: 15px;
         transform: rotate(-1deg);
       }
 
@@ -225,10 +277,19 @@
         }
 
         .phone {
+          position: fixed;
+          inset: 0;
           width: 100%;
-          min-height: 100dvh;
+          height: 100vh;
+          height: 100svh;
+          height: 100dvh;
+          padding-top: calc(96px + var(--mobile-notch-clearance));
           border-inline: 0;
           box-shadow: none;
+        }
+
+        .title-tab {
+          top: var(--mobile-notch-clearance);
         }
 
       }
