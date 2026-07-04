@@ -32,6 +32,8 @@
     - Speech bubble preview is capped; long messages end with "...".
     - After sending chat, the speech bubble auto-hides after 3 seconds if no newer message is sent.
     - Ready button changes Player 1 speech bubble and becomes Start for prototype navigation.
+    - In this prototype, Player 1 is the default host and shows the approved dashed host border.
+      Production should show this host border on the room creator's player card for every user.
 
   Button workflow:
     Chat -> open chat popup -> Send adds log line; Close/backdrop hides popup.
@@ -287,7 +289,15 @@
         Design decision:
         Ready state must not change .player-name-tab background.
         The lobby uses the Ready/Start button state only.
+        Player 1 is the default host in this prototype, so the dashed host border
+        is visible immediately. This border means host/room creator, not
+        "current user"; in production every user should see the same host
+        player card with this border.
       */
+      .player-card.is-host {
+        outline: 3px dashed var(--ink);
+        outline-offset: -8px;
+      }
 
       .lobby-footer {
         display: grid;
@@ -467,7 +477,7 @@
         Production: MVP can render only server-supported player slots; slots 5-6 are visual expansion placeholders.
       -->
       <section class="lobby-grid" aria-label="Room players">
-        <article class="player-card is-you" data-player-slot="1">
+        <article class="player-card is-you is-host" data-player-slot="1">
           <div class="player-name-tab" data-bind="player-one-name">Player 1</div>
           <div class="speech-bubble" data-bind="player-one-bubble-shell"><span class="speech-text" data-bind="player-one-bubble">Do something ..</span></div>
           <div class="player-avatar" aria-hidden="true"></div>
