@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Moronarchy crown icon">
+  <rect width="512" height="512" rx="96" fill="#171312"/>
+  <path d="M106 342h300l-26 62H132l-26-62Z" fill="#f1c453"/>
+  <path d="m126 316-34-162 92 76 72-118 72 118 92-76-34 162H126Z" fill="#f1c453"/>
+  <circle cx="256" cy="116" r="30" fill="#df4d3f"/>
+  <circle cx="92" cy="154" r="24" fill="#df4d3f"/>
+  <circle cx="420" cy="154" r="24" fill="#df4d3f"/>
+</svg>

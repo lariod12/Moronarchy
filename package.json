@@ -1,0 +1,27 @@
+{
+  "name": "moronarchy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "dev": "pnpm --filter @moronarchy/core build && pnpm --parallel --filter @moronarchy/server --filter @moronarchy/web dev",
+    "dev:web": "pnpm --filter @moronarchy/web dev",
+    "dev:server": "pnpm --filter @moronarchy/server dev",
+    "build": "pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/server build && pnpm --filter @moronarchy/web build",
+    "test": "pnpm --filter @moronarchy/core build && pnpm --recursive test",
+    "e2e": "playwright test",
+    "typecheck": "pnpm --filter @moronarchy/core build && pnpm --recursive typecheck",
+    "lint": "pnpm --recursive lint"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.61.1",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vitest": "^4.0.15"
+  }
+}
