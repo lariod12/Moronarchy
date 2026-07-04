@@ -44,6 +44,31 @@ Every frame should include:
 - Class names that map naturally to future React components.
 - Short HTML or JS comments for implementation notes when behavior is not obvious.
 
+## Design Memory Rule
+
+Every approved design idea, user feedback, interaction rule, visual exception, or workflow decision must be written into the relevant HTML prototype file.
+
+Use the closest durable place:
+
+- Top `DESIGN FRAME SPEC` for screen-level decisions.
+- HTML comments beside the affected section for layout/component decisions.
+- CSS comments beside class rules for visual-state decisions.
+- JS comments beside handlers for interaction/workflow decisions.
+- `data-*` attributes when the decision maps to future production behavior.
+
+Do not rely on chat history as the only record. Future implementation should be possible by reading the design HTML and this README.
+
+Example:
+
+```html
+<!--
+  Design decision:
+  The current user is identified by .player-card.is-you background only.
+  Do not render visible "(You)" text.
+-->
+<article class="player-card is-you"></article>
+```
+
 ## Prototype Flow Contract
 
 Design frames use normal HTML navigation plus tiny local JavaScript. Do not add a router, build step, shared bundle, or production imports.

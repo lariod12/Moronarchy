@@ -3,30 +3,42 @@
   DESIGN FRAME SPEC
   Frame: 02-room-lobby
   Screen purpose:
-    Waiting room after Create or Join. Shows room code, player slots, ready/waiting states, and starts match.
+    Room lobby after Create or Join. Players wait together, see quick chat bubbles
+    for active players, chat in the lobby log, and mark themselves ready before the match starts.
 
   Visual design:
-    Black/white room card with four player slots. No annotation text is rendered.
+    Black/white mobile wireframe based on the supplied lobby reference.
+    Layout has a small room-code tab at the top, six player panels in a 2x3 grid,
+    a full-width chat log above the bottom action buttons, and two equal action buttons.
+    Tooltip annotation bubbles are not rendered.
 
   Visible controls:
-    Inputs: 0
-    Buttons: 2
-      1. Back - returns to 01-welcome-create-join.html.
-      2. Start Game - navigates to 03-game-starting.html when enough players are present.
+    Inputs: 1
+      1. Chat message input - appears inside the Chat popup.
+    Buttons: 5
+      1. Chat - opens local chat popup.
+      2. Ready/Start - first click marks current player ready; second click advances prototype to countdown.
+      3. Send - appends chat text to the bottom lobby log.
+      4. Close - closes chat popup.
+      5. Chat popup backdrop - closes chat popup when clicked outside the dialog.
 
   Interactive features:
     - Reads optional query params from frame 01: player, room, flow.
-    - Displays player name in Player 1 slot when present.
-    - Start Game advances to the countdown frame.
+    - Player 1 card displays only "Player 1"; ownership is shown by the `player-card is-you`
+      background treatment, not by visible "(You)" text.
+    - Chat popup can append demo messages to the chat log.
+    - Ready button changes Player 1 speech bubble and becomes Start for prototype navigation.
 
   Button workflow:
-    Back -> 01-welcome-create-join.html
-    Start Game -> 03-game-starting.html
+    Chat -> open chat popup -> Send adds log line; Close/backdrop hides popup.
+    Ready -> Player 1 becomes ready, bubble says "Ready!" and button text changes to Start.
+    Start -> 03-game-starting.html with room query param.
 
   Production mapping:
     Page/component target: apps/web RoomPage.
-    Start action maps to room host starting a boardgame.io match.
-    Fake local lobby slots should be replaced by server match/room state.
+    Chat maps to lobby chat state or future websocket room messages.
+    Ready maps to room readiness state; Start maps to host/server match start.
+    The MVP rules still support 2-4 players; slots 5-6 are visual placeholders for future expansion.
 -->
 <html lang="en">
   <head>
@@ -34,91 +46,497 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>02 Room Lobby</title>
     <style>
-      :root { --ink:#050505; --paper:#fff; --wash:#eee; --shade:#d8d8d8; --dark:#333; }
-      * { box-sizing:border-box; }
-      body { margin:0; min-height:100vh; display:grid; place-items:start center; padding:18px; color:var(--ink); background:#f3f3f3; font-family:"Comic Sans MS","Trebuchet MS",Arial,sans-serif; }
-      .phone { width:min(100%,390px); min-height:720px; background:var(--paper); border:3px solid var(--ink); box-shadow:4px 4px 0 rgba(0,0,0,.16); padding:10px; }
-      .top { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; min-height:34px; }
-      .tag,.button,.box { background:var(--paper); border:2px solid var(--ink); font-weight:800; }
-      .tag { display:inline-grid; place-items:center; min-height:25px; padding:2px 8px; font-size:13px; transform:rotate(-1deg); }
-      .tag.center { justify-self:center; transform:rotate(1deg); }
-      .tag.right { justify-self:end; }
-      .room-card { display:grid; gap:10px; margin-top:18px; padding:10px; border:3px solid var(--ink); }
-      h1 { margin:0; text-align:center; font-size:20px; }
-      .code { display:grid; grid-template-columns:90px 1fr; min-height:42px; border:2px solid var(--ink); }
-      .code span,.code strong { display:grid; place-items:center; }
-      .code strong { border-left:2px solid var(--ink); font-size:18px; }
-      .players { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-      .slot { min-height:132px; display:grid; grid-template-rows:24px 1fr 24px; border:2px solid var(--ink); background:var(--paper); }
-      .slot.wait { background:var(--shade); }
-      .slot b,.slot small { display:grid; place-items:center; border-bottom:2px solid var(--ink); font-size:11px; }
-      .slot small { border-top:2px solid var(--ink); border-bottom:0; }
-      .avatar { justify-self:center; align-self:center; width:50px; height:50px; background:var(--ink); border-radius:50%; box-shadow:0 36px 0 -12px var(--ink); }
-      .button { min-height:42px; font:inherit; font-size:14px; }
-      .hint { text-align:center; font-size:12px; }
+      :root {
+        --ink: #050505;
+        --paper: #ffffff;
+        --wash: #eeeeee;
+        --shade: #d8d8d8;
+        --muted: #777777;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 16px;
+        color: var(--ink);
+        background: #f3f3f3;
+        font-family: "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .phone {
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 8px;
+        width: min(100%, 390px);
+        min-height: 620px;
+        margin: 0 auto;
+        padding: 28px 10px 10px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.16);
+      }
+
+      .room-code-tab {
+        position: absolute;
+        top: -3px;
+        left: 50%;
+        display: grid;
+        place-items: center;
+        min-width: 48px;
+        min-height: 28px;
+        padding: 0 6px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        font-size: 13px;
+        font-weight: 900;
+        transform: translateX(-50%) rotate(1deg);
+      }
+
+      .lobby-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: minmax(92px, 1fr);
+        gap: 8px 12px;
+        min-height: 430px;
+      }
+
+      .player-card {
+        position: relative;
+        min-height: 92px;
+        padding: 18px 8px 8px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+      }
+
+      .player-name-tab {
+        position: absolute;
+        top: -2px;
+        left: 50%;
+        z-index: 2;
+        display: grid;
+        place-items: center;
+        min-width: 78px;
+        min-height: 24px;
+        padding: 0 6px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+        transform: translateX(-50%) rotate(-1deg);
+      }
+
+      .player-avatar {
+        position: absolute;
+        left: 50%;
+        bottom: 8px;
+        width: 64px;
+        height: 58px;
+        transform: translateX(-50%);
+      }
+
+      .player-avatar::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 21px;
+        width: 31px;
+        height: 36px;
+        background: var(--ink);
+        border-radius: 999px;
+      }
+
+      .player-avatar::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 27px;
+        background: var(--ink);
+        border-radius: 34px 34px 7px 7px;
+      }
+
+      .speech-bubble {
+        position: absolute;
+        right: 8px;
+        top: 23px;
+        z-index: 3;
+        display: grid;
+        place-items: center;
+        max-width: 84px;
+        min-height: 24px;
+        padding: 3px 8px;
+        background: var(--paper);
+        border: 2px solid var(--ink);
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.1;
+        text-align: center;
+      }
+
+      .speech-bubble::after {
+        content: "";
+        position: absolute;
+        left: 8px;
+        bottom: -7px;
+        width: 12px;
+        height: 10px;
+        background: var(--paper);
+        border-right: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+        transform: rotate(35deg);
+      }
+
+      .player-card:nth-child(2n) .speech-bubble {
+        right: 5px;
+      }
+
+      /*
+        Design decision:
+        Current user is identified by the is-you background only.
+        Do not add visible "(You)" text to the player name tab.
+      */
+      .player-card.is-you {
+        background: var(--wash);
+      }
+
+      .player-card.is-ready .player-name-tab {
+        background: var(--shade);
+      }
+
+      .lobby-footer {
+        display: grid;
+        grid-template-rows: minmax(92px, auto) 58px;
+        gap: 8px;
+        min-height: 158px;
+      }
+
+      .chat-log {
+        position: relative;
+        min-height: 92px;
+        padding: 6px 18px 6px 6px;
+        overflow: hidden;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.18;
+      }
+
+      .chat-lines {
+        display: grid;
+        gap: 1px;
+      }
+
+      .scroll-rail {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        bottom: 3px;
+        width: 11px;
+        border-left: 2px solid var(--ink);
+      }
+
+      .scroll-rail::before,
+      .scroll-rail::after {
+        content: "";
+        position: absolute;
+        left: 2px;
+        width: 7px;
+        height: 7px;
+        border: 2px solid var(--ink);
+      }
+
+      .scroll-rail::before {
+        top: 1px;
+      }
+
+      .scroll-rail::after {
+        bottom: 1px;
+      }
+
+      .scroll-thumb {
+        position: absolute;
+        top: 17px;
+        right: 2px;
+        width: 6px;
+        height: 29px;
+        background: var(--ink);
+      }
+
+      .footer-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .lobby-action {
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        min-height: 58px;
+        padding: 0;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .lobby-action.is-primary {
+        background: var(--wash);
+      }
+
+      .chat-modal[hidden] {
+        display: none;
+      }
+
+      .chat-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.38);
+      }
+
+      .chat-dialog {
+        display: grid;
+        gap: 8px;
+        width: min(100%, 310px);
+        padding: 12px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+      }
+
+      .chat-dialog strong {
+        font-size: 17px;
+      }
+
+      .chat-input {
+        min-height: 44px;
+        padding: 6px 8px;
+        border: 3px solid var(--ink);
+        font-size: 16px;
+        outline: 0;
+      }
+
+      .chat-dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .chat-dialog-actions button {
+        min-height: 42px;
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        font-weight: 900;
+      }
+
+      @media (max-width: 430px) {
+        body {
+          padding: 0;
+          background: var(--paper);
+        }
+
+        .phone {
+          width: 100%;
+          min-height: 100dvh;
+          border-inline: 0;
+          box-shadow: none;
+        }
+      }
     </style>
   </head>
   <body>
-    <main class="phone">
-      <header class="top">
-        <button class="tag" data-nav="01-welcome-create-join.html">Back</button>
-        <span class="tag center" data-bind="room-code">R001</span>
-        <span class="tag right">Share</span>
-      </header>
-      <section class="room-card">
-        <h1>Waiting for creating room</h1>
-        <div class="code"><span>Room Code</span><strong data-bind="room-code">R001</strong></div>
-        <div class="players">
-          <div class="slot"><b data-bind="player-one-name">Player 1</b><div class="avatar"></div><small>Ready</small></div>
-          <div class="slot"><b>Player 2</b><div class="avatar"></div><small>Ready</small></div>
-          <div class="slot wait"><b>Player 3</b><div class="avatar"></div><small>Waiting</small></div>
-          <div class="slot wait"><b>Player 4</b><div class="avatar"></div><small>Waiting</small></div>
-        </div>
-        <button class="button" data-action="start-game">Start Game</button>
-        <div class="hint">Minimum 2 kings. Maximum 4 kings.</div>
+    <main class="phone screen-room-lobby" data-frame="room-lobby" data-ready-state="idle">
+      <header class="room-code-tab" data-bind="room-code">R001</header>
+
+      <!--
+        Feature: six lobby player panels.
+        Production: MVP can render only server-supported player slots; slots 5-6 are visual expansion placeholders.
+      -->
+      <section class="lobby-grid" aria-label="Room players">
+        <article class="player-card is-you" data-player-slot="1">
+          <div class="player-name-tab" data-bind="player-one-name">Player 1</div>
+          <div class="speech-bubble" data-bind="player-one-bubble">Do something ..</div>
+          <div class="player-avatar" aria-hidden="true"></div>
+        </article>
+
+        <article class="player-card" data-player-slot="2">
+          <div class="player-name-tab">Player 2</div>
+          <div class="speech-bubble">don't leave me..</div>
+          <div class="player-avatar" aria-hidden="true"></div>
+        </article>
+
+        <article class="player-card" data-player-slot="3">
+          <div class="player-name-tab">Player 3</div>
+          <div class="player-avatar" aria-hidden="true"></div>
+        </article>
+
+        <article class="player-card" data-player-slot="4">
+          <div class="player-name-tab">Player 4</div>
+          <div class="player-avatar" aria-hidden="true"></div>
+        </article>
+
+        <article class="player-card" data-player-slot="5">
+          <div class="player-name-tab">Player 5</div>
+          <div class="player-avatar" aria-hidden="true"></div>
+        </article>
+
+        <article class="player-card" data-player-slot="6">
+          <div class="player-name-tab">Player 6</div>
+          <div class="player-avatar" aria-hidden="true"></div>
+        </article>
       </section>
+
+      <!--
+        Feature: lobby chat/action footer.
+        Production: chat log can be replaced by room messages; Ready maps to room readiness/start-match flow.
+      -->
+      <footer class="lobby-footer">
+        <section class="chat-log" aria-label="Lobby chat log">
+          <div class="chat-lines" data-bind="chat-lines"></div>
+          <span class="scroll-rail" aria-hidden="true"><i class="scroll-thumb"></i></span>
+        </section>
+        <div class="footer-actions">
+          <button class="lobby-action" data-modal-open="chat-modal">Chat</button>
+          <button class="lobby-action is-primary" data-action="toggle-ready">Ready</button>
+        </div>
+      </footer>
     </main>
+
+    <section class="chat-modal" data-modal="chat-modal" hidden>
+      <form class="chat-dialog" data-action="send-chat-form">
+        <strong>Lobby Chat</strong>
+        <input
+          class="chat-input"
+          data-bind="chat-input"
+          aria-label="Chat message"
+          autocomplete="off"
+          value="Do something .."
+        />
+        <div class="chat-dialog-actions">
+          <button type="button" data-modal-close="chat-modal">Close</button>
+          <button type="submit">Send</button>
+        </div>
+      </form>
+    </section>
+
     <script>
       const frameState = {
         roomCode: "R001",
-        playerName: "Player 1",
-        readyPlayers: 2
+        playerDisplayName: "Player 1",
+        enteredName: "",
+        isReady: false,
+        chatLines: [
+          "Player 1: Do something",
+          "Player 1: don't leave me alone",
+          "Player 2: stupid userr"
+        ]
       };
 
       const frameElements = {
-        roomCodeLabels: document.querySelectorAll("[data-bind='room-code']"),
+        root: document.querySelector("[data-frame='room-lobby']"),
+        roomCode: document.querySelector("[data-bind='room-code']"),
+        playerOneCard: document.querySelector("[data-player-slot='1']"),
         playerOneName: document.querySelector("[data-bind='player-one-name']"),
-        startButton: document.querySelector("[data-action='start-game']"),
-        backButton: document.querySelector("[data-nav='01-welcome-create-join.html']")
+        playerOneBubble: document.querySelector("[data-bind='player-one-bubble']"),
+        chatLines: document.querySelector("[data-bind='chat-lines']"),
+        chatInput: document.querySelector("[data-bind='chat-input']"),
+        readyButton: document.querySelector("[data-action='toggle-ready']"),
+        chatForm: document.querySelector("[data-action='send-chat-form']"),
+        chatOpenButton: document.querySelector("[data-modal-open='chat-modal']"),
+        chatCloseButton: document.querySelector("[data-modal-close='chat-modal']"),
+        chatModal: document.querySelector("[data-modal='chat-modal']")
       };
 
       function initializeFrame() {
         /*
-          Production: RoomPage receives room/player state from server.
-          This frame reads query params only to make prototype navigation feel continuous.
+          Production: RoomPage receives room/player list from server.
+          Prototype: query params keep continuity from 01-welcome-create-join.html.
         */
         const params = new URLSearchParams(window.location.search);
         frameState.roomCode = params.get("room") || frameState.roomCode;
-        frameState.playerName = params.get("player") || frameState.playerName;
-        frameElements.startButton.addEventListener("click", handleStartGame);
-        frameElements.backButton.addEventListener("click", () => navigateToFrame("01-welcome-create-join.html"));
+        frameState.enteredName = params.get("player") || "";
+
+        frameElements.readyButton.addEventListener("click", handleReadyAction);
+        frameElements.chatOpenButton.addEventListener("click", () => openModal("chat-modal"));
+        frameElements.chatCloseButton.addEventListener("click", () => closeModal("chat-modal"));
+        frameElements.chatModal.addEventListener("click", handleChatBackdropClick);
+        frameElements.chatForm.addEventListener("submit", handleSendChat);
+
         renderFrame();
       }
 
       function renderFrame() {
-        frameElements.roomCodeLabels.forEach((item) => {
-          item.textContent = frameState.roomCode;
-        });
-        frameElements.playerOneName.textContent = frameState.playerName;
-        frameElements.startButton.disabled = frameState.readyPlayers < 2;
+        frameElements.root.dataset.readyState = frameState.isReady ? "ready" : "idle";
+        frameElements.roomCode.textContent = frameState.roomCode;
+        frameElements.playerOneName.textContent = frameState.playerDisplayName;
+        frameElements.playerOneBubble.textContent = frameState.isReady ? "Ready!" : "Do something ..";
+        frameElements.playerOneCard.classList.toggle("is-ready", frameState.isReady);
+        frameElements.readyButton.textContent = frameState.isReady ? "Start" : "Ready";
+        frameElements.chatLines.innerHTML = frameState.chatLines.map((line) => `<span>${line}</span>`).join("");
       }
 
-      function handleStartGame() {
+      function handleReadyAction() {
         /*
-          Production action: host sends start-game request, server creates match, client navigates to game route.
+          Production action:
+          - first state maps to ready-room/player-ready server state
+          - host can start match only when the room is eligible
         */
-        if (frameElements.startButton.disabled) return;
-        navigateToFrame("03-game-starting.html", { room: frameState.roomCode });
+        if (frameState.isReady) {
+          navigateToFrame("03-game-starting.html", { room: frameState.roomCode });
+          return;
+        }
+
+        frameState.isReady = true;
+        frameState.chatLines.push(`${frameState.playerDisplayName}: ready`);
+        renderFrame();
+      }
+
+      function handleSendChat(event) {
+        /*
+          Production action: send message to lobby websocket or room event stream.
+        */
+        event.preventDefault();
+        const message = frameElements.chatInput.value.trim();
+        if (!message) return;
+        frameState.chatLines.push(`${frameState.playerDisplayName}: ${message}`);
+        frameElements.chatInput.value = "";
+        closeModal("chat-modal");
+        renderFrame();
+      }
+
+      function handleChatBackdropClick(event) {
+        if (event.target === frameElements.chatModal) {
+          closeModal("chat-modal");
+        }
+      }
+
+      function openModal(id) {
+        document.querySelector(`[data-modal='${id}']`).hidden = false;
+        frameElements.chatInput.focus();
+      }
+
+      function closeModal(id) {
+        document.querySelector(`[data-modal='${id}']`).hidden = true;
       }
 
       function navigateToFrame(fileName, params = {}) {

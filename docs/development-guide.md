@@ -22,6 +22,7 @@ Rules:
 - `design/index.html` is the review hub and should link to every frame.
 - Put layout, CSS, local demo state, and quick UI ideas directly in the frame file.
 - Put a `DESIGN FRAME SPEC` comment at the top of every design HTML file. It must describe the screen purpose, visible controls, feature list, button workflow, and production mapping.
+- Treat each design HTML file as the design memory for that screen. Any approved idea, user feedback, visual exception, or interaction workflow must be recorded in the relevant HTML comments/spec before or while the frame is changed.
 - Make the frame interactive enough to test that screen's main action.
 - Use descriptive classes, `data-*` attributes, function names, and comments so implementers can understand the intended production behavior from the HTML file.
 - Use `data-nav` for buttons or links that move to another design frame.
