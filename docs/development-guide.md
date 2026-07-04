@@ -30,6 +30,8 @@ Rules:
 - Use `data-modal-open`, `data-modal-close`, and `data-modal` for popup behavior inside the same frame.
 - Use `data-bind` for sample state that frame JavaScript renders.
 - Add comments around major CSS class groups, HTML feature blocks, and JS handler functions.
+- Use cross-platform typography in design frames. Prefer `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif`; avoid Windows-only decorative fonts such as `"Comic Sans MS"` for UI controls because Safari/iOS may not render them.
+- Reset button appearance in design frames: set `color: var(--ink)`, `appearance: none`, and `-webkit-appearance: none` so iOS Safari does not tint button text blue. This was verified on real phone Safari after `Chat` and `Ready` initially rendered blue.
 - Do not let a scene container be draggable. The main scene shell, such as `.phone.screen-room-lobby` or the game board scene container, should not move/drag/scroll as a whole. Only explicit inner regions like chat logs, modals, buttons, inputs, or board actions should handle interaction.
 - If a scene needs scroll behavior, put it in a named inner region and document that region in the HTML comments. Do not fix scene dragging by collapsing or distorting the whole layout.
 - For any UI/layout change, verify the rendered frame visually in a browser or screenshot before marking the work done. DOM checks and computed-style assertions are useful, but they do not replace looking at the actual UI.

@@ -11,6 +11,7 @@
     Layout has a small room-code tab at the top, six player panels in a 2x3 grid,
     a full-width chat log above the bottom action buttons, and two equal action buttons.
     Tooltip annotation bubbles are not rendered.
+    Typography uses a system UI font stack so Safari/iOS, Android, and Windows render reliably.
 
   Visible controls:
     Inputs: 1
@@ -68,7 +69,7 @@
         padding: 16px;
         color: var(--ink);
         background: #f3f3f3;
-        font-family: "Comic Sans MS", "Trebuchet MS", Arial, sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       }
 
       button,
@@ -77,6 +78,14 @@
       }
 
       button {
+        /*
+          Cross-platform reset:
+          iOS Safari can tint native button text blue unless color and appearance
+          are explicitly controlled. Keep wireframe buttons black on every device.
+        */
+        color: var(--ink);
+        appearance: none;
+        -webkit-appearance: none;
         cursor: pointer;
         touch-action: manipulation;
       }

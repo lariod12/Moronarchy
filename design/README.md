@@ -109,6 +109,39 @@ For every design HTML change that affects layout, spacing, position, visibility,
 
 Automated assertions can support this, but they do not replace looking at the rendered UI.
 
+## Cross-Platform Typography Rule
+
+Design prototypes must use fonts that work across iOS Safari, Android Chrome, Windows, and desktop browsers.
+
+Use this stack unless a frame explicitly documents another approved cross-platform choice:
+
+```css
+font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+```
+
+Do not use OS-specific decorative fonts such as `"Comic Sans MS"` as the primary UI font. Safari/iOS may not have them, which changes button and text rendering on real phones.
+
+Buttons and inputs should usually inherit this stack:
+
+```css
+button,
+input {
+  font: inherit;
+}
+```
+
+Buttons must also set color and reset native appearance so iOS Safari does not apply blue system tint:
+
+```css
+button {
+  color: var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
+}
+```
+
+This has been verified on a real phone Safari session: without the reset, `Chat` and `Ready` rendered blue; with the reset, they render black as intended.
+
 ## Real Mobile Testing
 
 Use a real phone for touch and viewport checks whenever a design change affects dragging, scrolling, hit targets, mobile layout, or speech/chat behavior.
