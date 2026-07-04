@@ -36,7 +36,7 @@
   Button workflow:
     Chat -> open chat popup -> Send adds log line; Close/backdrop hides popup.
     Ready -> Player 1 becomes ready, bubble says "Ready!", Chat becomes Cancel, Ready becomes Start.
-    Cancel -> returns to not-ready state, Cancel becomes Chat, Start becomes Ready.
+    Cancel -> returns to not-ready state, writes cancel status to chat log, Cancel becomes Chat, Start becomes Ready.
     Start -> 03-game-starting.html with room query param.
 
   Production mapping:
@@ -668,6 +668,7 @@
         */
         frameState.isReady = false;
         frameState.latestPlayerMessage = "";
+        frameState.chatLines.push(`${frameState.playerDisplayName}: cancel ready`);
 
         if (frameState.speechBubbleClearTimerId) {
           window.clearTimeout(frameState.speechBubbleClearTimerId);
