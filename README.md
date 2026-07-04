@@ -19,6 +19,8 @@ apps/
   server/     Node.js boardgame.io multiplayer server
 packages/
   core/       Shared pure TypeScript game rules
+design/
+  index.html  Single-file UI design sandbox
 docs/
   game-rules.md
   system-architecture.md
@@ -32,6 +34,12 @@ docs/
 - [Development guide](docs/development-guide.md): how to update rules, UI, lobby flow, tests, and future features.
 - [Game rules](docs/game-rules.md): MVP gameplay rules and economy.
 - [Tech stack](docs/tech-stack.md): selected libraries, environment variables, and future visual layers.
+
+## Design Preview
+
+Use `design/index.html` for quick UI exploration before touching production React code.
+
+The design folder is intentionally simple: one standalone HTML file for layout, CSS, sample state, and visual ideas. Approved designs can later be implemented in `apps/web`.
 
 ## Prerequisites
 

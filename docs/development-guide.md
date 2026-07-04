@@ -12,6 +12,26 @@ Read order for new contributors:
 4. `docs/tech-stack.md`
 5. This guide
 
+## Design Preview Workflow
+
+Use `design/index.html` as the visual sandbox before changing production UI.
+
+Rules:
+
+- Keep `design/` focused on one standalone HTML file.
+- Put layout, CSS, sample state, and quick UI ideas directly in that file.
+- Do not import production React code from `apps/web`.
+- Do not put game rules, multiplayer behavior, or server logic in the design file.
+- After a design is approved, implement it in `apps/web` using the existing React components.
+- Update this guide or `docs/system-architecture.md` only when the design workflow or production UI ownership changes.
+
+Recommended flow:
+
+1. Edit `design/index.html` until the screen direction feels right.
+2. Review it in a browser as a static file.
+3. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
+4. Add or update tests only for production behavior, not for the sandbox file.
+
 ## Local Development
 
 Install dependencies:
