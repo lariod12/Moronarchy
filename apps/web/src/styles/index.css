@@ -706,10 +706,11 @@ input {
   font-size: clamp(10px, 3vw, 15px);
 }
 
-.tile.is-owned,
-.tile.is-owned-self,
-.tile.is-level-2,
-.tile.is-level-3 {
+.tile.is-owned {
+  background: var(--wash);
+}
+
+.tile.is-owned-self {
   background: var(--shade);
 }
 
@@ -726,20 +727,12 @@ input {
   font-weight: 900;
 }
 
-.tile-owner,
-.tile-level {
+.tile-owner {
   position: absolute;
-  bottom: 1px;
+  bottom: 0px;
+  left: 12px;
   font-size: 0.48rem;
   font-weight: 900;
-}
-
-.tile-owner {
-  left: 2px;
-}
-
-.tile-level {
-  right: 2px;
 }
 
 .token-stack {

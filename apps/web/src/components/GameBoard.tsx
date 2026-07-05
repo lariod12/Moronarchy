@@ -46,7 +46,6 @@ const getTileClass = (tile: TileState, currentPlayerId: string): string => {
   const classes = ["tile", `tile-${tile.type}`];
   if (tile.ownerId !== null) classes.push("is-owned");
   if (tile.ownerId === currentPlayerId) classes.push("is-owned-self");
-  if (tile.landLevel > 1) classes.push(`is-level-${tile.landLevel}`);
   classes.push(tile.id % 2 === 0 ? "is-tilted-right" : "is-tilted-left");
   return classes.join(" ");
 };
@@ -77,6 +76,8 @@ export const GameBoard = ({
   const [visualTurnPlayerId, setVisualTurnPlayerId] = useState(turnPlayerId);
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
   const animatedRollKey = useRef<string | null>(null);
+  const latestTurnPlayerId = useRef(turnPlayerId);
+  const isRollAnimationActive = useRef(false);
   const rollAnimationKey = state.lastDiceRoll
     ? [
         state.lastDiceRoll.playerId,
@@ -96,8 +97,9 @@ export const GameBoard = ({
   useEffect(() => {
     if (!state.lastDiceRoll || !rollAnimationKey) {
       animatedRollKey.current = null;
+      isRollAnimationActive.current = false;
       setVisualPlayerPositions(actualPlayerPositions);
-      setVisualTurnPlayerId(turnPlayerId);
+      setVisualTurnPlayerId(latestTurnPlayerId.current);
       setMovingPlayerId(null);
       return undefined;
     }
@@ -107,6 +109,7 @@ export const GameBoard = ({
     }
 
     animatedRollKey.current = rollAnimationKey;
+    isRollAnimationActive.current = true;
     setVisualTurnPlayerId(state.lastDiceRoll.playerId);
     setVisualPlayerPositions({
       ...actualPlayerPositions,
@@ -120,15 +123,27 @@ export const GameBoard = ({
     }, DICE_RESULT_HOLD_MS);
 
     const turnTimer = window.setTimeout(() => {
+      isRollAnimationActive.current = false;
       setMovingPlayerId(null);
-      setVisualTurnPlayerId(turnPlayerId);
+      setVisualPlayerPositions(actualPlayerPositions);
+      setVisualTurnPlayerId(latestTurnPlayerId.current);
     }, DICE_RESULT_HOLD_MS + TOKEN_MOVE_DURATION_MS);
 
     return () => {
       window.clearTimeout(moveTimer);
       window.clearTimeout(turnTimer);
     };
-  }, [actualPlayerPositions, rollAnimationKey, state.lastDiceRoll, turnPlayerId]);
+  }, [actualPlayerPositions, rollAnimationKey, state.lastDiceRoll]);
+
+  useEffect(() => {
+    latestTurnPlayerId.current = turnPlayerId;
+
+    if (isRollAnimationActive.current) return;
+
+    setVisualPlayerPositions(actualPlayerPositions);
+    setVisualTurnPlayerId(turnPlayerId);
+    setMovingPlayerId(null);
+  }, [actualPlayerPositions, turnPlayerId]);
 
   return (
     <section className="board-shell" aria-label="Moronarchy board">
@@ -147,8 +162,9 @@ export const GameBoard = ({
               }}
             >
               <span className="tile-id">{String(tile.id).padStart(2, "0")}</span>
-              {tile.ownerId !== null && <span className="tile-owner">P{Number(tile.ownerId) + 1}</span>}
-              {tile.landLevel > 0 && <span className="tile-level">L{tile.landLevel}</span>}
+              {tile.ownerId !== null && tile.ownerId !== currentPlayerId && (
+                <span className="tile-owner">P{Number(tile.ownerId) + 1}</span>
+              )}
               <div className="token-stack">
                 {occupants.map((player) => (
                   <motion.span
