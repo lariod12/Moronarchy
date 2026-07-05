@@ -26,13 +26,8 @@ interface GameBoardProps {
 
 type PlayerPositionMap = Record<string, number>;
 
-const getTurnPlayerOnTile = (
-  players: PlayerState[],
-  tileId: number,
-  turnPlayerId: string
-): PlayerState[] => {
-  const player = players.find((item) => item.id === turnPlayerId && item.position === tileId && !item.defeated);
-  return player ? [player] : [];
+const getPlayersOnTile = (players: PlayerState[], tileId: number): PlayerState[] => {
+  return players.filter((item) => item.position === tileId && !item.defeated);
 };
 
 const getPlayerPositions = (players: PlayerState[]): PlayerPositionMap => {
@@ -73,10 +68,9 @@ export const GameBoard = ({
   const pips = dicePips[diceValue] ?? ["top-left", "top-right", "center", "bottom-left", "bottom-right"];
   const actualPlayerPositions = useMemo(() => getPlayerPositions(state.players), [state.players]);
   const [visualPlayerPositions, setVisualPlayerPositions] = useState<PlayerPositionMap>(actualPlayerPositions);
-  const [visualTurnPlayerId, setVisualTurnPlayerId] = useState(turnPlayerId);
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
+  const [showDiceSpeech, setShowDiceSpeech] = useState(false);
   const animatedRollKey = useRef<string | null>(null);
-  const latestTurnPlayerId = useRef(turnPlayerId);
   const isRollAnimationActive = useRef(false);
   const rollAnimationKey = state.lastDiceRoll
     ? [
@@ -99,8 +93,8 @@ export const GameBoard = ({
       animatedRollKey.current = null;
       isRollAnimationActive.current = false;
       setVisualPlayerPositions(actualPlayerPositions);
-      setVisualTurnPlayerId(latestTurnPlayerId.current);
       setMovingPlayerId(null);
+      setShowDiceSpeech(false);
       return undefined;
     }
 
@@ -110,7 +104,7 @@ export const GameBoard = ({
 
     animatedRollKey.current = rollAnimationKey;
     isRollAnimationActive.current = true;
-    setVisualTurnPlayerId(state.lastDiceRoll.playerId);
+    setShowDiceSpeech(true);
     setVisualPlayerPositions({
       ...actualPlayerPositions,
       [state.lastDiceRoll.playerId]: state.lastDiceRoll.from
@@ -125,8 +119,8 @@ export const GameBoard = ({
     const turnTimer = window.setTimeout(() => {
       isRollAnimationActive.current = false;
       setMovingPlayerId(null);
+      setShowDiceSpeech(false);
       setVisualPlayerPositions(actualPlayerPositions);
-      setVisualTurnPlayerId(latestTurnPlayerId.current);
     }, DICE_RESULT_HOLD_MS + TOKEN_MOVE_DURATION_MS);
 
     return () => {
@@ -136,13 +130,11 @@ export const GameBoard = ({
   }, [actualPlayerPositions, rollAnimationKey, state.lastDiceRoll]);
 
   useEffect(() => {
-    latestTurnPlayerId.current = turnPlayerId;
-
     if (isRollAnimationActive.current) return;
 
     setVisualPlayerPositions(actualPlayerPositions);
-    setVisualTurnPlayerId(turnPlayerId);
     setMovingPlayerId(null);
+    setShowDiceSpeech(false);
   }, [actualPlayerPositions, turnPlayerId]);
 
   return (
@@ -150,7 +142,7 @@ export const GameBoard = ({
       <div className="board-grid">
         {state.tiles.map((tile) => {
           const position = getTileGridPosition(tile.id);
-          const occupants = getTurnPlayerOnTile(visualPlayers, tile.id, visualTurnPlayerId);
+          const occupants = getPlayersOnTile(visualPlayers, tile.id);
           return (
             <motion.div
               layout
@@ -188,7 +180,7 @@ export const GameBoard = ({
         })}
         <div className="board-center">
           <div className="dice-callout" aria-label="Dice result preview">
-            {state.lastDiceRoll && (
+            {state.lastDiceRoll && showDiceSpeech && (
               <div className="speech-bubble" aria-live="polite">
                 <span className="speech-text">{state.lastDiceRoll.value}</span>
               </div>
