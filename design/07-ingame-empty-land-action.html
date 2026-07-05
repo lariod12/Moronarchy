@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <!--
   DESIGN FRAME SPEC
   Frame: 07-ingame-empty-land-action
@@ -12,7 +12,7 @@
     Inputs: 0
     Buttons: 3
       1. Buy - opens land bought popup.
-      2. Skip - navigates to 04-ingame-main-board-waiting-turn.html.
+      2. Skip - navigates to 05-ingame-main-board-your-turn.html.
       3. Continue in popup - navigates to waiting turn after buy.
 
   Interactive features:
@@ -20,8 +20,8 @@
     - Skip ends tile action without modal.
 
   Button workflow:
-    Buy -> purchase result popup -> Continue -> 04-ingame-main-board-waiting-turn.html
-    Skip -> 04-ingame-main-board-waiting-turn.html
+    Buy -> purchase result popup -> Continue -> 05-ingame-main-board-your-turn.html
+    Skip -> 05-ingame-main-board-your-turn.html
 
   Production mapping:
     Page/component target: ActionPanel tile-action phase.
@@ -59,8 +59,8 @@
       <header class="top"><span class="tag">Round 1</span><span class="tag center">R001</span><span class="tag right">Map</span></header>
       <section class="board" data-board><div class="center-stage"><div class="notice"><b>Tile 11</b><span>Empty land found</span></div></div></section>
       <footer class="hud"><section class="panel player-card"><div class="player-name">Player Name</div><div class="avatar"></div></section><section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>200</strong></div><div class="stat-row"><span>level:</span><strong>1</strong></div></section></footer>
-      <section class="action"><div><b>Buy Tile 11?</b><span>Price 70 coin</span></div><button class="button primary" data-modal-open="buy-result-modal">Buy</button><button class="button" data-nav="04-ingame-main-board-waiting-turn.html">Skip</button></section>
-      <section class="modal" data-modal="buy-result-modal" hidden><div class="modal-card"><strong>Land bought</strong><span>Tile 11 now belongs to Player 1.</span><button data-nav="04-ingame-main-board-waiting-turn.html">Continue</button></div></section>
+      <section class="action"><div><b>Buy Tile 11?</b><span>Price 70 coin</span></div><button class="button primary" data-modal-open="buy-result-modal">Buy</button><button class="button" data-nav="05-ingame-main-board-your-turn.html">Skip</button></section>
+      <section class="modal" data-modal="buy-result-modal" hidden><div class="modal-card"><strong>Land bought</strong><span>Tile 11 now belongs to Player 1.</span><button data-nav="05-ingame-main-board-your-turn.html">Continue</button></div></section>
     </main>
     <script>
       const frameState = {
@@ -128,3 +128,5 @@
     </script>
   </body>
 </html>
+
+

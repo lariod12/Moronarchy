@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <!--
   DESIGN FRAME SPEC
   Frame: 09-ingame-rival-land-payment
@@ -17,7 +17,7 @@
     - Continue represents forced payment finishing.
 
   Button workflow:
-    Continue -> 04-ingame-main-board-waiting-turn.html
+    Continue -> 05-ingame-main-board-your-turn.html
 
   Production mapping:
     Page/component target: GamePage payment/result modal.
@@ -53,7 +53,7 @@
       <header class="top"><span class="tag">Round 5</span><span class="tag center">R001</span><span class="tag right">Map</span></header>
       <section class="board" data-board><div class="center-stage"><div class="fee"><b>Rival land</b><strong>-28</strong><div class="arrow"></div><span>coin paid to Player 2</span></div></div></section>
       <footer class="hud"><section class="panel player-card"><div class="player-name">Player Name</div><div class="avatar"></div></section><section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>72</strong></div><div class="stat-row"><span>level:</span><strong>1</strong></div></section></footer>
-      <section class="action"><span>Payment is forced. Turn ends after fee resolves.</span><button class="button" data-nav="04-ingame-main-board-waiting-turn.html">Continue</button></section>
+      <section class="action"><span>Payment is forced. Turn ends after fee resolves.</span><button class="button" data-nav="05-ingame-main-board-your-turn.html">Continue</button></section>
     </main>
     <script>
       const frameState = {
@@ -66,7 +66,7 @@
 
       const frameElements = {
         board: document.querySelector("[data-board]"),
-        continueButton: document.querySelector("[data-nav='04-ingame-main-board-waiting-turn.html']")
+        continueButton: document.querySelector("[data-nav='05-ingame-main-board-your-turn.html']")
       };
 
       function initializeFrame() {
@@ -76,7 +76,7 @@
           - UI shows the payment result, then the turn ends
         */
         renderBoard();
-        frameElements.continueButton.addEventListener("click", () => navigateToFrame("04-ingame-main-board-waiting-turn.html"));
+        frameElements.continueButton.addEventListener("click", () => navigateToFrame("05-ingame-main-board-your-turn.html"));
       }
 
       function renderBoard() {
@@ -108,3 +108,5 @@
     </script>
   </body>
 </html>
+
+

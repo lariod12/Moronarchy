@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <!--
   DESIGN FRAME SPEC
   Frame: 06-ingame-dice-rolling-move
@@ -12,7 +12,7 @@
     Inputs: 0
     Buttons: 3
       1. Moving/Continue button - advances to 07-ingame-empty-land-action.html.
-      2. Back - returns to 05-ingame-main-board-your-turn.html.
+      2. Back - returns to 04-ingame-main-board-waiting-turn.html.
       3. Crown - opens local status popup.
 
   Interactive features:
@@ -20,7 +20,7 @@
 
   Button workflow:
     Moving... -> 07-ingame-empty-land-action.html
-    Back -> 05-ingame-main-board-your-turn.html
+    Back -> 04-ingame-main-board-waiting-turn.html
     Crown -> status modal
 
   Production mapping:
@@ -77,7 +77,7 @@
       <footer class="hud">
         <section class="panel player-card"><div class="player-name">Player Name</div><div class="avatar"></div></section>
         <section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>100</strong></div><div class="stat-row"><span>level:</span><strong>1</strong></div></section>
-        <button class="panel big" data-nav="05-ingame-main-board-your-turn.html">&larr;</button><button class="panel big" data-modal-open="king-status-modal"><span class="crown"></span></button>
+        <button class="panel big" data-nav="04-ingame-main-board-waiting-turn.html">&larr;</button><button class="panel big" data-modal-open="king-status-modal"><span class="crown"></span></button>
       </footer>
       <section class="modal" data-modal="king-status-modal" hidden><div class="modal-card"><strong>Move Preview</strong><span>Dice 5. Destination tile 11.</span><button data-modal-close="king-status-modal">Close</button></div></section>
     </main>
@@ -93,7 +93,7 @@
       const frameElements = {
         board: document.querySelector("[data-board]"),
         finishMoveButton: document.querySelector("[data-action='finish-move']"),
-        backButton: document.querySelector("[data-nav='05-ingame-main-board-your-turn.html']"),
+        backButton: document.querySelector("[data-nav='04-ingame-main-board-waiting-turn.html']"),
         openStatusButton: document.querySelector("[data-modal-open='king-status-modal']"),
         closeStatusButton: document.querySelector("[data-modal-close='king-status-modal']")
       };
@@ -106,7 +106,7 @@
         */
         renderBoard();
         frameElements.finishMoveButton.addEventListener("click", handleFinishMove);
-        frameElements.backButton.addEventListener("click", () => navigateToFrame("05-ingame-main-board-your-turn.html"));
+        frameElements.backButton.addEventListener("click", () => navigateToFrame("04-ingame-main-board-waiting-turn.html"));
         frameElements.openStatusButton.addEventListener("click", () => openModal("king-status-modal"));
         frameElements.closeStatusButton.addEventListener("click", () => closeModal("king-status-modal"));
       }
@@ -156,3 +156,5 @@
     </script>
   </body>
 </html>
+
+
