@@ -193,35 +193,41 @@
         bottom: 8px;
         width: 64px;
         height: 58px;
+        overflow: hidden;
         transform: translateX(-50%);
       }
 
-      .player-avatar::before {
-        content: "";
+      .avatar-icon {
         position: absolute;
-        top: 0;
-        left: 21px;
-        width: 31px;
-        height: 36px;
-        background: var(--ink);
-        border-radius: 999px;
+        inset: 0;
       }
 
-      .player-avatar::after {
-        content: "";
+      .avatar-head {
         position: absolute;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        height: 27px;
+        left: 50%;
+        bottom: 25px;
+        width: 30px;
+        aspect-ratio: 1 / 1;
         background: var(--ink);
-        border-radius: 34px 34px 7px 7px;
+        border-radius: 999px;
+        transform: translateX(-50%);
+      }
+
+      .avatar-body {
+        position: absolute;
+        left: 50%;
+        bottom: -4px;
+        width: 60px;
+        height: 26px;
+        background: var(--ink);
+        border-radius: 999px 999px 0 0;
+        transform: translateX(-50%);
       }
 
       .speech-bubble {
         position: absolute;
-        right: 5px;
-        top: 27px;
+        right: 20px;
+        top: 34px;
         z-index: 3;
         display: grid;
         place-items: center;
@@ -282,10 +288,6 @@
         height: 9px;
         background: var(--paper);
         clip-path: polygon(0 0, 100% 0, 34% 100%);
-      }
-
-      .player-card:nth-child(2n) .speech-bubble {
-        right: 5px;
       }
 
       /*
@@ -532,7 +534,12 @@
         <article class="player-card is-you is-host" data-player-slot="1">
           <div class="player-name-tab" data-bind="player-one-name">Player 1</div>
           <div class="speech-bubble" data-bind="player-one-bubble-shell"><span class="speech-text" data-bind="player-one-bubble">Do something ..</span></div>
-          <div class="player-avatar" aria-hidden="true"></div>
+          <div class="player-avatar" aria-hidden="true">
+            <div class="avatar-icon" aria-hidden="true">
+              <div class="avatar-head"></div>
+              <div class="avatar-body"></div>
+            </div>
+          </div>
         </article>
 
         <!--
@@ -544,27 +551,52 @@
         <article class="player-card" data-player-slot="2">
           <div class="player-name-tab">Player 2</div>
           <div class="speech-bubble"><span class="speech-text">Ready!</span></div>
-          <div class="player-avatar" aria-hidden="true"></div>
+          <div class="player-avatar" aria-hidden="true">
+            <div class="avatar-icon" aria-hidden="true">
+              <div class="avatar-head"></div>
+              <div class="avatar-body"></div>
+            </div>
+          </div>
         </article>
 
         <article class="player-card" data-player-slot="3">
           <div class="player-name-tab">Player 3</div>
-          <div class="player-avatar" aria-hidden="true"></div>
+          <div class="player-avatar" aria-hidden="true">
+            <div class="avatar-icon" aria-hidden="true">
+              <div class="avatar-head"></div>
+              <div class="avatar-body"></div>
+            </div>
+          </div>
         </article>
 
         <article class="player-card" data-player-slot="4">
           <div class="player-name-tab">Player 4</div>
-          <div class="player-avatar" aria-hidden="true"></div>
+          <div class="player-avatar" aria-hidden="true">
+            <div class="avatar-icon" aria-hidden="true">
+              <div class="avatar-head"></div>
+              <div class="avatar-body"></div>
+            </div>
+          </div>
         </article>
 
         <article class="player-card" data-player-slot="5">
           <div class="player-name-tab">Player 5</div>
-          <div class="player-avatar" aria-hidden="true"></div>
+          <div class="player-avatar" aria-hidden="true">
+            <div class="avatar-icon" aria-hidden="true">
+              <div class="avatar-head"></div>
+              <div class="avatar-body"></div>
+            </div>
+          </div>
         </article>
 
         <article class="player-card" data-player-slot="6">
           <div class="player-name-tab">Player 6</div>
-          <div class="player-avatar" aria-hidden="true"></div>
+          <div class="player-avatar" aria-hidden="true">
+            <div class="avatar-icon" aria-hidden="true">
+              <div class="avatar-head"></div>
+              <div class="avatar-body"></div>
+            </div>
+          </div>
         </article>
       </section>
 
