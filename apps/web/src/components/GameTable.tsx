@@ -14,7 +14,7 @@ import {
 import { GameBoard } from "./GameBoard";
 import { PlayerHud } from "./PlayerHud";
 
-const LAND_PURCHASE_POPUP_DELAY_MS = 2000;
+const LAND_PURCHASE_POPUP_DELAY_MS = 2500;
 
 interface GameTableProps {
   G: MoronarchyState;

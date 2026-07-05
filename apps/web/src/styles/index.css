@@ -725,8 +725,8 @@ input {
 
 .tile-owner {
   position: absolute;
-  bottom: 0px;
-  left: 12px;
+  bottom: -1px;
+  left: 3px;
   font-size: 0.48rem;
   font-weight: 900;
 }
@@ -740,7 +740,7 @@ input {
   isolation: isolate;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  transition: left 1.25s ease-in-out, top 1.25s ease-in-out;
+  transition: left 260ms ease-in-out, top 260ms ease-in-out;
   will-change: left, top;
 }
 

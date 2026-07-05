@@ -1,5 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { createInitialState } from "@moronarchy/core";
 import { GameBoard } from "./GameBoard";
 
@@ -34,5 +34,40 @@ describe("GameBoard", () => {
     );
 
     expect(container.querySelector(".turn-token-caret")).toBeInTheDocument();
+  });
+
+  it("walks the moving marker through each tile instead of crossing the board", () => {
+    vi.useFakeTimers();
+
+    try {
+      const state = createInitialState(["0", "1"]);
+      state.players[0]!.position = 7;
+      state.lastDiceRoll = {
+        playerId: "0",
+        from: 1,
+        to: 7,
+        value: 6,
+        passedStart: false
+      };
+
+      const { container } = render(<GameBoard state={state} currentPlayerId="0" visiblePlayerIds={["0"]} />);
+      const token = container.querySelector(".king-token");
+
+      expect(token).toHaveStyle({ top: "4.545454545454546%" });
+
+      act(() => {
+        vi.advanceTimersByTime(750);
+      });
+
+      expect(token).toHaveStyle({ top: "13.636363636363635%" });
+
+      act(() => {
+        vi.advanceTimersByTime(260);
+      });
+
+      expect(token).toHaveStyle({ top: "22.727272727272727%" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
