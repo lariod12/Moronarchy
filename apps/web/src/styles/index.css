@@ -1137,6 +1137,27 @@ input {
   transform: rotate(1.5deg);
 }
 
+.lap-reward-summary {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--stroke) solid var(--ink);
+  transform: rotate(-1deg);
+}
+
+.land-purchase-copy .lap-reward-summary span,
+.land-purchase-copy .lap-reward-summary strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .land-purchase-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -9,6 +9,7 @@ import {
   getPlayerTile,
   getUpgradeableOwnedLands,
   getUpgradeCost,
+  START_BONUS,
   type MoronarchyState
 } from "@moronarchy/core";
 import { GameBoard } from "./GameBoard";
@@ -48,6 +49,7 @@ export const GameTable = ({
   const navigate = useNavigate();
   const currentPlayerId = playerID ?? "0";
   const [isLandPurchasePopupReady, setIsLandPurchasePopupReady] = useState(false);
+  const [isLapUpgradePopupReady, setIsLapUpgradePopupReady] = useState(false);
   const startingPlayerId = getStartingPlayerId(matchID);
   const startingPlayerMoveQueued = useRef(false);
   const winner = G.winnerId ?? ctx.gameover?.winner ?? null;
@@ -65,6 +67,8 @@ export const GameTable = ({
   const canPurchaseCurrentLand = canBuyLand(G, currentPlayerId);
   const isLapUpgradeReady = isCurrentPlayerTurn && G.phase === "lap-upgrade";
   const upgradeableOwnedLands = isLapUpgradeReady ? getUpgradeableOwnedLands(G, currentPlayerId) : [];
+  const completedLapRoll =
+    G.lastDiceRoll?.playerId === currentPlayerId && G.lastDiceRoll.passedStart ? G.lastDiceRoll : null;
   const joinedPlayerIds = useMemo(() => {
     const joinedIds = matchData
       ?.filter((player) => player.name)
@@ -101,6 +105,25 @@ export const GameTable = ({
     G.lastDiceRoll?.to,
     G.lastDiceRoll?.value,
     isUnownedCurrentLand
+  ]);
+
+  useEffect(() => {
+    setIsLapUpgradePopupReady(false);
+
+    if (!isLapUpgradeReady || upgradeableOwnedLands.length === 0) return undefined;
+
+    const timerId = window.setTimeout(() => {
+      setIsLapUpgradePopupReady(true);
+    }, LAND_PURCHASE_POPUP_DELAY_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [
+    G.lastDiceRoll?.from,
+    G.lastDiceRoll?.playerId,
+    G.lastDiceRoll?.to,
+    G.lastDiceRoll?.value,
+    isLapUpgradeReady,
+    upgradeableOwnedLands.length
   ]);
 
   return (
@@ -163,7 +186,7 @@ export const GameTable = ({
       </AnimatePresence>
 
       <AnimatePresence>
-        {isLapUpgradeReady && upgradeableOwnedLands.length > 0 && (
+        {isLapUpgradeReady && isLapUpgradePopupReady && upgradeableOwnedLands.length > 0 && (
           <motion.div
             className="land-purchase-modal"
             initial={{ opacity: 0 }}
@@ -182,6 +205,13 @@ export const GameTable = ({
               <div className="land-purchase-copy">
                 <span className="land-purchase-kicker">King Level {currentPlayer?.level ?? 1}</span>
                 <strong id="lap-upgrade-title">Upgrade owned land?</strong>
+                {completedLapRoll && (
+                  <div className="lap-reward-summary" aria-label="Lap reward">
+                    <span>Round complete</span>
+                    <strong>+{START_BONUS} coin</strong>
+                    <span>Level {currentPlayer?.level ?? 1}</span>
+                  </div>
+                )}
                 <span>One royal upgrade is available.</span>
               </div>
               <div className="lap-upgrade-list">
