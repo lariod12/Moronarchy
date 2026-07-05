@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { saveStartingPlayerId } from "@/api/game-start";
 import { getPlayerSession, getRoom } from "@/api/lobby";
 import { getLobbyChatUrl, type LobbyChatMessage, type LobbyChatServerMessage } from "@/api/lobby-chat";
 
@@ -116,6 +117,9 @@ export const RoomPage = () => {
           }
 
           if (payload.type === "start") {
+            if (roomId) {
+              saveStartingPlayerId(roomId, payload.firstPlayerID);
+            }
             setCountdown(3);
           }
         } catch {

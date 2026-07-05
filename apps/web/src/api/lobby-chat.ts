@@ -31,6 +31,7 @@ export type LobbyChatServerMessage =
     }
   | {
       type: "start";
+      firstPlayerID: string;
     };
 
 export const getLobbyChatUrl = (): string => {

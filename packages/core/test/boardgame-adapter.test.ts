@@ -38,4 +38,37 @@ describe("boardgame.io adapter", () => {
 
     expect(nextPlayer).toBe("2");
   });
+
+  it("lets the host select the first active player once", () => {
+    const state = createInitialState(["0", "1", "2"]);
+    const game = createMoronarchyGameConfig("INVALID_MOVE" as const);
+    let nextPlayer: string | undefined;
+
+    game.moves.chooseStartingPlayer({
+      G: state,
+      ctx: {
+        currentPlayer: "0",
+        numPlayers: 3,
+        playOrder: ["0", "1", "2"]
+      },
+      playerID: "0",
+      events: {
+        endTurn: (arg?: { next: string }) => {
+          nextPlayer = arg?.next;
+        }
+      }
+    }, "2");
+
+    expect(state.startingPlayerId).toBe("2");
+    expect(nextPlayer).toBe("2");
+    expect(game.moves.chooseStartingPlayer({
+      G: state,
+      ctx: {
+        currentPlayer: "2",
+        numPlayers: 3,
+        playOrder: ["0", "1", "2"]
+      },
+      playerID: "2"
+    }, "1")).toBe("INVALID_MOVE");
+  });
 });

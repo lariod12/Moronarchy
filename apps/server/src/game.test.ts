@@ -5,7 +5,7 @@ describe("Moronarchy boardgame.io config", () => {
   it("exposes the expected server-authoritative moves", () => {
     expect(MoronarchyGame.name).toBe("moronarchy");
     expect(Object.keys(MoronarchyGame.moves)).toEqual(
-      expect.arrayContaining(["rollDice", "buyLand", "upgradeLand", "skipTileAction", "endTurn"])
+      expect.arrayContaining(["chooseStartingPlayer", "rollDice", "buyLand", "upgradeLand", "skipTileAction", "endTurn"])
     );
   });
 

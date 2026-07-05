@@ -1,6 +1,8 @@
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Crown } from "lucide-react";
 import { useNavigate } from "react-router";
+import { getStartingPlayerId } from "@/api/game-start";
 import type { MoronarchyState } from "@moronarchy/core";
 import { ActionPanel } from "./ActionPanel";
 import { GameBoard } from "./GameBoard";
@@ -31,10 +33,21 @@ export const GameTable = ({
 }: GameTableProps) => {
   const navigate = useNavigate();
   const currentPlayerId = playerID ?? "0";
+  const startingPlayerId = getStartingPlayerId(matchID);
+  const startingPlayerMoveQueued = useRef(false);
   const winner = G.winnerId ?? ctx.gameover?.winner ?? null;
   const latestLog = G.logs[0]?.message ?? "Roll dice and claim the kingdom.";
   const currentPlayer = G.players.find((player) => player.id === currentPlayerId);
   const canRoll = isActive && G.phase === "rolling" && !currentPlayer?.defeated;
+  const showTurnIndicator = currentPlayerId === ctx.currentPlayer && !currentPlayer?.defeated;
+
+  useEffect(() => {
+    if (!startingPlayerId || startingPlayerMoveQueued.current) return;
+    if (playerID !== "0" || G.startingPlayerId || ctx.currentPlayer !== "0") return;
+
+    startingPlayerMoveQueued.current = true;
+    moves.chooseStartingPlayer?.(startingPlayerId);
+  }, [G.startingPlayerId, ctx.currentPlayer, moves, playerID, startingPlayerId]);
 
   return (
     <main className="phone-frame game-screen screen-ingame-main-board-your-turn">
@@ -49,6 +62,8 @@ export const GameTable = ({
       <GameBoard
         state={G}
         currentPlayerId={currentPlayerId}
+        turnPlayerId={ctx.currentPlayer}
+        showTurnIndicator={showTurnIndicator}
         canRoll={canRoll}
         latestLog={latestLog}
         onRollDice={() => moves.rollDice?.()}

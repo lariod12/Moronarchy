@@ -14,13 +14,20 @@ const dicePips: Record<number, string[]> = {
 interface GameBoardProps {
   state: MoronarchyState;
   currentPlayerId: string;
+  turnPlayerId?: string;
+  showTurnIndicator?: boolean;
   canRoll?: boolean;
   latestLog?: string;
   onRollDice?: () => void;
 }
 
-const getPlayersOnTile = (players: PlayerState[], tileId: number): PlayerState[] => {
-  return players.filter((player) => player.position === tileId && !player.defeated);
+const getTurnPlayerOnTile = (
+  players: PlayerState[],
+  tileId: number,
+  turnPlayerId: string
+): PlayerState[] => {
+  const player = players.find((item) => item.id === turnPlayerId && item.position === tileId && !item.defeated);
+  return player ? [player] : [];
 };
 
 const getTileClass = (tile: TileState, currentPlayerId: string): string => {
@@ -43,7 +50,15 @@ const PlayerMarker = ({ label }: { label: string }) => (
   </span>
 );
 
-export const GameBoard = ({ state, currentPlayerId, canRoll = false, latestLog, onRollDice }: GameBoardProps) => {
+export const GameBoard = ({
+  state,
+  currentPlayerId,
+  turnPlayerId = currentPlayerId,
+  showTurnIndicator = false,
+  canRoll = false,
+  latestLog,
+  onRollDice
+}: GameBoardProps) => {
   const diceValue = state.lastDiceRoll?.value ?? 5;
   const pips = dicePips[diceValue] ?? ["top-left", "top-right", "center", "bottom-left", "bottom-right"];
 
@@ -52,7 +67,7 @@ export const GameBoard = ({ state, currentPlayerId, canRoll = false, latestLog, 
       <div className="board-grid">
         {state.tiles.map((tile) => {
           const position = getTileGridPosition(tile.id);
-          const occupants = getPlayersOnTile(state.players, tile.id);
+          const occupants = getTurnPlayerOnTile(state.players, tile.id, turnPlayerId);
           return (
             <motion.div
               layout
@@ -69,6 +84,11 @@ export const GameBoard = ({ state, currentPlayerId, canRoll = false, latestLog, 
               <div className="token-stack">
                 {occupants.map((player) => (
                   <motion.span layoutId={`token-${player.id}`} key={player.id} className="king-token" title={player.name}>
+                    {showTurnIndicator && (
+                      <span className="turn-token-callout" aria-hidden="true">
+                        <span className="turn-token-caret" />
+                      </span>
+                    )}
                     <PlayerMarker label={`${player.name} marker`} />
                   </motion.span>
                 ))}

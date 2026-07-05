@@ -118,9 +118,20 @@ test("creates a room, joins from a second player, and enters the game", async ({
 
   await expect(page.locator(".board-grid")).toBeVisible();
   await expect(secondPage.locator(".board-grid")).toBeVisible();
+  await expect(thirdPage.locator(".board-grid")).toBeVisible();
+  await expect(fourthPage.locator(".board-grid")).toBeVisible();
+  await expect(page.locator(".king-token")).toHaveCount(1);
+  await expect(secondPage.locator(".king-token")).toHaveCount(1);
+  await expect(thirdPage.locator(".king-token")).toHaveCount(1);
+  await expect(fourthPage.locator(".king-token")).toHaveCount(1);
 
-  await page.getByRole("button", { name: /tap to scroll/i }).click();
-  await expect(page.locator(".speech-bubble .speech-text")).toBeVisible();
+  const playerPages = [page, secondPage, thirdPage, fourthPage];
+  const activePageIndex = (await Promise.all(
+    playerPages.map(async (playerPage) => playerPage.locator(".tap-scroll").isEnabled())
+  )).findIndex(Boolean);
+  expect(activePageIndex).toBeGreaterThanOrEqual(0);
+  await playerPages[activePageIndex]!.locator(".tap-scroll").click();
+  await expect(playerPages[activePageIndex]!.locator(".speech-bubble .speech-text")).toBeVisible();
 
   let rateLimited = false;
   for (let requestCount = 0; requestCount < 130; requestCount += 1) {

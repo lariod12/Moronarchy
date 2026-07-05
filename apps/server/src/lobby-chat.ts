@@ -62,6 +62,17 @@ export interface LobbyChatServerOptions {
 
 const rooms = new Map<string, LobbyRoomState>();
 
+export const pickStartingPlayerId = (
+  readyByPlayer: Record<string, boolean>,
+  random = Math.random
+): string => {
+  const eligiblePlayerIds = ["0", ...Object.keys(readyByPlayer).filter((playerID) => readyByPlayer[playerID])]
+    .filter((playerID, index, playerIds) => playerIds.indexOf(playerID) === index)
+    .sort((left, right) => Number(left) - Number(right));
+  const selectedIndex = Math.floor(random() * eligiblePlayerIds.length);
+  return eligiblePlayerIds[selectedIndex] ?? "0";
+};
+
 export const sanitizeChatText = (value: unknown, maxLength = MAX_CHAT_TEXT_LENGTH): string => {
   if (typeof value !== "string") return "";
 
@@ -190,9 +201,11 @@ export const createLobbyChatServer = ({ port, allowedOrigins }: LobbyChatServerO
 
       if (payload.type === "start") {
         if (playerID !== "0") return;
+        const firstPlayerID = pickStartingPlayerId(room.readyByPlayer);
 
         broadcastRoom(room, {
-          type: "start"
+          type: "start",
+          firstPlayerID
         });
         return;
       }

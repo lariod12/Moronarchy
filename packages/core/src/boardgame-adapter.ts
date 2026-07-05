@@ -73,6 +73,17 @@ export const createMoronarchyGameConfig = <TInvalidMove>(invalidMove: TInvalidMo
   setup: ({ ctx }: Pick<BoardgameRuntime, "ctx">): MoronarchyState =>
     createInitialState(Array.from({ length: ctx.numPlayers }, (_, index) => String(index))),
   moves: {
+    chooseStartingPlayer: (runtime: BoardgameRuntime, startingPlayerId: string): TInvalidMove | void => {
+      if (runtime.G.startingPlayerId) return invalidMove;
+      if (runtime.ctx.currentPlayer !== "0" || runtime.playerID !== "0") return invalidMove;
+      const startingPlayer = runtime.G.players.find((player) => player.id === startingPlayerId && !player.defeated);
+      if (!startingPlayer) return invalidMove;
+
+      runtime.G.startingPlayerId = startingPlayerId;
+      if (startingPlayerId !== runtime.ctx.currentPlayer) {
+        runtime.events?.endTurn({ next: startingPlayerId });
+      }
+    },
     rollDice: {
       client: false,
       move: (runtime: BoardgameRuntime): TInvalidMove | void => {

@@ -43,6 +43,7 @@ export interface MoronarchyState {
   maxRounds: number;
   phase: GamePhase;
   winnerId: PlayerId | null;
+  startingPlayerId: PlayerId | null;
   lastDiceRoll: DiceRollState | null;
   logs: GameLogEntry[];
 }

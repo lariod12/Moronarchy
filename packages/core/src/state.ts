@@ -42,7 +42,7 @@ export const createPlayers = (playerIds: PlayerId[]): PlayerState[] => {
 
   return playerIds.map((id, index) => ({
     id,
-    name: `King ${index + 1}`,
+    name: `Player ${index + 1}`,
     health: STARTING_HEALTH,
     coin: STARTING_COIN,
     level: 1,
@@ -62,6 +62,7 @@ export const createInitialState = (
   maxRounds,
   phase: "rolling",
   winnerId: null,
+  startingPlayerId: null,
   lastDiceRoll: null,
   logs: []
 });

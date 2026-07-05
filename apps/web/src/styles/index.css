@@ -763,6 +763,29 @@ input {
   display: block;
   width: 22px;
   height: 28px;
+  isolation: isolate;
+}
+
+.turn-token-callout {
+  position: absolute;
+  left: 50%;
+  bottom: 29px;
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transform-origin: center bottom;
+}
+
+.turn-token-caret {
+  width: 0;
+  height: 0;
+  margin-top: 0;
+  border-right: 8px solid transparent;
+  border-left: 8px solid transparent;
+  border-top: 11px solid var(--ink);
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.18));
 }
 
 .tile-marker {
