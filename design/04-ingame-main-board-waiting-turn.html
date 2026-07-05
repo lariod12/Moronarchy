@@ -13,18 +13,18 @@
     Inputs: 0
     Buttons: 4
       1. Map - future map overview shortcut.
-      2. Tap to Scroll - prototype shortcut to 05-ingame-main-board-your-turn.html.
+      2. Tap to Scroll - shakes the dice, randomizes pips, then reveals the speech result.
       3. Back - returns to 02-room-lobby.html.
       4. Crown button - opens a local status popup.
 
   Interactive features:
-    - Tap to Scroll simulates the turn changing to the current player.
+    - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, then reveals the final number.
     - Crown button opens/closes a player status modal.
     - Map button is visible as a future production control.
 
   Button workflow:
     Map -> local no-op for this frame.
-    Tap to Scroll -> 05-ingame-main-board-your-turn.html.
+    Tap to Scroll -> dice shake -> random pip changes -> final number appears in speech text.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
@@ -68,6 +68,7 @@
         display: grid;
         place-items: start center;
         padding: 10px;
+        overflow: hidden;
         color: var(--ink);
         background: #f3f3f3;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -76,12 +77,20 @@
       /* Root mobile frame. Production equivalent: GamePage shell. */
       .phone {
         position: relative;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 8px;
         width: min(100%, 430px);
+        min-height: calc(100vh - 20px);
         margin: 0 auto;
         background: var(--paper);
         border: var(--stroke) solid var(--ink);
         box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.16);
         padding: 12px;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
+        user-select: none;
       }
 
       .frame-top {
@@ -143,7 +152,8 @@
         grid-template-columns: repeat(11, 1fr);
         grid-template-rows: repeat(11, 1fr);
         width: 100%;
-        aspect-ratio: 1.03 / 1;
+        height: 100%;
+        min-height: 0;
         gap: 7px;
         padding: 8px;
         border: var(--stroke) solid var(--ink);
@@ -214,38 +224,69 @@
         display: grid;
         justify-items: center;
         gap: 9px;
-        margin-top: 94px;
+        margin-top: clamp(82px, 18dvh, 144px);
         transform: rotate(-1deg);
       }
 
       .speech-bubble {
         position: absolute;
-        left: 54px;
-        top: -20px;
-        min-width: 50px;
-        min-height: 28px;
+        left: 53px;
+        top: -34px;
+        z-index: 3;
+        width: 58px;
+        height: 32px;
         display: grid;
         place-items: center;
-        padding: 4px 13px 5px;
+        padding: 4px 11px;
+        overflow: visible;
         background: var(--paper);
-        border: 3px solid var(--ink);
-        border-radius: 50% 48% 48% 45%;
+        border: 2px solid var(--ink);
+        border-radius: 999px;
         font-size: 14px;
         font-weight: 900;
-        transform: rotate(-12deg);
+        line-height: 1.1;
+        text-align: center;
+        /* transform: rotate(-12deg); */
+      }
+
+      .speech-text {
+        display: block;
+        max-width: 38px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .speech-bubble[hidden] {
+        display: none;
+      }
+
+      /*
+        Design decision:
+        This bubble reuses the approved speech bubble construction from 02-room-lobby.
+        Tail uses a black outer layer and white inner layer so it stays connected
+        to the bubble body. Do not switch back to a rotated border tail.
+      */
+      .speech-bubble::before {
+        content: "";
+        position: absolute;
+        left: 6px;
+        bottom: -14px;
+        width: 18px;
+        height: 15px;
+        background: var(--ink);
+        clip-path: polygon(20% 0, 96% 0, 27% 70%);
       }
 
       .speech-bubble::after {
         content: "";
         position: absolute;
-        left: 5px;
-        bottom: -9px;
-        width: 18px;
-        height: 15px;
+        left: 9px;
+        bottom: -6px;
+        width: 14px;
+        height: 10px;
         background: var(--paper);
-        border-left: 3px solid var(--ink);
-        border-bottom: 3px solid var(--ink);
-        transform: rotate(-26deg);
+        clip-path: polygon(0 0, 100% 0, 34% 100%);
       }
 
       .dice {
@@ -261,6 +302,10 @@
         border-radius: 4px;
       }
 
+      .dice.is-shaking {
+        animation: dice-shake 200ms ease-in-out infinite;
+      }
+
       .pip {
         width: 7px;
         height: 7px;
@@ -269,29 +314,65 @@
         border-radius: 50%;
       }
 
-      .pip:nth-child(1) {
+      .pip--top-left {
         grid-column: 1;
         grid-row: 1;
       }
 
-      .pip:nth-child(2) {
+      .pip--top-right {
         grid-column: 3;
         grid-row: 1;
       }
 
-      .pip:nth-child(3) {
+      .pip--middle-left {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .pip--center {
         grid-column: 2;
         grid-row: 2;
       }
 
-      .pip:nth-child(4) {
+      .pip--middle-right {
+        grid-column: 3;
+        grid-row: 2;
+      }
+
+      .pip--bottom-left {
         grid-column: 1;
         grid-row: 3;
       }
 
-      .pip:nth-child(5) {
+      .pip--bottom-right {
         grid-column: 3;
         grid-row: 3;
+      }
+
+      @keyframes dice-shake {
+        0% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+
+        20% {
+          transform: translate(-3px, 1px) rotate(-6deg);
+        }
+
+        40% {
+          transform: translate(3px, -1px) rotate(5deg);
+        }
+
+        60% {
+          transform: translate(-2px, -1px) rotate(-4deg);
+        }
+
+        80% {
+          transform: translate(2px, 1px) rotate(4deg);
+        }
+
+        100% {
+          transform: translate(0, 0) rotate(0deg);
+        }
       }
 
       .tap-scroll {
@@ -309,7 +390,7 @@
         grid-template-columns: 1.45fr 0.8fr 1fr 1fr;
         gap: 6px;
         min-height: 84px;
-        margin-top: 8px;
+        align-self: end;
       }
 
       .panel {
@@ -489,13 +570,15 @@
       <section class="board" data-board aria-label="40 tile game board">
         <div class="board-center">
           <div class="dice-callout" aria-label="Dice result preview">
-            <div class="speech-bubble">11</div>
-            <div class="dice" aria-hidden="true">
-              <span class="pip"></span>
-              <span class="pip"></span>
-              <span class="pip"></span>
-              <span class="pip"></span>
-              <span class="pip"></span>
+            <div class="speech-bubble" hidden aria-live="polite">
+              <span class="speech-text" data-bind="roll-result">11</span>
+            </div>
+            <div class="dice" data-dice-face="5" aria-hidden="true">
+              <span class="pip pip--top-left"></span>
+              <span class="pip pip--top-right"></span>
+              <span class="pip pip--center"></span>
+              <span class="pip pip--bottom-left"></span>
+              <span class="pip pip--bottom-right"></span>
             </div>
             <button class="tap-scroll" type="button" data-action="simulate-your-turn">Tap to Scroll</button>
           </div>
@@ -535,16 +618,30 @@
     <script>
       const frameState = {
         shadedTiles: new Set([5, 8, 12, 27]),
-        pawnTile: 4
+        pawnTile: 4,
+        isRolling: false,
+        currentFace: 5
       };
 
       const frameElements = {
         board: document.querySelector("[data-board]"),
         mapButton: document.querySelector("[data-action='open-map']"),
         waitButton: document.querySelector("[data-action='simulate-your-turn']"),
+        dice: document.querySelector("[data-dice-face]"),
+        speechBubble: document.querySelector(".speech-bubble"),
+        speechText: document.querySelector("[data-bind='roll-result']"),
         backButton: document.querySelector("[data-nav='02-room-lobby.html']"),
         openStatusButton: document.querySelector("[data-modal-open='king-status-modal']"),
         closeStatusButton: document.querySelector("[data-modal-close='king-status-modal']")
+      };
+
+      const diceFaces = {
+        1: ["center"],
+        2: ["top-left", "bottom-right"],
+        3: ["top-left", "center", "bottom-right"],
+        4: ["top-left", "top-right", "bottom-left", "bottom-right"],
+        5: ["top-left", "top-right", "center", "bottom-left", "bottom-right"],
+        6: ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"]
       };
 
       function initializeFrame() {
@@ -554,6 +651,8 @@
           - Tap to Scroll is a prototype shortcut for frame review only
         */
         renderBoard();
+        renderDiceFace(frameState.currentFace);
+        hideSpeechResult();
         frameElements.mapButton.addEventListener("click", handleOpenMap);
         frameElements.waitButton.addEventListener("click", handleSimulateYourTurn);
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
@@ -603,7 +702,68 @@
       }
 
       function handleSimulateYourTurn() {
-        navigateToFrame("05-ingame-main-board-your-turn.html");
+        if (frameState.isRolling) return;
+
+        /*
+          Prototype action:
+          - hide the speech result while dice is moving
+          - rapidly swap pip patterns to show random rolling
+          - reveal the final number in the speech bubble after the shake stops
+          Production should replace this with the real dice/move result.
+        */
+        frameState.isRolling = true;
+        frameElements.waitButton.disabled = true;
+        frameElements.waitButton.textContent = "Rolling...";
+        hideSpeechResult();
+
+        frameElements.dice.classList.remove("is-shaking");
+        void frameElements.dice.offsetWidth;
+        frameElements.dice.classList.add("is-shaking");
+
+        let ticks = 0;
+        const maxTicks = 14;
+        const rollTimer = window.setInterval(() => {
+          ticks += 1;
+          renderDiceFace(getRandomDiceFace());
+
+          if (ticks >= maxTicks) {
+            window.clearInterval(rollTimer);
+            const finalFace = getRandomDiceFace();
+            frameState.currentFace = finalFace;
+            renderDiceFace(finalFace);
+            showSpeechResult(finalFace);
+            frameElements.dice.classList.remove("is-shaking");
+            frameElements.waitButton.disabled = false;
+            frameElements.waitButton.textContent = "Tap to Scroll";
+            frameState.isRolling = false;
+          }
+        }, 140);
+      }
+
+      function getRandomDiceFace() {
+        return Math.floor(Math.random() * 6) + 1;
+      }
+
+      function renderDiceFace(face) {
+        frameElements.dice.dataset.diceFace = String(face);
+        frameElements.dice.replaceChildren(
+          ...diceFaces[face].map((position) => {
+            const pip = document.createElement("span");
+            pip.className = `pip pip--${position}`;
+            return pip;
+          })
+        );
+      }
+
+      function hideSpeechResult() {
+        frameElements.speechBubble.hidden = true;
+        frameElements.speechBubble.setAttribute("aria-hidden", "true");
+      }
+
+      function showSpeechResult(face) {
+        frameElements.speechText.textContent = String(face);
+        frameElements.speechBubble.hidden = false;
+        frameElements.speechBubble.setAttribute("aria-hidden", "false");
       }
 
       function navigateToFrame(fileName) {
