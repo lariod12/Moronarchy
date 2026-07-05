@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { getPlayerSession, getRoom } from "@/api/lobby";
+import { getLobbyChatUrl, type LobbyChatMessage, type LobbyChatServerMessage } from "@/api/lobby-chat";
 
 interface MatchPlayer {
   id: number;
@@ -20,20 +21,21 @@ export const RoomPage = () => {
   const navigate = useNavigate();
   const [match, setMatch] = useState<MatchInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatInput, setChatInput] = useState("Do something ..");
-  const [latestMessage, setLatestMessage] = useState("Do something ..");
-  const [chatLines, setChatLines] = useState([
-    "Player 1: Do something",
-    "Player 1: don't leave me alone"
-  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<LobbyChatMessage[]>([]);
+  const [speechByPlayer, setSpeechByPlayer] = useState<Record<string, string>>({});
+  const [readyByPlayer, setReadyByPlayer] = useState<Record<string, boolean>>({});
+  const [chatSocket, setChatSocket] = useState<WebSocket | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [roomCodeCopied, setRoomCodeCopied] = useState(false);
   const session = roomId ? getPlayerSession(roomId) : null;
+  const sessionKey = session ? `${session.matchID}:${session.playerID}:${session.playerName}` : "";
   const playerSlot = session ? Number(session.playerID) + 1 : 1;
-  const playerLabel = `Player ${playerSlot}`;
+  const isHost = session?.playerID === "0";
+  const isReady = session ? Boolean(readyByPlayer[session.playerID]) : false;
   const activePlayers = match?.players.filter((player) => player.name) ?? [];
+  const activeNonHostPlayers = activePlayers.filter((player) => player.id !== 0);
   const roomCapacity = match?.players.length ?? DEFAULT_ROOM_CAPACITY;
   const visiblePlayers = activePlayers.length > 0
     ? activePlayers
@@ -41,7 +43,10 @@ export const RoomPage = () => {
       ? [{ id: Number(session.playerID), name: session.playerName, isConnected: true }]
       : [];
   const hasOpenPlayerSlot = visiblePlayers.length < roomCapacity;
-  const canStart = isReady && activePlayers.length >= 2;
+  const allCurrentPlayersReady = activePlayers.length >= 2
+    && activeNonHostPlayers.length > 0
+    && activeNonHostPlayers.every((player) => readyByPlayer[String(player.id)]);
+  const canStart = isHost && allCurrentPlayersReady;
 
   const loadRoom = async () => {
     if (!roomId) return;
@@ -63,6 +68,76 @@ export const RoomPage = () => {
   }, [roomId]);
 
   useEffect(() => {
+    if (!roomId || !session) {
+      setChatSocket(null);
+      return undefined;
+    }
+
+    let socket: WebSocket | null = null;
+    const connectTimer = window.setTimeout(() => {
+      socket = new WebSocket(getLobbyChatUrl());
+
+      socket.addEventListener("open", () => {
+        socket?.send(JSON.stringify({
+          type: "join",
+          matchID: roomId,
+          playerID: session.playerID,
+          playerName: session.playerName
+        }));
+      });
+
+      socket.addEventListener("message", (event) => {
+        try {
+          const payload = JSON.parse(event.data as string) as LobbyChatServerMessage;
+          if (payload.type === "snapshot") {
+            setChatMessages(payload.messages);
+            setSpeechByPlayer(payload.speechByPlayer);
+            setReadyByPlayer(payload.readyByPlayer);
+            return;
+          }
+
+          if (payload.type === "message") {
+            setChatMessages((messages) => {
+              if (messages.some((message) => message.id === payload.message.id)) return messages;
+              return [...messages, payload.message];
+            });
+            setSpeechByPlayer(payload.speechByPlayer);
+            return;
+          }
+
+          if (payload.type === "speech") {
+            setSpeechByPlayer(payload.speechByPlayer);
+            return;
+          }
+
+          if (payload.type === "ready") {
+            setReadyByPlayer(payload.readyByPlayer);
+            return;
+          }
+
+          if (payload.type === "start") {
+            setCountdown(3);
+          }
+        } catch {
+          setError("Could not read lobby chat update.");
+        }
+      });
+
+      socket.addEventListener("error", () => {
+        setError("Lobby chat websocket is not connected.");
+      });
+
+      setChatSocket(socket);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(connectTimer);
+      socket?.close();
+      setChatSocket((current) => (current === socket ? null : current));
+    };
+  }, [roomId, sessionKey]);
+
+  useEffect(() => {
     if (countdown === null) return undefined;
     if (countdown <= 0) {
       if (roomId) navigate(`/game/${roomId}`);
@@ -82,9 +157,15 @@ export const RoomPage = () => {
 
   const handleChatOrCancel = () => {
     if (isReady) {
-      setIsReady(false);
-      setLatestMessage("");
-      setChatLines((lines) => [...lines, `${playerLabel}: cancel ready`]);
+      if (session && roomId && chatSocket?.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+          type: "ready",
+          matchID: roomId,
+          playerID: session.playerID,
+          playerName: session.playerName,
+          isReady: false
+        }));
+      }
       return;
     }
 
@@ -92,16 +173,32 @@ export const RoomPage = () => {
   };
 
   const handleReadyOrStart = () => {
-    if (!isReady) {
-      setIsReady(true);
-      setLatestMessage("Ready!");
-      setChatLines((lines) => [...lines, `${playerLabel}: ready`]);
+    if (!session || !roomId || chatSocket?.readyState !== WebSocket.OPEN) {
+      setError("Lobby websocket is not connected.");
       return;
     }
 
-    if (canStart) {
-      setCountdown(3);
+    if (isHost) {
+      if (!canStart) return;
+
+      chatSocket.send(JSON.stringify({
+        type: "start",
+        matchID: roomId,
+        playerID: session.playerID,
+        playerName: session.playerName
+      }));
+      return;
     }
+
+    if (isReady) return;
+
+    chatSocket.send(JSON.stringify({
+      type: "ready",
+      matchID: roomId,
+      playerID: session.playerID,
+      playerName: session.playerName,
+      isReady: true
+    }));
   };
 
   const handleSendChat = (event: FormEvent<HTMLFormElement>) => {
@@ -109,13 +206,20 @@ export const RoomPage = () => {
     const message = chatInput.trim();
     if (!message) return;
 
-    setChatLines((lines) => [...lines, `${playerLabel}: ${message}`]);
-    setLatestMessage(message);
+    if (!session || !roomId || chatSocket?.readyState !== WebSocket.OPEN) {
+      setError("Lobby chat websocket is not connected.");
+      return;
+    }
+
+    chatSocket.send(JSON.stringify({
+      type: "message",
+      matchID: roomId,
+      playerID: session.playerID,
+      playerName: session.playerName,
+      text: message
+    }));
     setChatInput("");
     setIsChatOpen(false);
-    window.setTimeout(() => {
-      setLatestMessage((current) => (current === message ? "" : current));
-    }, 3000);
   };
 
   const handleCopyRoomCode = async () => {
@@ -133,12 +237,10 @@ export const RoomPage = () => {
   const renderPlayerCard = (player: MatchPlayer) => {
     const slot = player.id + 1;
     const isCurrentPlayer = playerSlot === slot;
-    const isHost = player.id === 0;
-    const bubble = isCurrentPlayer
-      ? (isReady ? "Ready!" : formatSpeechBubbleText(latestMessage))
-      : player.isConnected
-        ? "Joined"
-        : "";
+    const isPlayerHost = player.id === 0;
+    const isPlayerReady = Boolean(readyByPlayer[String(player.id)]);
+    const latestSpeech = speechByPlayer[String(player.id)] ?? "";
+    const bubble = latestSpeech ? formatSpeechBubbleText(latestSpeech) : isPlayerReady ? "Ready!" : "";
 
     return (
       <article
@@ -146,7 +248,7 @@ export const RoomPage = () => {
         className={[
           "lobby-player-card",
           isCurrentPlayer ? "is-you" : "",
-          isHost ? "is-host" : "",
+          isPlayerHost ? "is-host" : "",
           "is-active"
         ].join(" ")}
         data-player-slot={slot}
@@ -200,9 +302,13 @@ export const RoomPage = () => {
         <section className="chat-log" aria-label="Lobby chat log">
           <div className="chat-scroll">
             <div className="chat-lines">
-              {chatLines.map((line, index) => (
-                <span key={`${line}-${index}`}>{line}</span>
-              ))}
+              {chatMessages.length > 0 ? (
+                chatMessages.map((message) => (
+                  <span key={message.id}>{`Player ${Number(message.playerID) + 1}: ${message.text}`}</span>
+                ))
+              ) : (
+                <span className="chat-empty-line">Lobby chat is empty.</span>
+              )}
             </div>
           </div>
           <span className="scroll-rail" aria-hidden="true">
@@ -215,10 +321,10 @@ export const RoomPage = () => {
           </button>
           <button
             className="lobby-action is-primary"
-            disabled={!session || countdown !== null || (isReady && !canStart)}
+            disabled={!session || countdown !== null || (isHost ? !canStart : isReady)}
             onClick={handleReadyOrStart}
           >
-            {isReady ? (canStart ? "Start" : "Waiting") : "Ready"}
+            {isHost ? (canStart ? "Start" : "Waiting...") : isReady ? "Waiting" : "Ready"}
           </button>
         </div>
       </footer>
@@ -231,6 +337,7 @@ export const RoomPage = () => {
               className="chat-input"
               aria-label="Chat message"
               autoComplete="off"
+              placeholder="Do something .."
               value={chatInput}
               onChange={(event) => setChatInput(event.target.value)}
             />

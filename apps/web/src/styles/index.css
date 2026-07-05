@@ -513,6 +513,11 @@ input {
   gap: 1px;
 }
 
+.chat-empty-line {
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .scroll-rail {
   position: absolute;
   top: 3px;

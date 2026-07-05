@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { networkInterfaces } from "node:os";
 import { MoronarchyGame } from "./game.js";
+import { createLobbyChatServer } from "./lobby-chat.js";
 import { applyLobbySecurity } from "./security.js";
 
 const require = createRequire(import.meta.url);
@@ -13,6 +14,7 @@ const { Server } = require("boardgame.io/server") as {
 };
 
 const port = Number.parseInt(process.env.PORT ?? "8000", 10);
+const chatPort = Number.parseInt(process.env.CHAT_PORT ?? `${port + 1}`, 10);
 const webPort = process.env.WEB_PORT ?? "5173";
 const getLanOrigins = (): string[] => {
   return Object.values(networkInterfaces())
@@ -35,6 +37,7 @@ const server = Server({
 });
 
 applyLobbySecurity(server.app as Parameters<typeof applyLobbySecurity>[0], server.db as Parameters<typeof applyLobbySecurity>[1]);
+createLobbyChatServer({ port: chatPort, allowedOrigins });
 
 server.run(port, () => {
   console.log(`Moronarchy multiplayer server listening on http://localhost:${port}`);
