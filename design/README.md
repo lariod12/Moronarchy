@@ -32,6 +32,51 @@ The frame files are not production code, but they should be useful implementatio
 - Do not copy visible annotation/callout text from source design images into the UI. Treat arrows, red marks, and explanatory bubbles as design notes only.
 - Production code in `apps/web` should be updated only after a frame is approved.
 
+## Shared Frame Reuse Rule
+
+When a new design frame is visually or structurally the same as an existing frame, reuse the existing frame contract instead of redesigning the shell.
+
+For similar frames, keep these parts unchanged unless the user explicitly asks for a layout change:
+
+- outer screen container
+- top navigation/status area
+- board or scene structure
+- shared HUD/footer
+- shared modal style
+- shared button/icon style
+- spacing, borders, typography, and black/white wireframe language
+
+Only change the parts that are actually new for that frame:
+
+- center content
+- action panel content
+- primary/secondary button labels
+- enabled/disabled state
+- modal text
+- `data-action`, `data-nav`, and local demo behavior
+- sample state needed to demonstrate that specific action
+
+If a frame intentionally reuses another frame, write a non-visible contract near the top of the HTML:
+
+```html
+<!--
+  DESIGN REUSE CONTRACT
+  Base frame: 04-ingame-main-board-waiting-turn.html
+  This frame reuses the same in-game shell, board, HUD, spacing, borders,
+  typography, and black/white wireframe style.
+
+  Only allowed differences:
+  - center action content
+  - button labels
+  - data-action / data-nav targets
+  - local demo state for this specific interaction
+
+  Do not redesign the CSS structure or HTML shell when porting to production.
+-->
+```
+
+Production implementation should turn reused frame contracts into shared React components, such as `InGameShell`, `BoardFrame`, `PlayerHud`, and action slots. The standalone design HTML should stay simple and may duplicate markup when that makes review easier, but duplicated frames must still preserve the documented shared contract.
+
 ## Interactive Frame Standard
 
 Every frame should include:
