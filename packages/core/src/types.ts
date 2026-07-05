@@ -1,7 +1,7 @@
 export type PlayerId = string;
 export type TileId = number;
 export type TileType = "start" | "land";
-export type GamePhase = "waiting" | "rolling" | "tile-action" | "game-over";
+export type GamePhase = "waiting" | "rolling" | "tile-action" | "lap-upgrade" | "game-over";
 export type KingLevel = 1 | 2 | 3;
 export type LandLevel = 0 | 1 | 2 | 3;
 

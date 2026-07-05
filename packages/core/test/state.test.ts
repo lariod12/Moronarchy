@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   START_BONUS,
   buyLand,
+  canUpgradeOwnedLand,
   canUpgradeLand,
   checkVictory,
   createInitialState,
+  getUpgradeableOwnedLands,
   getPlayer,
   getTile,
   rollDiceAndMove,
@@ -91,6 +93,27 @@ describe("Moronarchy core rules", () => {
     expect(result.ok).toBe(true);
     expect(getTile(state, 2)?.landLevel).toBe(2);
     expect(getPlayer(state, "0")?.coin).toBe(60);
+  });
+
+  it("allows upgrading owned land after completing a lap", () => {
+    const state = createInitialState(["0", "1"]);
+    rollDiceAndMove(state, "0", 1);
+    buyLand(state, "0");
+    getPlayer(state, "0")!.position = 39;
+
+    rollDiceAndMove(state, "0", 4);
+
+    expect(state.phase).toBe("lap-upgrade");
+    expect(getPlayer(state, "0")?.level).toBe(2);
+    expect(getUpgradeableOwnedLands(state, "0").map((tile) => tile.id)).toEqual([2]);
+    expect(canUpgradeOwnedLand(state, "0", 2)).toBe(true);
+
+    const result = upgradeLand(state, "0", 2);
+
+    expect(result.ok).toBe(true);
+    expect(state.phase).toBe("rolling");
+    expect(getTile(state, 2)?.landLevel).toBe(2);
+    expect(getPlayer(state, "0")?.coin).toBe(200 + START_BONUS - 50 - 40);
   });
 
   it("caps level at 3", () => {

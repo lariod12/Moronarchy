@@ -44,7 +44,7 @@ const getPlayerPositions = (players: PlayerState[]): PlayerPositionMap => {
 
 const getTileClass = (tile: TileState, currentPlayerId: string): string => {
   const classes = ["tile", `tile-${tile.type}`];
-  if (tile.ownerId) classes.push("is-owned");
+  if (tile.ownerId !== null) classes.push("is-owned");
   if (tile.ownerId === currentPlayerId) classes.push("is-owned-self");
   if (tile.landLevel > 1) classes.push(`is-level-${tile.landLevel}`);
   classes.push(tile.id % 2 === 0 ? "is-tilted-right" : "is-tilted-left");
@@ -147,7 +147,7 @@ export const GameBoard = ({
               }}
             >
               <span className="tile-id">{String(tile.id).padStart(2, "0")}</span>
-              {tile.ownerId && <span className="tile-owner">P{Number(tile.ownerId) + 1}</span>}
+              {tile.ownerId !== null && <span className="tile-owner">P{Number(tile.ownerId) + 1}</span>}
               {tile.landLevel > 0 && <span className="tile-level">L{tile.landLevel}</span>}
               <div className="token-stack">
                 {occupants.map((player) => (

@@ -46,11 +46,12 @@ Health is reserved for the battle layer. In the MVP, normal land rent affects Co
 3. If player passes or lands on Start, gain 50 Coin and increase Level by 1.
 4. Level is capped at 3.
 5. Destination tile resolves.
-6. If empty land, player may buy it.
-7. If rival land, player pays rent.
-8. If own land, player may upgrade it.
-9. Check defeat and victory.
-10. Turn passes to next player.
+6. If rival land, player pays rent.
+7. If the completed lap unlocks an eligible owned land upgrade, player may upgrade one owned land that matches current Level.
+8. If empty land and no lap upgrade is pending, player may buy it.
+9. If own land and no lap upgrade is pending, player may upgrade it.
+10. Check defeat and victory.
+11. Turn passes to next player.
 
 ## Dice
 
@@ -64,6 +65,7 @@ Health is reserved for the battle layer. In the MVP, normal land rent affects Co
 - Start bonus: +50 Coin.
 - Start bonus triggers when passing or landing on Start.
 - Completing a lap increases king Level by 1, capped at Level 3.
+- Completing a lap may also grant one owned-land upgrade if the player owns land below the current king Level and can pay the upgrade cost while keeping at least 1 Coin.
 
 ## Land Economy
 
@@ -96,6 +98,7 @@ Land starts at Level 1 when bought and can be upgraded to Level 3.
 - Max land level: 3.
 - Player can upgrade only if king Level is at least the target land level.
 - Voluntary upgrade actions require the player to keep at least 1 Coin afterward.
+- After completing a lap, a player may upgrade one eligible owned land from anywhere on the board, based on the king's current Level.
 - Level 1 land collects normal rent.
 - Level 2 land collects higher rent.
 - Level 3 land collects highest MVP rent.

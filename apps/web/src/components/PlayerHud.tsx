@@ -12,7 +12,7 @@ export const PlayerHud = ({ state, playerId, matchID }: PlayerHudProps) => {
   const navigate = useNavigate();
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const player = state.players.find((item) => item.id === playerId) ?? state.players[0];
-  const ownedLand = state.tiles.filter((tile) => tile.ownerId === player?.id).length;
+  const landTiles = state.tiles.filter((tile) => tile.type === "land");
 
   if (!player) return null;
 
@@ -41,13 +41,50 @@ export const PlayerHud = ({ state, playerId, matchID }: PlayerHudProps) => {
       </button>
 
       {isStatusOpen && (
-        <section className="modal" onClick={() => setIsStatusOpen(false)}>
-          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="king-status-title" onClick={(event) => event.stopPropagation()}>
-            <strong id="king-status-title">King Status</strong>
-            <span>
-              Health {player.health} / Coin {player.coin} / Level {player.level} / Land {ownedLand} / Lap {player.lapCount}
-            </span>
-            <button type="button" onClick={() => setIsStatusOpen(false)}>
+        <section className="land-ledger-modal" onClick={() => setIsStatusOpen(false)}>
+          <div
+            className="land-ledger-screen"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="land-ledger-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="land-ledger-header">
+              <span className="tag">Round {Math.min(state.currentRound, state.maxRounds)}</span>
+              <strong id="land-ledger-title" className="tag center">
+                {matchID.slice(0, 6)}
+              </strong>
+              <span className="tag">{player.name}</span>
+            </header>
+
+            <section className="land-ledger-table" aria-label="Land ownership and levels">
+              <div className="land-ledger-row land-ledger-row-head">
+                <span>Name</span>
+                <span>Level</span>
+                <span>Plots</span>
+                <span>Plots LV</span>
+              </div>
+              <div className="land-ledger-body">
+                {landTiles.map((tile) => {
+                  const owner =
+                    tile.ownerId !== null ? state.players.find((item) => item.id === tile.ownerId) : null;
+                  const isOwnedByPlayer = tile.ownerId === player.id;
+                  return (
+                    <div
+                      key={tile.id}
+                      className={`land-ledger-row ${isOwnedByPlayer ? "is-owned-self" : ""}`}
+                    >
+                      <span>{String(tile.id).padStart(2, "0")}</span>
+                      <span>{tile.landLevel}</span>
+                      <span>{isOwnedByPlayer ? "Mine" : owner ? `P${Number(owner.id) + 1}` : "-"}</span>
+                      <span>{isOwnedByPlayer ? tile.landLevel : "-"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <button className="land-ledger-close" type="button" onClick={() => setIsStatusOpen(false)}>
               Close
             </button>
           </div>

@@ -93,7 +93,7 @@ export const createMoronarchyGameConfig = <TInvalidMove>(invalidMove: TInvalidMo
         const diceValue = runtime.random?.D6() ?? 1;
         const result = rollDiceAndMove(runtime.G, runtime.ctx.currentPlayer, diceValue);
         if (!result.ok) return invalidMove;
-        if (runtime.G.phase !== "tile-action") {
+        if (runtime.G.phase !== "tile-action" && runtime.G.phase !== "lap-upgrade") {
           finishTurn(runtime);
         }
       }
@@ -105,10 +105,10 @@ export const createMoronarchyGameConfig = <TInvalidMove>(invalidMove: TInvalidMo
       if (!result.ok) return invalidMove;
       finishTurn(runtime);
     },
-    upgradeLand: (runtime: BoardgameRuntime): TInvalidMove | void => {
+    upgradeLand: (runtime: BoardgameRuntime, tileId?: number): TInvalidMove | void => {
       if (!isCurrentPlayer(runtime)) return invalidMove;
       if (advanceDefeatedCurrentPlayer(runtime)) return;
-      const result = upgradeLand(runtime.G, runtime.ctx.currentPlayer);
+      const result = upgradeLand(runtime.G, runtime.ctx.currentPlayer, tileId);
       if (!result.ok) return invalidMove;
       finishTurn(runtime);
     },
@@ -122,7 +122,7 @@ export const createMoronarchyGameConfig = <TInvalidMove>(invalidMove: TInvalidMo
     endTurn: (runtime: BoardgameRuntime): TInvalidMove | void => {
       if (!isCurrentPlayer(runtime)) return invalidMove;
       if (advanceDefeatedCurrentPlayer(runtime)) return;
-      if (runtime.G.phase === "tile-action") return invalidMove;
+      if (runtime.G.phase === "tile-action" || runtime.G.phase === "lap-upgrade") return invalidMove;
       finishTurn(runtime);
     }
   },

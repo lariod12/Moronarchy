@@ -159,7 +159,7 @@ const resolveRivalLandFee = (
   player: PlayerState,
   tile: TileState
 ): string | null => {
-  if (!tile.ownerId || tile.ownerId === player.id || tile.landLevel === 0) return null;
+  if (tile.ownerId === null || tile.ownerId === player.id || tile.landLevel === 0) return null;
 
   const owner = getPlayer(state, tile.ownerId);
   if (!owner) return null;
@@ -176,6 +176,16 @@ const resolveRivalLandFee = (
   }
 
   return `${player.name} paid ${rent} coin to ${owner.name}.`;
+};
+
+const canPlayerUpgradeTile = (player: PlayerState, tile: TileState): boolean => {
+  if (tile.type !== "land" || tile.ownerId !== player.id) return false;
+  if (tile.landLevel < 1 || tile.landLevel >= MAX_LAND_LEVEL) return false;
+
+  const nextLevel = (tile.landLevel + 1) as LandLevel;
+  if (player.level < nextLevel) return false;
+
+  return player.coin - getUpgradeCost(tile.id, tile.landLevel) >= 1;
 };
 
 export const rollDiceAndMove = (
@@ -223,7 +233,9 @@ export const rollDiceAndMove = (
     return { ok: true, message: state.logs[0]?.message ?? "Game over." };
   }
 
-  if (tile.type === "land" && (!tile.ownerId || tile.ownerId === player.id)) {
+  if (movement.passedStart && getUpgradeableOwnedLands(state, playerId).length > 0) {
+    state.phase = "lap-upgrade";
+  } else if (tile.type === "land" && (tile.ownerId === null || tile.ownerId === player.id)) {
     state.phase = "tile-action";
   } else {
     state.phase = "rolling";
@@ -273,11 +285,33 @@ export const canUpgradeLand = (state: MoronarchyState, playerId: PlayerId): bool
   return player.coin - getUpgradeCost(tile.id, tile.landLevel) >= 1;
 };
 
-export const upgradeLand = (state: MoronarchyState, playerId: PlayerId): MoveResult => {
-  if (!canUpgradeLand(state, playerId)) return { ok: false, reason: "Land cannot be upgraded." };
+export const canUpgradeOwnedLand = (
+  state: MoronarchyState,
+  playerId: PlayerId,
+  tileId: TileId
+): boolean => {
+  const player = getPlayer(state, playerId);
+  const tile = getTile(state, tileId);
+  if (!player || !tile || state.phase !== "lap-upgrade") return false;
+  return canPlayerUpgradeTile(player, tile);
+};
+
+export const getUpgradeableOwnedLands = (state: MoronarchyState, playerId: PlayerId): TileState[] => {
+  const player = getPlayer(state, playerId);
+  if (!player) return [];
+  return state.tiles.filter((tile) => canPlayerUpgradeTile(player, tile));
+};
+
+export const upgradeLand = (state: MoronarchyState, playerId: PlayerId, tileId?: TileId): MoveResult => {
+  const canUpgrade =
+    state.phase === "lap-upgrade" && tileId !== undefined
+      ? canUpgradeOwnedLand(state, playerId, tileId)
+      : canUpgradeLand(state, playerId);
+  if (!canUpgrade) return { ok: false, reason: "Land cannot be upgraded." };
 
   const player = getPlayer(state, playerId);
-  const tile = getPlayerTile(state, playerId);
+  const tile =
+    state.phase === "lap-upgrade" && tileId !== undefined ? getTile(state, tileId) : getPlayerTile(state, playerId);
   if (!player || !tile) return { ok: false, reason: "Player or tile is missing." };
 
   const cost = getUpgradeCost(tile.id, tile.landLevel);
@@ -292,7 +326,9 @@ export const upgradeLand = (state: MoronarchyState, playerId: PlayerId): MoveRes
 
 export const skipTileAction = (state: MoronarchyState, playerId: PlayerId): MoveResult => {
   const player = getPlayer(state, playerId);
-  if (!player || state.phase !== "tile-action") return { ok: false, reason: "No action to skip." };
+  if (!player || (state.phase !== "tile-action" && state.phase !== "lap-upgrade")) {
+    return { ok: false, reason: "No action to skip." };
+  }
 
   state.phase = "rolling";
   const message = `${player.name} skipped the tile action.`;
