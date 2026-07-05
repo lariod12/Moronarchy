@@ -4,7 +4,6 @@ import { Crown } from "lucide-react";
 import { useNavigate } from "react-router";
 import { getStartingPlayerId } from "@/api/game-start";
 import type { MoronarchyState } from "@moronarchy/core";
-import { ActionPanel } from "./ActionPanel";
 import { GameBoard } from "./GameBoard";
 import { PlayerHud } from "./PlayerHud";
 
@@ -36,7 +35,6 @@ export const GameTable = ({
   const startingPlayerId = getStartingPlayerId(matchID);
   const startingPlayerMoveQueued = useRef(false);
   const winner = G.winnerId ?? ctx.gameover?.winner ?? null;
-  const latestLog = G.logs[0]?.message ?? "Roll dice and claim the kingdom.";
   const currentPlayer = G.players.find((player) => player.id === currentPlayerId);
   const canRoll = isActive && G.phase === "rolling" && !currentPlayer?.defeated;
   const showTurnIndicator = currentPlayerId === ctx.currentPlayer && !currentPlayer?.defeated;
@@ -54,9 +52,6 @@ export const GameTable = ({
       <header className="frame-top">
         <span className="tag">Round {Math.min(G.currentRound, G.maxRounds)}</span>
         <span className="tag center">{matchID.slice(0, 6)}</span>
-        <button className="map-button" type="button" aria-label="Open map overview">
-          Map
-        </button>
       </header>
 
       <GameBoard
@@ -65,23 +60,8 @@ export const GameTable = ({
         turnPlayerId={ctx.currentPlayer}
         showTurnIndicator={showTurnIndicator}
         canRoll={canRoll}
-        latestLog={latestLog}
         onRollDice={() => moves.rollDice?.()}
       />
-
-      {G.phase === "tile-action" && (
-        <ActionPanel
-          state={G}
-          playerId={currentPlayerId}
-          isActive={isActive}
-          moves={{
-            rollDice: () => moves.rollDice?.(),
-            buyLand: () => moves.buyLand?.(),
-            upgradeLand: () => moves.upgradeLand?.(),
-            skipTileAction: () => moves.skipTileAction?.()
-          }}
-        />
-      )}
 
       <PlayerHud state={G} playerId={currentPlayerId} matchID={matchID} />
 
