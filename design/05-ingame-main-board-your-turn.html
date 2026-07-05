@@ -1,38 +1,38 @@
 <!doctype html>
 <!--
   DESIGN FRAME SPEC
-  Frame: 04-main-board-waiting-turn
+  Frame: 05-ingame-main-board-your-turn
   Screen purpose:
-    Main board while another king is playing. Player can inspect status, open king menu, or wait for turn.
+    Main board when it is the current player's turn and the next action is rolling dice.
 
   Visual design:
-    40-tile board, centered waiting card, bottom HUD. Black/white sketch only.
+    40-tile board with central dice and one clear Tap to Roll action.
 
   Visible controls:
     Inputs: 0
     Buttons: 3
-      1. Back - returns to 02-room-lobby.html.
-      2. Waiting card - prototype shortcut to 05-main-board-your-turn.html.
-      3. Crown button - opens a local status popup.
+      1. Tap to Roll - navigates to 06-ingame-dice-rolling-move.html.
+      2. Back - returns to 02-room-lobby.html.
+      3. Crown - opens local king status popup.
 
   Interactive features:
-    - Waiting card simulates the turn changing to the current player.
-    - Crown button opens/closes a player status modal.
+    - Roll button demonstrates the transition into dice/move animation.
+    - Crown opens/closes a local HUD detail popup.
 
   Button workflow:
+    Tap to Roll -> 06-ingame-dice-rolling-move.html
     Back -> 02-room-lobby.html
-    Waiting card -> 05-main-board-your-turn.html
-    Crown -> open status popup; Close -> hide popup
+    Crown -> status modal
 
   Production mapping:
-    Page/component target: GamePage and PlayerHud.
-    Waiting state should come from boardgame.io currentPlayer, not local JS.
+    Page/component target: GamePage and ActionPanel rolling phase.
+    Roll action maps to boardgame.io move rollDice().
 -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>04 Main Board Waiting Turn</title>
+    <title>05 Main Board Your Turn</title>
     <style>
       button, input {
         font: inherit;
@@ -49,7 +49,7 @@
       body { margin:0; min-height:100vh; display:grid; place-items:start center; padding:18px; color:var(--ink); background:#f3f3f3; font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
       .phone { width:min(100%,390px); background:var(--paper); border:3px solid var(--ink); box-shadow:4px 4px 0 rgba(0,0,0,.16); padding:10px; }
       .top { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; min-height:34px; margin-bottom:8px; }
-      .tag,.panel,.button { background:var(--paper); border:2px solid var(--ink); font-weight:800; }
+      .tag,.panel,.roll { background:var(--paper); border:2px solid var(--ink); font-weight:800; }
       .tag { display:inline-grid; place-items:center; min-height:25px; padding:2px 8px; font-size:13px; transform:rotate(-1deg); }
       .tag.center { justify-self:center; transform:rotate(1deg); }
       .tag.right { justify-self:end; }
@@ -61,9 +61,13 @@
       .tile small { position:absolute; right:2px; bottom:1px; font-size:7px; }
       .token { position:absolute; top:-5px; right:-5px; width:10px; height:10px; background:var(--ink); border:1px solid var(--paper); border-radius:50%; }
       .center-stage { grid-column:3/10; grid-row:3/10; display:grid; place-items:center; }
-      .wait-card { display:grid; gap:6px; min-width:170px; padding:10px; color:var(--ink); text-align:center; border:2px solid var(--ink); background:var(--wash); font:inherit; transform:rotate(-1deg); }
-      .wait-card span { font-size:12px; }
-      .dice { width:42px; height:42px; justify-self:center; background:var(--paper); border:3px solid var(--ink); border-radius:6px; }
+      .dice-wrap { position:relative; display:grid; gap:8px; justify-items:center; }
+      .dice { position:relative; width:54px; height:54px; background:var(--ink); border:2px solid var(--ink); border-radius:7px; }
+      .pip { position:absolute; width:8px; height:8px; background:var(--paper); border-radius:50%; }
+      .pip:nth-child(1){top:9px;left:9px}.pip:nth-child(2){top:9px;right:9px}.pip:nth-child(3){top:23px;left:23px}.pip:nth-child(4){bottom:9px;left:9px}.pip:nth-child(5){bottom:9px;right:9px}
+      .speech { position:absolute; top:-24px; right:-48px; min-width:44px; min-height:28px; display:grid; place-items:center; background:var(--paper); border:2px solid var(--ink); border-radius:50%; font-size:13px; font-weight:800; transform:rotate(-10deg); }
+      .speech:after { content:""; position:absolute; left:5px; bottom:-10px; width:14px; height:12px; background:var(--paper); border-right:2px solid var(--ink); border-bottom:2px solid var(--ink); transform:rotate(35deg); }
+      .roll { min-height:25px; padding:2px 9px; font:inherit; font-size:12px; transform:rotate(-1deg); }
       .hud { display:grid; grid-template-columns:112px 1fr 72px 72px; gap:5px; min-height:82px; margin-top:8px; }
       .player-card { display:grid; grid-template-rows:22px 1fr; }
       .player-name { display:grid; place-items:center; border-bottom:2px solid var(--ink); font-size:12px; }
@@ -75,10 +79,7 @@
       .stat-row strong { display:grid; place-items:center; height:100%; border-left:2px solid var(--ink); }
       .big { display:grid; place-items:center; font-size:34px; }
       .crown { width:48px; height:32px; background:var(--ink); clip-path:polygon(0 100%,0 32%,20% 58%,35% 0,50% 54%,68% 0,83% 58%,100% 32%,100% 100%); }
-      .modal[hidden] { display:none; }
-      .modal { position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.34); }
-      .modal-card { display:grid; gap:8px; width:260px; padding:14px; background:var(--paper); border:3px solid var(--ink); text-align:center; }
-      .modal-card button { min-height:34px; background:var(--paper); border:2px solid var(--ink); font:inherit; font-weight:800; }
+      .modal[hidden]{display:none}.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.34)}.modal-card{display:grid;gap:8px;width:260px;padding:14px;background:var(--paper);border:3px solid var(--ink);text-align:center}.modal-card button{min-height:34px;background:var(--paper);border:2px solid var(--ink);font:inherit;font-weight:800}
     </style>
   </head>
   <body>
@@ -86,7 +87,7 @@
       <header class="top"><span class="tag">Round 1</span><span class="tag center">R001</span><span class="tag right">Map</span></header>
       <section class="board" data-board>
         <div class="center-stage">
-          <button class="wait-card" data-action="simulate-your-turn"><strong>Waiting turn</strong><span>Player 2 is rolling dice</span><div class="dice"></div></button>
+          <div class="dice-wrap"><div class="speech">?</div><div class="dice"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div><button class="roll" data-action="roll-dice">Tap to Roll</button></div>
         </div>
       </section>
       <footer class="hud">
@@ -94,13 +95,7 @@
         <section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>100</strong></div><div class="stat-row"><span>level:</span><strong>1</strong></div></section>
         <button class="panel big" data-nav="02-room-lobby.html">&larr;</button><button class="panel big" data-modal-open="king-status-modal"><span class="crown"></span></button>
       </footer>
-      <section class="modal" data-modal="king-status-modal" hidden>
-        <div class="modal-card">
-          <strong>King Status</strong>
-          <span>Health 100 / Coin 100 / Level 1</span>
-          <button data-modal-close="king-status-modal">Close</button>
-        </div>
-      </section>
+      <section class="modal" data-modal="king-status-modal" hidden><div class="modal-card"><strong>Your King</strong><span>Ready to roll. Coin 100 / Level 1</span><button data-modal-close="king-status-modal">Close</button></div></section>
     </main>
     <script>
       const frameState = {
@@ -111,7 +106,7 @@
 
       const frameElements = {
         board: document.querySelector("[data-board]"),
-        waitButton: document.querySelector("[data-action='simulate-your-turn']"),
+        rollButton: document.querySelector("[data-action='roll-dice']"),
         backButton: document.querySelector("[data-nav='02-room-lobby.html']"),
         openStatusButton: document.querySelector("[data-modal-open='king-status-modal']"),
         closeStatusButton: document.querySelector("[data-modal-close='king-status-modal']")
@@ -120,11 +115,11 @@
       function initializeFrame() {
         /*
           Production:
-          - waiting state comes from boardgame.io currentPlayer
-          - this shortcut lets the reviewer jump into the next phase without a server
+          - roll button should call boardgame.io move rollDice()
+          - dice result must come from the server, never from client random()
         */
         renderBoard();
-        frameElements.waitButton.addEventListener("click", handleSimulateYourTurn);
+        frameElements.rollButton.addEventListener("click", handleRollDice);
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
         frameElements.openStatusButton.addEventListener("click", () => openModal("king-status-modal"));
         frameElements.closeStatusButton.addEventListener("click", () => closeModal("king-status-modal"));
@@ -143,10 +138,6 @@
       }
 
       function getTileGridPosition(id) {
-        /*
-          Production equivalent: tile-layout helper maps 40 monopoly-style tiles
-          onto an 11x11 perimeter grid.
-        */
         if (id === 1) return { column: 11, row: 1 };
         if (id >= 2 && id <= 10) return { column: 11, row: id };
         if (id === 11) return { column: 11, row: 11 };
@@ -155,8 +146,8 @@
         return { column: id - 30, row: 1 };
       }
 
-      function handleSimulateYourTurn() {
-        navigateToFrame("05-main-board-your-turn.html");
+      function handleRollDice() {
+        navigateToFrame("06-ingame-dice-rolling-move.html");
       }
 
       function navigateToFrame(fileName) {

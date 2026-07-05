@@ -1,38 +1,35 @@
 # Project Agent Instructions
 
-## Subagent Orchestration Preference
+## Default Workflow
 
-Use this workflow for code, test, script, and configuration tasks in this repository unless the user explicitly overrides it.
+Use the normal Codex workflow for this repository. The main assistant should read the relevant code, make scoped changes directly, run useful checks, and summarize the result.
 
-### Controller Role
+## Subagents
 
-- The main assistant stays as controller, architect, and reviewer.
-- Before delegating implementation, the controller should classify the task, read the relevant repo context, and define the intended code shape.
-- The controller should not hand off vague work. Each subagent prompt must include the implementation overview, file ownership, constraints, acceptance criteria, and tests/checks to run.
+- Do not spawn subagents by default.
+- Use subagents only when the user explicitly asks for them or when a task is large enough that parallel investigation would clearly help.
+- For ordinary code, test, script, documentation, and configuration work, keep the work in the main thread.
 
-### Model Selection
+## GitNexus
 
-- For trivial or very small edits, delegate the edit to a subagent using `gpt-5.4-mini` when the subagent tool supports model overrides.
-- For simple or substantial implementation work, delegate edits to a subagent using `gpt-5.4` when the subagent tool supports model overrides.
-- For testing and verification, always delegate to a tester subagent. Use `gpt-5.4-mini` for small/trivial checks and `gpt-5.4` for broader or riskier verification.
-- If subagent tools or requested model overrides are unavailable, state the limitation and use the closest available workflow.
+- GitNexus is not required for this project.
+- Do not run GitNexus checks during normal work.
+- Do not add GitNexus dependencies, generated files, or workflow requirements unless the user explicitly asks for GitNexus again.
 
-### Delegation Prompt Requirements
+## Development Baseline
 
-Every coding subagent prompt should describe:
+- Follow existing project docs, code style, and local patterns.
+- Keep changes scoped to the request.
+- Prefer simple, direct implementations over new abstractions.
+- Preserve public behavior unless the requested change intentionally updates it.
+- Run the narrowest useful test, lint, typecheck, or build command for the touched area.
+- Do not commit secrets, environment files, tokens, private keys, credentials, or personal data.
 
-- the overall code approach the controller wants followed
-- files or modules the subagent may read
-- files or modules the subagent may modify
-- expected structure, data flow, APIs, components, or function shapes
-- constraints and files/modules that must not be changed
-- acceptance criteria
-- tests, lint, typecheck, build, or manual checks to run
-- final report format with changed files, behavior changed, checks run, and residual concerns
+## Reporting
 
-### Review Loop
+Final responses should briefly include:
 
-- The controller reviews subagent changes before finalizing.
-- Review should check file structure, module boundaries, repo conventions, implementation scope, and test results.
-- If the implementation is not aligned, the controller should send specific feedback back to a subagent for revision instead of silently rewriting the work locally.
-- The final response should summarize changed files, behavior changed, checks run, pass/fail results, and remaining risks.
+- changed files
+- behavior or workflow changed
+- checks run and whether they passed
+- any remaining risks or follow-up notes

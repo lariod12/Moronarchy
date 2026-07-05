@@ -12,15 +12,15 @@ The frame files are not production code, but they should be useful implementatio
 1. `01-welcome-create-join.html` - welcome, player name, create/join room.
 2. `02-room-lobby.html` - room lobby and player slots.
 3. `03-game-starting.html` - game starting countdown.
-4. `04-main-board-waiting-turn.html` - board while waiting for another player.
-5. `05-main-board-your-turn.html` - board when it is your turn to roll.
-6. `06-dice-rolling-move.html` - dice roll and token movement.
-7. `07-empty-land-action.html` - empty land buy/skip decision.
-8. `08-own-land-upgrade.html` - own land upgrade decision.
-9. `09-rival-land-payment.html` - rival land fee payment.
-10. `10-start-bonus-level-up.html` - pass Start bonus and level up.
-11. `11-defeated-bankruptcy.html` - defeated/bankruptcy state.
-12. `12-game-over-result.html` - final winner and ranking.
+4. `04-ingame-main-board-waiting-turn.html` - in-game board while waiting for another player.
+5. `05-ingame-main-board-your-turn.html` - in-game board when it is your turn to roll.
+6. `06-ingame-dice-rolling-move.html` - in-game dice roll and token movement.
+7. `07-ingame-empty-land-action.html` - in-game empty land buy/skip decision.
+8. `08-ingame-own-land-upgrade.html` - in-game own land upgrade decision.
+9. `09-ingame-rival-land-payment.html` - in-game rival land fee payment.
+10. `10-ingame-start-bonus-level-up.html` - in-game pass Start bonus and level up.
+11. `11-ingame-defeated-bankruptcy.html` - in-game defeated/bankruptcy state.
+12. `12-ingame-game-over-result.html` - in-game final winner and ranking.
 
 ## Rules
 
@@ -222,22 +222,22 @@ index.html
   -> 01-welcome-create-join.html
   -> 02-room-lobby.html
   -> 03-game-starting.html
-  -> 05-main-board-your-turn.html
-  -> 06-dice-rolling-move.html
-  -> 07-empty-land-action.html
-  -> 04-main-board-waiting-turn.html
+  -> 05-ingame-main-board-your-turn.html
+  -> 06-ingame-dice-rolling-move.html
+  -> 07-ingame-empty-land-action.html
+  -> 04-ingame-main-board-waiting-turn.html
 ```
 
 Optional branch frames:
 
 ```text
-04-main-board-waiting-turn.html -> 05-main-board-your-turn.html
-06-dice-rolling-move.html      -> 07-empty-land-action.html
-08-own-land-upgrade.html       -> 04-main-board-waiting-turn.html
-09-rival-land-payment.html     -> 04-main-board-waiting-turn.html
-10-start-bonus-level-up.html   -> 04-main-board-waiting-turn.html
-11-defeated-bankruptcy.html    -> 04-main-board-waiting-turn.html
-12-game-over-result.html       -> 02-room-lobby.html
+04-ingame-main-board-waiting-turn.html -> 05-ingame-main-board-your-turn.html
+06-ingame-dice-rolling-move.html      -> 07-ingame-empty-land-action.html
+08-ingame-own-land-upgrade.html       -> 04-ingame-main-board-waiting-turn.html
+09-ingame-rival-land-payment.html     -> 04-ingame-main-board-waiting-turn.html
+10-ingame-start-bonus-level-up.html   -> 04-ingame-main-board-waiting-turn.html
+11-ingame-defeated-bankruptcy.html    -> 04-ingame-main-board-waiting-turn.html
+12-ingame-game-over-result.html       -> 02-room-lobby.html
 ```
 
 When a new frame is added, update this flow map and link it from `index.html`.
@@ -385,23 +385,23 @@ When a source image contains annotation text, move that meaning into non-visible
    - Start should only feel available when enough players exist.
 3. `03-game-starting.html`
    - Countdown should be represented.
-4. `04-main-board-waiting-turn.html`
+4. `04-ingame-main-board-waiting-turn.html`
    - Controls should be disabled or clearly waiting.
-5. `05-main-board-your-turn.html`
+5. `05-ingame-main-board-your-turn.html`
    - Roll action should be clickable.
-6. `06-dice-rolling-move.html`
+6. `06-ingame-dice-rolling-move.html`
    - Dice result and movement state should be visible.
-7. `07-empty-land-action.html`
+7. `07-ingame-empty-land-action.html`
    - Buy and Skip should be clickable.
-8. `08-own-land-upgrade.html`
+8. `08-ingame-own-land-upgrade.html`
    - Upgrade and Skip should be clickable.
-9. `09-rival-land-payment.html`
+9. `09-ingame-rival-land-payment.html`
    - Fee payment result should be shown.
-10. `10-start-bonus-level-up.html`
+10. `10-ingame-start-bonus-level-up.html`
    - Bonus and level-up result should be shown.
-11. `11-defeated-bankruptcy.html`
+11. `11-ingame-defeated-bankruptcy.html`
    - Defeated state and continue watching action should be shown.
-12. `12-game-over-result.html`
+12. `12-ingame-game-over-result.html`
    - Ranking and return-to-lobby action should be shown.
 
 ## Production Porting Workflow

@@ -42,7 +42,7 @@
     Chat -> open chat popup -> Send adds log line; Close/backdrop hides popup.
     Ready -> Player 1 becomes ready, bubble says "Ready!", Chat becomes Cancel, button becomes Start only if every active player is ready and current player is host.
     Cancel -> returns to not-ready state, writes cancel status to chat log, Cancel becomes Chat, Start/Waiting becomes Ready.
-    Start -> open Game Starting countdown popup -> auto-count 3, 2, 1 -> 05-main-board-your-turn.html.
+    Start -> open Game Starting countdown popup -> auto-count 3, 2, 1 -> 05-ingame-main-board-your-turn.html.
 
   Production mapping:
     Page/component target: apps/web RoomPage.
@@ -816,7 +816,7 @@
             frameState.startCountdownTimerId = null;
             frameState.isStartCountdownOpen = false;
             frameElements.startModal.hidden = true;
-            navigateToFrame("05-main-board-your-turn.html", { room: frameState.roomCode });
+            navigateToFrame("05-ingame-main-board-your-turn.html", { room: frameState.roomCode });
             return;
           }
 
