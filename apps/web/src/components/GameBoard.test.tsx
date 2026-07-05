@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "@moronarchy/core";
 import { GameBoard } from "./GameBoard";
@@ -10,13 +10,16 @@ describe("GameBoard", () => {
     expect(screen.getAllByText(/^\d{2}$/)).toHaveLength(40);
   });
 
-  it("renders only the current turn player marker", () => {
+  it("renders markers for every visible player", () => {
     const { container } = render(
-      <GameBoard state={createInitialState(["0", "1", "2", "3"])} currentPlayerId="0" turnPlayerId="2" />
+      <GameBoard state={createInitialState(["0", "1", "2", "3"])} currentPlayerId="0" visiblePlayerIds={["0", "1"]} />
     );
+    const board = within(container);
 
-    expect(container.querySelectorAll(".king-token")).toHaveLength(1);
-    expect(screen.getByLabelText("Player 3 marker")).toBeInTheDocument();
+    expect(container.querySelectorAll(".king-token")).toHaveLength(2);
+    expect(board.getByLabelText("Player 1 marker")).toBeInTheDocument();
+    expect(board.getByLabelText("Player 2 marker")).toBeInTheDocument();
+    expect(board.queryByLabelText("Player 3 marker")).not.toBeInTheDocument();
     expect(container.querySelector(".turn-token-caret")).not.toBeInTheDocument();
   });
 

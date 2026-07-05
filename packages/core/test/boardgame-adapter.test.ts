@@ -71,4 +71,36 @@ describe("boardgame.io adapter", () => {
       playerID: "2"
     }, "1")).toBe("INVALID_MOVE");
   });
+
+  it("locks the game to joined players when selecting the first player", () => {
+    const state = createInitialState(["0", "1", "2", "3"]);
+    const game = createMoronarchyGameConfig("INVALID_MOVE" as const);
+    let nextPlayer: string | undefined;
+
+    game.moves.chooseStartingPlayer({
+      G: state,
+      ctx: {
+        currentPlayer: "0",
+        numPlayers: 4,
+        playOrder: ["0", "1", "2", "3"]
+      },
+      playerID: "0",
+      events: {
+        endTurn: (arg?: { next: string }) => {
+          nextPlayer = arg?.next;
+        }
+      }
+    }, "1", ["0", "1"]);
+
+    expect(state.players.map((player) => player.id)).toEqual(["0", "1"]);
+    expect(state.startingPlayerId).toBe("1");
+    expect(nextPlayer).toBe("1");
+    expect(
+      getNextAlivePlayerId(state, {
+        currentPlayer: "1",
+        numPlayers: 4,
+        playOrder: ["0", "1", "2", "3"]
+      })
+    ).toBe("0");
+  });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Crown } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -27,6 +27,11 @@ interface GameTableProps {
   };
   playerID?: string | null;
   matchID?: string;
+  matchData?: Array<{
+    id: number;
+    name?: string;
+    isConnected?: boolean;
+  }>;
   isActive?: boolean;
   isConnected?: boolean;
 }
@@ -37,6 +42,7 @@ export const GameTable = ({
   moves,
   playerID,
   matchID = "local",
+  matchData,
   isActive = false
 }: GameTableProps) => {
   const navigate = useNavigate();
@@ -59,14 +65,24 @@ export const GameTable = ({
   const canPurchaseCurrentLand = canBuyLand(G, currentPlayerId);
   const isLapUpgradeReady = isCurrentPlayerTurn && G.phase === "lap-upgrade";
   const upgradeableOwnedLands = isLapUpgradeReady ? getUpgradeableOwnedLands(G, currentPlayerId) : [];
+  const joinedPlayerIds = useMemo(() => {
+    const joinedIds = matchData
+      ?.filter((player) => player.name)
+      .map((player) => String(player.id));
+
+    if (!joinedIds?.length) return undefined;
+
+    return joinedIds.includes(currentPlayerId) ? joinedIds : [...joinedIds, currentPlayerId];
+  }, [currentPlayerId, matchData]);
 
   useEffect(() => {
     if (!startingPlayerId || startingPlayerMoveQueued.current) return;
     if (playerID !== "0" || G.startingPlayerId || ctx.currentPlayer !== "0") return;
+    if (matchData && (!joinedPlayerIds || joinedPlayerIds.length < 2)) return;
 
     startingPlayerMoveQueued.current = true;
-    moves.chooseStartingPlayer?.(startingPlayerId);
-  }, [G.startingPlayerId, ctx.currentPlayer, moves, playerID, startingPlayerId]);
+    moves.chooseStartingPlayer?.(startingPlayerId, joinedPlayerIds);
+  }, [G.startingPlayerId, ctx.currentPlayer, joinedPlayerIds, matchData, moves, playerID, startingPlayerId]);
 
   useEffect(() => {
     setIsLandPurchasePopupReady(false);
@@ -98,6 +114,7 @@ export const GameTable = ({
         state={G}
         currentPlayerId={currentPlayerId}
         turnPlayerId={ctx.currentPlayer}
+        visiblePlayerIds={joinedPlayerIds}
         showTurnIndicator={showTurnIndicator}
         canRoll={canRoll}
         onRollDice={() => moves.rollDice?.()}

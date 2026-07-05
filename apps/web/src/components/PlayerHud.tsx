@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import type { MoronarchyState } from "@moronarchy/core";
 
 interface PlayerHudProps {
@@ -9,7 +8,6 @@ interface PlayerHudProps {
 }
 
 export const PlayerHud = ({ state, playerId, matchID }: PlayerHudProps) => {
-  const navigate = useNavigate();
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const player = state.players.find((item) => item.id === playerId) ?? state.players[0];
   const landTiles = state.tiles.filter((tile) => tile.type === "land");
@@ -32,7 +30,7 @@ export const PlayerHud = ({ state, playerId, matchID }: PlayerHudProps) => {
         <div className="stat-row">level: {player.level}</div>
       </section>
 
-      <button className="panel nav-button" type="button" onClick={() => navigate(`/room/${matchID}`)} aria-label="Back to room lobby">
+      <button className="panel nav-button" type="button" disabled aria-label="Back to room lobby">
         <span className="back-disc" aria-hidden="true" />
       </button>
 

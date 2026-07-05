@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import type { MoronarchyState, PlayerState, TileState } from "@moronarchy/core";
 import { getTileGridPosition } from "./tile-layout";
@@ -19,22 +19,34 @@ interface GameBoardProps {
   state: MoronarchyState;
   currentPlayerId: string;
   turnPlayerId?: string;
+  visiblePlayerIds?: string[];
   showTurnIndicator?: boolean;
   canRoll?: boolean;
   onRollDice?: () => void;
 }
 
-type PlayerPositionMap = Record<string, number>;
-
 const getPlayersOnTile = (players: PlayerState[], tileId: number): PlayerState[] => {
   return players.filter((item) => item.position === tileId && !item.defeated);
 };
 
-const getPlayerPositions = (players: PlayerState[]): PlayerPositionMap => {
-  return players.reduce<PlayerPositionMap>((positions, player) => {
-    positions[player.id] = player.position;
-    return positions;
-  }, {});
+const getTokenOffset = (players: PlayerState[], player: PlayerState): number => {
+  const playersOnTile = getPlayersOnTile(players, player.position);
+  if (playersOnTile.length < 2) return 0;
+
+  const playerIndex = playersOnTile.findIndex((item) => item.id === player.id);
+  return playerIndex === 0 ? -11 : 11;
+};
+
+const getTokenStyle = (players: PlayerState[], player: PlayerState): CSSProperties => {
+  const position = getTileGridPosition(player.position);
+  return {
+    left: `calc(${((position.gridColumn - 0.5) / 11) * 100}% + ${getTokenOffset(players, player)}px)`,
+    top: `${((position.gridRow - 0.5) / 11) * 100}%`
+  };
+};
+
+const getUniquePlayers = (players: PlayerState[]): PlayerState[] => {
+  return [...new Map(players.map((player) => [player.id, player])).values()];
 };
 
 const getTileClass = (tile: TileState, currentPlayerId: string): string => {
@@ -59,19 +71,24 @@ const PlayerMarker = ({ label }: { label: string }) => (
 export const GameBoard = ({
   state,
   currentPlayerId,
-  turnPlayerId = currentPlayerId,
+  visiblePlayerIds,
   showTurnIndicator = false,
   canRoll = false,
   onRollDice
 }: GameBoardProps) => {
   const diceValue = state.lastDiceRoll?.value ?? 5;
   const pips = dicePips[diceValue] ?? ["top-left", "top-right", "center", "bottom-left", "bottom-right"];
-  const actualPlayerPositions = useMemo(() => getPlayerPositions(state.players), [state.players]);
-  const [visualPlayerPositions, setVisualPlayerPositions] = useState<PlayerPositionMap>(actualPlayerPositions);
   const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
   const [showDiceSpeech, setShowDiceSpeech] = useState(false);
   const animatedRollKey = useRef<string | null>(null);
-  const isRollAnimationActive = useRef(false);
+  const visiblePlayerIdSet = useMemo(() => (visiblePlayerIds ? new Set(visiblePlayerIds) : null), [visiblePlayerIds]);
+  const visiblePlayers = useMemo(
+    () =>
+      getUniquePlayers(state.players).filter(
+        (player) => !player.defeated && (!visiblePlayerIdSet || visiblePlayerIdSet.has(player.id))
+      ),
+    [state.players, visiblePlayerIdSet]
+  );
   const rollAnimationKey = state.lastDiceRoll
     ? [
         state.lastDiceRoll.playerId,
@@ -80,19 +97,10 @@ export const GameBoard = ({
         state.lastDiceRoll.value
       ].join(":")
     : null;
-  const visualPlayers = useMemo(
-    () => state.players.map((player) => ({
-      ...player,
-      position: visualPlayerPositions[player.id] ?? player.position
-    })),
-    [state.players, visualPlayerPositions]
-  );
 
   useEffect(() => {
     if (!state.lastDiceRoll || !rollAnimationKey) {
       animatedRollKey.current = null;
-      isRollAnimationActive.current = false;
-      setVisualPlayerPositions(actualPlayerPositions);
       setMovingPlayerId(null);
       setShowDiceSpeech(false);
       return undefined;
@@ -103,46 +111,24 @@ export const GameBoard = ({
     }
 
     animatedRollKey.current = rollAnimationKey;
-    isRollAnimationActive.current = true;
     setShowDiceSpeech(true);
-    setVisualPlayerPositions({
-      ...actualPlayerPositions,
-      [state.lastDiceRoll.playerId]: state.lastDiceRoll.from
-    });
-    setMovingPlayerId(null);
-
-    const moveTimer = window.setTimeout(() => {
-      setMovingPlayerId(state.lastDiceRoll?.playerId ?? null);
-      setVisualPlayerPositions(actualPlayerPositions);
-    }, DICE_RESULT_HOLD_MS);
+    setMovingPlayerId(state.lastDiceRoll.playerId);
 
     const turnTimer = window.setTimeout(() => {
-      isRollAnimationActive.current = false;
       setMovingPlayerId(null);
       setShowDiceSpeech(false);
-      setVisualPlayerPositions(actualPlayerPositions);
     }, DICE_RESULT_HOLD_MS + TOKEN_MOVE_DURATION_MS);
 
     return () => {
-      window.clearTimeout(moveTimer);
       window.clearTimeout(turnTimer);
     };
-  }, [actualPlayerPositions, rollAnimationKey, state.lastDiceRoll]);
-
-  useEffect(() => {
-    if (isRollAnimationActive.current) return;
-
-    setVisualPlayerPositions(actualPlayerPositions);
-    setMovingPlayerId(null);
-    setShowDiceSpeech(false);
-  }, [actualPlayerPositions, turnPlayerId]);
+  }, [rollAnimationKey, state.lastDiceRoll]);
 
   return (
     <section className="board-shell" aria-label="Moronarchy board">
       <div className="board-grid">
         {state.tiles.map((tile) => {
           const position = getTileGridPosition(tile.id);
-          const occupants = getPlayersOnTile(visualPlayers, tile.id);
           return (
             <motion.div
               layout
@@ -157,27 +143,27 @@ export const GameBoard = ({
               {tile.ownerId !== null && tile.ownerId !== currentPlayerId && (
                 <span className="tile-owner">P{Number(tile.ownerId) + 1}</span>
               )}
-              <div className="token-stack">
-                {occupants.map((player) => (
-                  <motion.span
-                    layoutId={`token-${player.id}`}
-                    key={player.id}
-                    className={`king-token ${movingPlayerId === player.id ? "is-moving" : ""}`}
-                    title={player.name}
-                    transition={{ layout: { duration: TOKEN_MOVE_DURATION_MS / 1000, ease: "easeInOut" } }}
-                  >
-                    {showTurnIndicator && player.id === currentPlayerId && (
-                      <span className="turn-token-callout" aria-hidden="true">
-                        <span className="turn-token-caret" />
-                      </span>
-                    )}
-                    <PlayerMarker label={`${player.name} marker`} />
-                  </motion.span>
-                ))}
-              </div>
             </motion.div>
           );
         })}
+        {visiblePlayers
+          .map((player) => {
+            return (
+              <span
+                key={player.id}
+                className={`king-token ${movingPlayerId === player.id ? "is-moving" : ""}`}
+                title={player.name}
+                style={getTokenStyle(visiblePlayers, player)}
+              >
+                {showTurnIndicator && player.id === currentPlayerId && (
+                  <span className="turn-token-callout" aria-hidden="true">
+                    <span className="turn-token-caret" />
+                  </span>
+                )}
+                <PlayerMarker label={`${player.name} marker`} />
+              </span>
+            );
+          })}
         <div className="board-center">
           <div className="dice-callout" aria-label="Dice result preview">
             {state.lastDiceRoll && showDiceSpeech && (
