@@ -2,11 +2,21 @@ import { motion } from "motion/react";
 import type { MoronarchyState, PlayerState, TileState } from "@moronarchy/core";
 import { getTileGridPosition } from "./tile-layout";
 
-const PLAYER_COLORS = ["#df4d3f", "#2b72d6", "#27966f", "#7c56d9"];
+const dicePips: Record<number, string[]> = {
+  1: ["center"],
+  2: ["top-left", "bottom-right"],
+  3: ["top-left", "center", "bottom-right"],
+  4: ["top-left", "top-right", "bottom-left", "bottom-right"],
+  5: ["top-left", "top-right", "center", "bottom-left", "bottom-right"],
+  6: ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"]
+};
 
 interface GameBoardProps {
   state: MoronarchyState;
   currentPlayerId: string;
+  canRoll?: boolean;
+  latestLog?: string;
+  onRollDice?: () => void;
 }
 
 const getPlayersOnTile = (players: PlayerState[], tileId: number): PlayerState[] => {
@@ -15,13 +25,28 @@ const getPlayersOnTile = (players: PlayerState[], tileId: number): PlayerState[]
 
 const getTileClass = (tile: TileState, currentPlayerId: string): string => {
   const classes = ["tile", `tile-${tile.type}`];
-  if (tile.ownerId) classes.push("tile-owned");
-  if (tile.ownerId === currentPlayerId) classes.push("tile-owned-self");
-  if (tile.landLevel > 1) classes.push(`tile-level-${tile.landLevel}`);
+  if (tile.ownerId) classes.push("is-owned");
+  if (tile.ownerId === currentPlayerId) classes.push("is-owned-self");
+  if (tile.landLevel > 1) classes.push(`is-level-${tile.landLevel}`);
+  classes.push(tile.id % 2 === 0 ? "is-tilted-right" : "is-tilted-left");
   return classes.join(" ");
 };
 
-export const GameBoard = ({ state, currentPlayerId }: GameBoardProps) => {
+const PlayerMarker = ({ label }: { label: string }) => (
+  <span className="tile-marker" role="img" aria-label={label}>
+    <span className="tile-marker-part tile-marker-head" />
+    <span className="tile-marker-part tile-marker-body" />
+    <span className="tile-marker-part tile-marker-arm tile-marker-arm-left" />
+    <span className="tile-marker-part tile-marker-arm tile-marker-arm-right" />
+    <span className="tile-marker-part tile-marker-leg tile-marker-leg-left" />
+    <span className="tile-marker-part tile-marker-leg tile-marker-leg-right" />
+  </span>
+);
+
+export const GameBoard = ({ state, currentPlayerId, canRoll = false, latestLog, onRollDice }: GameBoardProps) => {
+  const diceValue = state.lastDiceRoll?.value ?? 5;
+  const pips = dicePips[diceValue] ?? ["top-left", "top-right", "center", "bottom-left", "bottom-right"];
+
   return (
     <section className="board-shell" aria-label="Moronarchy board">
       <div className="board-grid">
@@ -43,21 +68,37 @@ export const GameBoard = ({ state, currentPlayerId }: GameBoardProps) => {
               {tile.landLevel > 0 && <span className="tile-level">L{tile.landLevel}</span>}
               <div className="token-stack">
                 {occupants.map((player) => (
-                  <motion.span
-                    layoutId={`token-${player.id}`}
-                    key={player.id}
-                    className="king-token"
-                    style={{ background: PLAYER_COLORS[Number(player.id)] ?? "#171312" }}
-                    title={player.name}
-                  />
+                  <motion.span layoutId={`token-${player.id}`} key={player.id} className="king-token" title={player.name}>
+                    <PlayerMarker label={`${player.name} marker`} />
+                  </motion.span>
                 ))}
               </div>
             </motion.div>
           );
         })}
         <div className="board-center">
-          <span className="board-title">Moronarchy</span>
-          <span className="board-subtitle">40 tiles kingdom loop</span>
+          <div className="dice-callout" aria-label="Dice result preview">
+            {state.lastDiceRoll && (
+              <div className="speech-bubble" aria-live="polite">
+                <span className="speech-text">{state.lastDiceRoll.value}</span>
+              </div>
+            )}
+            <motion.div
+              key={state.lastDiceRoll?.value ?? "idle"}
+              className="dice"
+              data-dice-face={diceValue}
+              aria-hidden="true"
+              animate={state.lastDiceRoll ? { rotate: [0, -8, 8, 0], scale: [1, 1.06, 1] } : undefined}
+            >
+              {pips.map((position) => (
+                <span key={position} className={`pip pip--${position}`} />
+              ))}
+            </motion.div>
+            <button className="tap-scroll" type="button" disabled={!canRoll} onClick={onRollDice}>
+              {canRoll ? "Tap to Scroll" : "Waiting"}
+            </button>
+            <span className="board-log">{latestLog ?? "Roll dice and claim the kingdom."}</span>
+          </div>
         </div>
       </div>
     </section>

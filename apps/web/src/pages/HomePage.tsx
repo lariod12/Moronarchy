@@ -1,95 +1,95 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Crown, LogIn, Plus } from "lucide-react";
 import { useNavigate } from "react-router";
 import { createRoom, joinRoom } from "@/api/lobby";
 
 export const HomePage = () => {
   const navigate = useNavigate();
-  const [playerName, setPlayerName] = useState("King");
-  const [numPlayers, setNumPlayers] = useState(2);
+  const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const trimmedName = playerName.trim();
+  const trimmedRoomCode = roomCode.trim();
+  const isJoinFlow = trimmedRoomCode.length > 0;
+  const canSubmit = trimmedName.length > 0 && !busy;
+  const previewName = useMemo(() => trimmedName || "Player Name", [trimmedName]);
 
-  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setBusy(true);
-    setError(null);
-
-    try {
-      const session = await createRoom(playerName.trim() || "King", numPlayers);
-      navigate(`/room/${session.matchID}`);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not create room.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!roomCode.trim()) return;
+    if (!canSubmit) return;
 
     setBusy(true);
     setError(null);
 
     try {
-      const session = await joinRoom(roomCode.trim(), playerName.trim() || "King");
+      const session = isJoinFlow
+        ? await joinRoom(trimmedRoomCode, trimmedName)
+        : await createRoom(trimmedName, 4);
       navigate(`/room/${session.matchID}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not join room.");
+      setError(caught instanceof Error ? caught.message : "Could not enter room.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <main className="phone-frame home-screen">
-      <motion.section className="hero-panel" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="hero-crown">
-          <Crown size={42} />
+    <main
+      className="phone-frame home-screen screen-welcome-create-join"
+      data-flow={isJoinFlow ? "join" : "create"}
+      data-can-submit={canSubmit}
+      aria-label="Welcome create or join room"
+    >
+      <header className="title-tab">Welcome KingDoom</header>
+
+      <motion.section
+        className="profile-card player-preview-card"
+        aria-label="Player preview"
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="name-display">{previewName}</div>
+        <div className="portrait" aria-hidden="true">
+          <div className="wire-avatar" />
         </div>
-        <span>Moronarchy MVP</span>
-        <h1>Claim land. Tax rivals. Keep the crown.</h1>
       </motion.section>
 
-      <section className="form-stack">
-        <label>
-          King name
-          <input value={playerName} maxLength={18} onChange={(event) => setPlayerName(event.target.value)} />
+      <form onSubmit={handleSubmit} className="form-flow frame-action-panel" aria-label="Create or join form">
+        <label className="label-box" htmlFor="player-name">
+          Name
         </label>
+        <input
+          id="player-name"
+          className="input-box player-name-input"
+          aria-label="King name"
+          autoComplete="off"
+          maxLength={18}
+          value={playerName}
+          onChange={(event) => setPlayerName(event.target.value)}
+        />
 
-        <form onSubmit={handleCreate} className="action-form">
-          <label>
-            Players
-            <select value={numPlayers} onChange={(event) => setNumPlayers(Number(event.target.value))}>
-              <option value={2}>2 players</option>
-              <option value={3}>3 players</option>
-              <option value={4}>4 players</option>
-            </select>
-          </label>
-          <button className="primary-action" disabled={busy} type="submit">
-            <Plus size={18} />
-            Create room
-          </button>
-        </form>
+        <label className="label-box join-room-label" htmlFor="room-code">
+          Join room
+        </label>
+        <input
+          id="room-code"
+          className="input-box room-code-input"
+          aria-label="Room code"
+          autoComplete="off"
+          value={roomCode}
+          onChange={(event) => setRoomCode(event.target.value)}
+        />
 
-        <form onSubmit={handleJoin} className="action-form">
-          <label>
-            Room code
-            <input
-              value={roomCode}
-              placeholder="Match ID"
-              onChange={(event) => setRoomCode(event.target.value)}
-            />
-          </label>
-          <button className="ghost-action" disabled={busy || !roomCode.trim()} type="submit">
-            <LogIn size={18} />
-            Join room
-          </button>
-        </form>
-      </section>
+        <button
+          className="primary-flow-button"
+          aria-label={isJoinFlow ? "Join room" : "Create room"}
+          disabled={!canSubmit}
+          type="submit"
+        >
+          {busy ? "..." : isJoinFlow ? "Join" : "Create"}
+        </button>
+      </form>
 
       {error && <p className="error-text">{error}</p>}
     </main>

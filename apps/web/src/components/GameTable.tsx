@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, Crown, Map, Wifi, WifiOff } from "lucide-react";
+import { Crown } from "lucide-react";
 import { useNavigate } from "react-router";
 import type { MoronarchyState } from "@moronarchy/core";
 import { ActionPanel } from "./ActionPanel";
@@ -27,70 +27,48 @@ export const GameTable = ({
   moves,
   playerID,
   matchID = "local",
-  isActive = false,
-  isConnected = false
+  isActive = false
 }: GameTableProps) => {
   const navigate = useNavigate();
   const currentPlayerId = playerID ?? "0";
-  const currentPlayer = G.players.find((player) => player.id === ctx.currentPlayer);
   const winner = G.winnerId ?? ctx.gameover?.winner ?? null;
   const latestLog = G.logs[0]?.message ?? "Roll dice and claim the kingdom.";
+  const currentPlayer = G.players.find((player) => player.id === currentPlayerId);
+  const canRoll = isActive && G.phase === "rolling" && !currentPlayer?.defeated;
 
   return (
-    <main className="phone-frame game-screen">
-      <header className="game-topbar">
-        <button className="icon-button" onClick={() => navigate(`/room/${matchID}`)} aria-label="Back to room">
-          <ArrowLeft size={20} />
-        </button>
-        <div className="round-chip">
-          <span>Round</span>
-          <strong>{Math.min(G.currentRound, G.maxRounds)} / {G.maxRounds}</strong>
-        </div>
-        <div className="room-chip">
-          <span>Room</span>
-          <strong>{matchID.slice(0, 6)}</strong>
-        </div>
-        <button className="icon-button" aria-label="Map">
-          <Map size={20} />
+    <main className="phone-frame game-screen screen-ingame-main-board-your-turn">
+      <header className="frame-top">
+        <span className="tag">Round {Math.min(G.currentRound, G.maxRounds)}</span>
+        <span className="tag center">{matchID.slice(0, 6)}</span>
+        <button className="map-button" type="button" aria-label="Open map overview">
+          Map
         </button>
       </header>
 
-      <section className="turn-banner">
-        <div>
-          <span>Current king</span>
-          <strong>{currentPlayer?.name ?? `Player ${Number(ctx.currentPlayer) + 1}`}</strong>
-        </div>
-        <div className={isConnected ? "connection connected" : "connection disconnected"}>
-          {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
-          <span>{isConnected ? "Online" : "Offline"}</span>
-        </div>
-      </section>
-
-      <GameBoard state={G} currentPlayerId={currentPlayerId} />
-
-      <section className="dice-panel" aria-label="Dice result">
-        <motion.div
-          key={G.lastDiceRoll?.value ?? "idle"}
-          animate={{ rotate: G.lastDiceRoll ? [0, -8, 8, 0] : 0, scale: G.lastDiceRoll ? [1, 1.08, 1] : 1 }}
-          className="dice-face"
-        >
-          {G.lastDiceRoll?.value ?? "?"}
-        </motion.div>
-        <p>{latestLog}</p>
-      </section>
-
-      <PlayerHud state={G} playerId={currentPlayerId} />
-      <ActionPanel
+      <GameBoard
         state={G}
-        playerId={currentPlayerId}
-        isActive={isActive}
-        moves={{
-          rollDice: () => moves.rollDice?.(),
-          buyLand: () => moves.buyLand?.(),
-          upgradeLand: () => moves.upgradeLand?.(),
-          skipTileAction: () => moves.skipTileAction?.()
-        }}
+        currentPlayerId={currentPlayerId}
+        canRoll={canRoll}
+        latestLog={latestLog}
+        onRollDice={() => moves.rollDice?.()}
       />
+
+      {G.phase === "tile-action" && (
+        <ActionPanel
+          state={G}
+          playerId={currentPlayerId}
+          isActive={isActive}
+          moves={{
+            rollDice: () => moves.rollDice?.(),
+            buyLand: () => moves.buyLand?.(),
+            upgradeLand: () => moves.upgradeLand?.(),
+            skipTileAction: () => moves.skipTileAction?.()
+          }}
+        />
+      )}
+
+      <PlayerHud state={G} playerId={currentPlayerId} matchID={matchID} />
 
       <AnimatePresence>
         {winner && (

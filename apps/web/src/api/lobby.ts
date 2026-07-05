@@ -1,7 +1,12 @@
 import { LobbyClient } from "boardgame.io/client";
 
 export const GAME_NAME = "moronarchy";
-export const GAME_SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL ?? "http://localhost:8000";
+const getDefaultGameServerUrl = (): string => {
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:8000`;
+};
+
+export const GAME_SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL ?? getDefaultGameServerUrl();
 
 const lobbyClient = new LobbyClient({ server: GAME_SERVER_URL });
 

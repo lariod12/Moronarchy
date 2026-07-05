@@ -1,4 +1,4 @@
-﻿# Moronarchy Design Frames
+# Moronarchy Design Frames
 
 This folder is for design review before production implementation.
 
@@ -12,8 +12,8 @@ The frame files are not production code, but they should be useful implementatio
 1. `01-welcome-create-join.html` - welcome, player name, create/join room.
 2. `02-room-lobby.html` - room lobby and player slots.
 3. `03-game-starting.html` - game starting countdown.
-4. `04-ingame-main-board-waiting-turn.html` - in-game board when it is your turn to roll.
-5. `05-ingame-main-board-your-turn.html` - in-game board while waiting for another player.
+4. `04-ingame-main-board-your-turn.html` - in-game board when it is your turn to roll.
+5. `05-ingame-main-board-waiting-turn.html` - in-game board while waiting for another player.
 6. `06-ingame-dice-rolling-move.html` - in-game dice roll and token movement.
 7. `07-ingame-empty-land-action.html` - in-game empty land buy/skip decision.
 8. `08-ingame-own-land-upgrade.html` - in-game own land upgrade decision.
@@ -61,7 +61,7 @@ If a frame intentionally reuses another frame, write a non-visible contract near
 ```html
 <!--
   DESIGN REUSE CONTRACT
-  Base frame: 05-ingame-main-board-your-turn.html
+  Base frame: 05-ingame-main-board-waiting-turn.html
   This frame reuses the same in-game shell, board, HUD, spacing, borders,
   typography, and black/white wireframe style.
 
@@ -267,21 +267,21 @@ index.html
   -> 01-welcome-create-join.html
   -> 02-room-lobby.html
   -> 03-game-starting.html
-  -> 04-ingame-main-board-waiting-turn.html
+  -> 04-ingame-main-board-your-turn.html
   -> 06-ingame-dice-rolling-move.html
   -> 07-ingame-empty-land-action.html
-  -> 05-ingame-main-board-your-turn.html
+  -> 05-ingame-main-board-waiting-turn.html
 ```
 
 Optional branch frames:
 
 ```text
-05-ingame-main-board-your-turn.html -> 04-ingame-main-board-waiting-turn.html
+05-ingame-main-board-waiting-turn.html -> 04-ingame-main-board-your-turn.html
 06-ingame-dice-rolling-move.html      -> 07-ingame-empty-land-action.html
-08-ingame-own-land-upgrade.html       -> 05-ingame-main-board-your-turn.html
-09-ingame-rival-land-payment.html     -> 05-ingame-main-board-your-turn.html
-10-ingame-start-bonus-level-up.html   -> 05-ingame-main-board-your-turn.html
-11-ingame-defeated-bankruptcy.html    -> 05-ingame-main-board-your-turn.html
+08-ingame-own-land-upgrade.html       -> 05-ingame-main-board-waiting-turn.html
+09-ingame-rival-land-payment.html     -> 05-ingame-main-board-waiting-turn.html
+10-ingame-start-bonus-level-up.html   -> 05-ingame-main-board-waiting-turn.html
+11-ingame-defeated-bankruptcy.html    -> 05-ingame-main-board-waiting-turn.html
 12-ingame-game-over-result.html       -> 02-room-lobby.html
 ```
 
@@ -430,9 +430,9 @@ When a source image contains annotation text, move that meaning into non-visible
    - Start should only feel available when enough players exist.
 3. `03-game-starting.html`
    - Countdown should be represented.
-4. `04-ingame-main-board-waiting-turn.html`
+4. `04-ingame-main-board-your-turn.html`
    - Roll action should be clickable.
-5. `05-ingame-main-board-your-turn.html`
+5. `05-ingame-main-board-waiting-turn.html`
    - Controls should be disabled or clearly waiting.
 6. `06-ingame-dice-rolling-move.html`
    - Dice result and movement state should be visible.

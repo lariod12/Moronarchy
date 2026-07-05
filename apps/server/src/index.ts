@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { networkInterfaces } from "node:os";
 import { MoronarchyGame } from "./game.js";
 import { applyLobbySecurity } from "./security.js";
 
@@ -12,10 +13,21 @@ const { Server } = require("boardgame.io/server") as {
 };
 
 const port = Number.parseInt(process.env.PORT ?? "8000", 10);
-const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173")
-  .split(",")
+const webPort = process.env.WEB_PORT ?? "5173";
+const getLanOrigins = (): string[] => {
+  return Object.values(networkInterfaces())
+    .flatMap((items) => items ?? [])
+    .filter((item) => item.family === "IPv4" && !item.internal)
+    .map((item) => `http://${item.address}:${webPort}`);
+};
+const defaultOrigins = [
+  `http://localhost:${webPort}`,
+  `http://127.0.0.1:${webPort}`,
+  ...getLanOrigins()
+];
+const allowedOrigins = [...new Set((process.env.ALLOWED_ORIGINS?.split(",") ?? defaultOrigins)
   .map((origin) => origin.trim())
-  .filter(Boolean);
+  .filter(Boolean))];
 
 const server = Server({
   games: [MoronarchyGame],
@@ -26,4 +38,5 @@ applyLobbySecurity(server.app as Parameters<typeof applyLobbySecurity>[0], serve
 
 server.run(port, () => {
   console.log(`Moronarchy multiplayer server listening on http://localhost:${port}`);
+  console.log(`Allowed web origins: ${allowedOrigins.join(", ")}`);
 });

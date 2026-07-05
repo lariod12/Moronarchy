@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <!--
   DESIGN FRAME SPEC
   Frame: 08-ingame-own-land-upgrade
@@ -12,7 +12,7 @@
     Inputs: 0
     Buttons: 3
       1. Upgrade - opens upgraded result popup.
-      2. Skip - navigates to 05-ingame-main-board-your-turn.html.
+      2. Skip - navigates to 05-ingame-main-board-waiting-turn.html.
       3. Continue in popup - returns to waiting turn.
 
   Interactive features:
@@ -20,8 +20,8 @@
     - Skip ends tile action.
 
   Button workflow:
-    Upgrade -> upgraded popup -> Continue -> 05-ingame-main-board-your-turn.html
-    Skip -> 05-ingame-main-board-your-turn.html
+    Upgrade -> upgraded popup -> Continue -> 05-ingame-main-board-waiting-turn.html
+    Skip -> 05-ingame-main-board-waiting-turn.html
 
   Production mapping:
     Page/component target: ActionPanel own-land tile-action phase.
@@ -57,8 +57,8 @@
       <header class="top"><span class="tag">Round 4</span><span class="tag center">R001</span><span class="tag right">Map</span></header>
       <section class="board" data-board><div class="center-stage"><div class="notice"><b>Your land</b><div class="buildings"><i class="house"></i><i class="house"></i></div><span>Upgrade to Level 3</span></div></div></section>
       <footer class="hud"><section class="panel player-card"><div class="player-name">Player Name</div><div class="avatar"></div></section><section class="panel stats"><div class="stat-row"><span>health:</span><strong>100</strong></div><div class="stat-row"><span>coin:</span><strong>180</strong></div><div class="stat-row"><span>level:</span><strong>3</strong></div></section></footer>
-      <section class="action"><div><b>Upgrade Tile 12?</b><span>Cost 84 coin</span></div><button class="button primary" data-modal-open="upgrade-result-modal">Upgrade</button><button class="button" data-nav="05-ingame-main-board-your-turn.html">Skip</button></section>
-      <section class="modal" data-modal="upgrade-result-modal" hidden><div class="modal-card"><strong>Land upgraded</strong><span>Tile 12 is now Level 3.</span><button data-nav="05-ingame-main-board-your-turn.html">Continue</button></div></section>
+      <section class="action"><div><b>Upgrade Tile 12?</b><span>Cost 84 coin</span></div><button class="button primary" data-modal-open="upgrade-result-modal">Upgrade</button><button class="button" data-nav="05-ingame-main-board-waiting-turn.html">Skip</button></section>
+      <section class="modal" data-modal="upgrade-result-modal" hidden><div class="modal-card"><strong>Land upgraded</strong><span>Tile 12 is now Level 3.</span><button data-nav="05-ingame-main-board-waiting-turn.html">Continue</button></div></section>
     </main>
     <script>
       const frameState = {

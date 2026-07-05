@@ -17,6 +17,10 @@ test("creates a room, joins from a second player, and enters the game", async ({
   await page.getByRole("button", { name: /create room/i }).click();
 
   await expect(page.getByText("Waiting room")).toBeVisible();
+  await expect(page.getByText("Waiting for other player")).toBeVisible();
+  await expect(page.getByRole("button", { name: /copy room code/i })).toBeVisible();
+  await page.getByRole("button", { name: /copy room code/i }).click();
+  await expect(page.getByRole("button", { name: /copy room code/i })).toHaveText("Copied");
   const roomCode = (await page.locator(".room-code-box strong").innerText()).trim();
   expect(roomCode.length).toBeGreaterThan(0);
 
@@ -33,14 +37,56 @@ test("creates a room, joins from a second player, and enters the game", async ({
   await secondPage.getByRole("button", { name: /join room/i }).click();
   await expect(secondPage.getByText("Waiting room")).toBeVisible();
 
-  await page.getByRole("button", { name: /enter game/i }).click();
-  await secondPage.getByRole("button", { name: /enter game/i }).click();
+  await page.waitForTimeout(3000);
+  await secondPage.waitForTimeout(3000);
+  await expect(page.locator(".lobby-player-card")).toHaveCount(2);
+  await expect(page.getByText("Waiting for other player")).toBeVisible();
 
-  await expect(page.getByText("40 tiles kingdom loop")).toBeVisible();
-  await expect(secondPage.getByText("40 tiles kingdom loop")).toBeVisible();
+  const thirdContext = await browser.newContext({
+    viewport: { width: 393, height: 851 },
+    isMobile: true,
+    hasTouch: true
+  });
+  const thirdPage = await thirdContext.newPage();
+  await thirdPage.goto("/");
+  await thirdPage.getByLabel("King name").fill("Cora");
+  await thirdPage.getByLabel("Room code").fill(roomCode);
+  await thirdPage.getByRole("button", { name: /join room/i }).click();
+  await expect(thirdPage.getByText("Waiting room")).toBeVisible();
 
-  await page.getByRole("button", { name: /roll/i }).click();
-  await expect(page.locator(".dice-face")).not.toHaveText("?");
+  await page.waitForTimeout(3000);
+  await expect(page.locator(".lobby-player-card")).toHaveCount(3);
+  await expect(page.getByText("Waiting for other player")).toBeVisible();
+
+  const fourthContext = await browser.newContext({
+    viewport: { width: 393, height: 851 },
+    isMobile: true,
+    hasTouch: true
+  });
+  const fourthPage = await fourthContext.newPage();
+  await fourthPage.goto("/");
+  await fourthPage.getByLabel("King name").fill("Dane");
+  await fourthPage.getByLabel("Room code").fill(roomCode);
+  await fourthPage.getByRole("button", { name: /join room/i }).click();
+  await expect(fourthPage.getByText("Waiting room")).toBeVisible();
+
+  await page.waitForTimeout(3000);
+  await expect(page.locator(".lobby-player-card")).toHaveCount(4);
+  await expect(page.getByText("Waiting for other player")).toHaveCount(0);
+
+  await page.getByRole("button", { name: /^Ready$/ }).click();
+  await page.getByRole("button", { name: /^Start$/ }).click();
+  await expect(page.getByText("Game Starting")).toBeVisible();
+
+  await secondPage.getByRole("button", { name: /^Ready$/ }).click();
+  await secondPage.getByRole("button", { name: /^Start$/ }).click();
+  await expect(secondPage.getByText("Game Starting")).toBeVisible();
+
+  await expect(page.locator(".board-grid")).toBeVisible();
+  await expect(secondPage.locator(".board-grid")).toBeVisible();
+
+  await page.getByRole("button", { name: /tap to scroll/i }).click();
+  await expect(page.locator(".speech-bubble .speech-text")).toBeVisible();
 
   let rateLimited = false;
   for (let requestCount = 0; requestCount < 130; requestCount += 1) {
@@ -53,4 +99,6 @@ test("creates a room, joins from a second player, and enters the game", async ({
   expect(rateLimited).toBe(true);
 
   await secondContext.close();
+  await thirdContext.close();
+  await fourthContext.close();
 });
