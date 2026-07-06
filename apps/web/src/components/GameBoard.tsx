@@ -185,11 +185,16 @@ export const GameBoard = ({
         {state.tiles.map((tile) => {
           const position = getTileGridPosition(tile.id);
           const tilePlayers = visualPlayersByTile[tile.id] ?? [];
+          const hasTurnToken = showTurnIndicator && tilePlayers.some((player) => player.id === currentPlayerId);
           return (
             <motion.div
               layout
               key={tile.id}
-              className={getTileClass(tile, currentPlayerId)}
+              className={[
+                getTileClass(tile, currentPlayerId),
+                tilePlayers.length > 0 ? "has-king-token" : "",
+                hasTurnToken ? "has-turn-token" : ""
+              ].filter(Boolean).join(" ")}
               data-tile-id={tile.id}
               style={{
                 gridColumn: position.gridColumn,

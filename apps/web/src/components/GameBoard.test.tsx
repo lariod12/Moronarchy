@@ -34,6 +34,7 @@ describe("GameBoard", () => {
     );
 
     expect(container.querySelector(".turn-token-caret")).toBeInTheDocument();
+    expect(container.querySelector(".turn-token-caret")?.closest(".tile")).toHaveClass("has-turn-token");
   });
 
   it("walks the moving marker through each tile instead of crossing the board", () => {
