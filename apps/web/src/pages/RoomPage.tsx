@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { saveStartingPlayerId } from "@/api/game-start";
 import { getPlayerSession, getRoom } from "@/api/lobby";
 import { getLobbyChatUrl, type LobbyChatMessage, type LobbyChatServerMessage } from "@/api/lobby-chat";
+import { residentProfileIcon } from "../assets/icons";
 
 interface MatchPlayer {
   id: number;
@@ -263,10 +264,7 @@ export const RoomPage = () => {
             <span className="speech-text">{bubble}</span>
           </div>
         )}
-        <div className="player-avatar" aria-hidden="true">
-          <div className="avatar-head" />
-          <div className="avatar-body" />
-        </div>
+        <img className="player-avatar" src={residentProfileIcon} alt="" aria-hidden="true" />
       </article>
     );
   };

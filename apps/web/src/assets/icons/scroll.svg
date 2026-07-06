@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Scroll icon">
+  <path d="M15 8h35c-5 3-5 10 0 13v28c0 4-3 7-7 7H15V8Z" fill="#f7efe0" stroke="#171312" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M15 8c-5 0-8 3-8 7s3 7 8 7h35c-5-3-5-11 0-14H15Z" fill="#f1c453" stroke="#171312" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M21 31h21M21 41h16" stroke="#8b5a32" stroke-width="4" stroke-linecap="round"/>
+</svg>

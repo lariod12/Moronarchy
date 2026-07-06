@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gavel icon">
+  <path d="m26 14 24 24-8 8-24-24 8-8Z" fill="#8b5a32"/>
+  <path d="m18 6 16 16-8 8L10 14l8-8Z" fill="#c9904d"/>
+  <path d="m38 26 16 16-8 8-16-16 8-8Z" fill="#c9904d"/>
+  <path d="M24 38 9 53" stroke="#171312" stroke-width="7" stroke-linecap="round"/>
+  <path d="M7 55h26" stroke="#f1c453" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -1,5 +1,6 @@
-import { ArrowLeft, Crown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
+import { crownIcon } from "../assets/icons";
 
 export const ResultPage = () => {
   const { matchId } = useParams();
@@ -11,7 +12,7 @@ export const ResultPage = () => {
         <ArrowLeft size={20} />
       </button>
       <div className="result-badge">
-        <Crown size={54} />
+        <img className="crown-icon crown-icon-result" src={crownIcon} alt="" aria-hidden="true" />
       </div>
       <span>Match complete</span>
       <h1>The crown has chosen a ruler.</h1>

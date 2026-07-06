@@ -51,21 +51,21 @@ describe("GameBoard", () => {
       };
 
       const { container } = render(<GameBoard state={state} currentPlayerId="0" visiblePlayerIds={["0"]} />);
-      const token = container.querySelector(".king-token");
+      const getTokenTileId = () => container.querySelector(".king-token")?.parentElement?.getAttribute("data-tile-id");
 
-      expect(token).toHaveStyle({ top: "4.545454545454546%" });
+      expect(getTokenTileId()).toBe("1");
 
       act(() => {
         vi.advanceTimersByTime(750);
       });
 
-      expect(token).toHaveStyle({ top: "13.636363636363635%" });
+      expect(getTokenTileId()).toBe("2");
 
       act(() => {
         vi.advanceTimersByTime(260);
       });
 
-      expect(token).toHaveStyle({ top: "22.727272727272727%" });
+      expect(getTokenTileId()).toBe("3");
     } finally {
       vi.useRealTimers();
     }

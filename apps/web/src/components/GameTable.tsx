@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Crown } from "lucide-react";
 import { useNavigate } from "react-router";
+import { crownIcon } from "../assets/icons";
 import { getStartingPlayerId } from "@/api/game-start";
 import {
   canBuyLand,
@@ -257,7 +257,7 @@ export const GameTable = ({
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 18 }}
             >
-              <Crown size={38} />
+              <img className="crown-icon crown-icon-modal" src={crownIcon} alt="" aria-hidden="true" />
               <span>Game Over</span>
               <strong>Player {Number(winner) + 1} wins</strong>
               <button className="primary-action" onClick={() => navigate(`/result/${matchID}`)}>

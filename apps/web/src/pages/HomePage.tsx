@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { createRoom, joinRoom } from "@/api/lobby";
+import { residentProfileIcon } from "../assets/icons";
 
 export const HomePage = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export const HomePage = () => {
       >
         <div className="name-display">{previewName}</div>
         <div className="portrait" aria-hidden="true">
-          <div className="wire-avatar" />
+          <img className="wire-avatar" src={residentProfileIcon} alt="" />
         </div>
       </motion.section>
 

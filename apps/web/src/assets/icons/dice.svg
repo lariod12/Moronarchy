@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dice icon">
+  <rect x="10" y="10" width="44" height="44" rx="10" fill="#f7efe0" stroke="#171312" stroke-width="4"/>
+  <circle cx="22" cy="22" r="4" fill="#df4d3f"/>
+  <circle cx="42" cy="22" r="4" fill="#df4d3f"/>
+  <circle cx="32" cy="32" r="4" fill="#171312"/>
+  <circle cx="22" cy="42" r="4" fill="#df4d3f"/>
+  <circle cx="42" cy="42" r="4" fill="#df4d3f"/>
+</svg>

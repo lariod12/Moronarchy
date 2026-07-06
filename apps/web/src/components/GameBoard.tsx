@@ -1,12 +1,14 @@
 import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import type { MoronarchyState, PlayerState, TileState } from "@moronarchy/core";
+import { residentsIcon } from "../assets/icons";
 import { getTileGridPosition } from "./tile-layout";
 
 const DICE_RESULT_HOLD_MS = 750;
 const TOKEN_STEP_DURATION_MS = 260;
 
 type PlayerPositionMap = Record<string, number>;
+type PlayersByTile = Record<number, PlayerState[]>;
 
 const dicePips: Record<number, string[]> = {
   1: ["center"],
@@ -40,10 +42,9 @@ const getTokenOffset = (players: PlayerState[], player: PlayerState): number => 
 };
 
 const getTokenStyle = (players: PlayerState[], player: PlayerState): CSSProperties => {
-  const position = getTileGridPosition(player.position);
   return {
-    left: `calc(${((position.gridColumn - 0.5) / 11) * 100}% + ${getTokenOffset(players, player)}px)`,
-    top: `${((position.gridRow - 0.5) / 11) * 100}%`
+    left: `calc(50% + ${getTokenOffset(players, player)}px)`,
+    top: "50%"
   };
 };
 
@@ -55,6 +56,13 @@ const getPlayerPositions = (players: PlayerState[]): PlayerPositionMap => {
   return players.reduce<PlayerPositionMap>((positions, player) => {
     positions[player.id] = player.position;
     return positions;
+  }, {});
+};
+
+const getPlayersByTile = (players: PlayerState[]): PlayersByTile => {
+  return players.reduce<PlayersByTile>((playersByTile, player) => {
+    playersByTile[player.position] = [...(playersByTile[player.position] ?? []), player];
+    return playersByTile;
   }, {});
 };
 
@@ -72,12 +80,7 @@ const getTileClass = (tile: TileState, currentPlayerId: string): string => {
 
 const PlayerMarker = ({ label }: { label: string }) => (
   <span className="tile-marker" role="img" aria-label={label}>
-    <span className="tile-marker-part tile-marker-head" />
-    <span className="tile-marker-part tile-marker-body" />
-    <span className="tile-marker-part tile-marker-arm tile-marker-arm-left" />
-    <span className="tile-marker-part tile-marker-arm tile-marker-arm-right" />
-    <span className="tile-marker-part tile-marker-leg tile-marker-leg-left" />
-    <span className="tile-marker-part tile-marker-leg tile-marker-leg-right" />
+    <img className="tile-marker-image" src={residentsIcon} alt="" aria-hidden="true" />
   </span>
 );
 
@@ -114,6 +117,7 @@ export const GameBoard = ({
       })),
     [visiblePlayers, visualPlayerPositions]
   );
+  const visualPlayersByTile = useMemo(() => getPlayersByTile(visualPlayers), [visualPlayers]);
   const rollAnimationKey = state.lastDiceRoll
     ? [
         state.lastDiceRoll.playerId,
@@ -180,11 +184,13 @@ export const GameBoard = ({
       <div className="board-grid">
         {state.tiles.map((tile) => {
           const position = getTileGridPosition(tile.id);
+          const tilePlayers = visualPlayersByTile[tile.id] ?? [];
           return (
             <motion.div
               layout
               key={tile.id}
               className={getTileClass(tile, currentPlayerId)}
+              data-tile-id={tile.id}
               style={{
                 gridColumn: position.gridColumn,
                 gridRow: position.gridRow
@@ -194,27 +200,24 @@ export const GameBoard = ({
               {tile.ownerId !== null && tile.ownerId !== currentPlayerId && (
                 <span className="tile-owner">P{Number(tile.ownerId) + 1}</span>
               )}
+              {tilePlayers.map((player) => (
+                <span
+                  key={player.id}
+                  className={`king-token ${movingPlayerId === player.id ? "is-moving" : ""}`}
+                  title={player.name}
+                  style={getTokenStyle(tilePlayers, player)}
+                >
+                  {showTurnIndicator && player.id === currentPlayerId && (
+                    <span className="turn-token-callout" aria-hidden="true">
+                      <span className="turn-token-caret" />
+                    </span>
+                  )}
+                  <PlayerMarker label={`${player.name} marker`} />
+                </span>
+              ))}
             </motion.div>
           );
         })}
-        {visualPlayers
-          .map((player) => {
-            return (
-              <span
-                key={player.id}
-                className={`king-token ${movingPlayerId === player.id ? "is-moving" : ""}`}
-                title={player.name}
-                style={getTokenStyle(visualPlayers, player)}
-              >
-                {showTurnIndicator && player.id === currentPlayerId && (
-                  <span className="turn-token-callout" aria-hidden="true">
-                    <span className="turn-token-caret" />
-                  </span>
-                )}
-                <PlayerMarker label={`${player.name} marker`} />
-              </span>
-            );
-          })}
         <div className="board-center">
           <div className="dice-callout" aria-label="Dice result preview">
             {state.lastDiceRoll && showDiceSpeech && (

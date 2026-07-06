@@ -180,34 +180,13 @@ input {
 .player-avatar,
 .avatar {
   position: relative;
+  display: block;
+  object-fit: contain;
 }
 
 .wire-avatar {
   width: 130px;
   height: 128px;
-}
-
-.wire-avatar::before,
-.wire-avatar::after {
-  content: "";
-  position: absolute;
-  background: var(--ink);
-}
-
-.wire-avatar::before {
-  top: 0;
-  left: 38px;
-  width: 58px;
-  height: 72px;
-  border-radius: 999px;
-}
-
-.wire-avatar::after {
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 52px;
-  border-radius: 60px 60px 8px 8px;
 }
 
 .form-flow {
@@ -395,28 +374,6 @@ input {
   width: 64px;
   height: 58px;
   transform: translateX(-50%);
-}
-
-.avatar-head,
-.avatar-body {
-  position: absolute;
-  left: 50%;
-  background: var(--ink);
-  transform: translateX(-50%);
-}
-
-.avatar-head {
-  bottom: 25px;
-  width: 30px;
-  aspect-ratio: 1 / 1;
-  border-radius: 999px;
-}
-
-.avatar-body {
-  bottom: -4px;
-  width: 60px;
-  height: 26px;
-  border-radius: 999px 999px 0 0;
 }
 
 .speech-bubble {
@@ -767,10 +724,6 @@ input {
   filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.18));
 }
 
-.king-token.is-moving .tile-marker {
-  animation: king-token-wobble 0.42s ease-in-out infinite;
-}
-
 @keyframes turn-token-callout-bob {
   0%,
   100% {
@@ -782,88 +735,21 @@ input {
   }
 }
 
-@keyframes king-token-wobble {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) scale(0.9) rotate(0deg);
-  }
-
-  25% {
-    transform: translate(-50%, -50%) scale(0.9) rotate(-5deg);
-  }
-
-  75% {
-    transform: translate(-50%, -50%) scale(0.9) rotate(5deg);
-  }
-}
-
 .tile-marker {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 20px;
+  width: 22px;
   height: 28px;
   transform: translate(-50%, -50%) scale(0.9);
   z-index: 2;
 }
 
-.tile-marker-part {
-  position: absolute;
-  background: var(--ink);
-}
-
-.tile-marker-head {
-  left: 50%;
-  top: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  transform: translateX(-50%);
-}
-
-.tile-marker-body {
-  left: 50%;
-  top: 9px;
-  z-index: 2;
-  width: 12px;
-  height: 10px;
-  border-radius: 999px 999px 5px 5px;
-  transform: translateX(-50%);
-}
-
-.tile-marker-arm {
-  top: 10px;
-  z-index: 1;
-  width: 4px;
-  height: 12px;
-  border-radius: 999px;
-  transform-origin: 50% 2px;
-}
-
-.tile-marker-arm-left {
-  left: 4px;
-  transform: rotate(36deg);
-}
-
-.tile-marker-arm-right {
-  right: 4px;
-  transform: rotate(-36deg);
-}
-
-.tile-marker-leg {
-  top: 16px;
-  z-index: 1;
-  width: 4px;
-  height: 12px;
-  border-radius: 999px;
-}
-
-.tile-marker-leg-left {
-  left: 5px;
-}
-
-.tile-marker-leg-right {
-  right: 5px;
+.tile-marker-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .board-center {
@@ -1003,6 +889,8 @@ input {
 
 .player-hud .avatar {
   display: block;
+  width: 100%;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   background: var(--paper);
@@ -1068,34 +956,25 @@ input {
 }
 
 .crown {
-  position: relative;
   display: block;
-  width: 58px;
-  height: 45px;
+  width: 68px;
+  height: 52px;
+  object-fit: contain;
 }
 
-.crown::before {
-  content: "";
-  position: absolute;
-  left: 3px;
-  right: 3px;
-  bottom: 2px;
-  height: 34px;
-  background: var(--ink);
-  clip-path: polygon(7% 100%, 0 28%, 30% 58%, 50% 0, 70% 58%, 100% 28%, 93% 100%);
-  border-radius: 0 0 9px 9px;
+.crown-icon {
+  display: block;
+  object-fit: contain;
 }
 
-.crown::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 12px;
-  width: 12px;
-  height: 12px;
-  background: var(--ink);
-  border-radius: 50%;
-  box-shadow: 23px -11px 0 var(--ink), 46px 0 0 var(--ink);
+.crown-icon-modal {
+  width: 46px;
+  height: 35px;
+}
+
+.crown-icon-result {
+  width: 64px;
+  height: 49px;
 }
 
 .result-modal {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { MoronarchyState } from "@moronarchy/core";
+import { crownIcon, residentProfileIcon } from "../assets/icons";
 
 interface PlayerHudProps {
   state: MoronarchyState;
@@ -18,10 +19,7 @@ export const PlayerHud = ({ state, playerId, matchID }: PlayerHudProps) => {
     <footer className="player-hud" aria-label="Player heads up display">
       <section className="panel player-card" aria-label="Current player">
         <div className="player-name">{player.name}</div>
-        <div className="avatar" aria-hidden="true">
-          <div className="avatar-head" />
-          <div className="avatar-body" />
-        </div>
+        <img className="avatar" src={residentProfileIcon} alt="" aria-hidden="true" />
       </section>
 
       <section className="stats" aria-label="Player stats">
@@ -35,7 +33,7 @@ export const PlayerHud = ({ state, playerId, matchID }: PlayerHudProps) => {
       </button>
 
       <button className="panel crown-button" type="button" onClick={() => setIsStatusOpen(true)} aria-label="Open king status">
-        <span className="crown" aria-hidden="true" />
+        <img className="crown" src={crownIcon} alt="" aria-hidden="true" />
       </button>
 
       {isStatusOpen && (

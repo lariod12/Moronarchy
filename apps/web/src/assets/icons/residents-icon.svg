@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="35 35 130 180" role="img" aria-labelledby="title desc">
+  <title id="title">Person icon</title>
+  <desc id="desc">A black simplified person icon.</desc>
+
+  <circle cx="99" cy="63" r="21" fill="#000000" />
+
+  <path
+    d="M99 94
+       C82 94 66 101 57 114
+       L46 134
+       C43 140 46 147 52 151
+       C58 154 65 152 68 146
+       L74 134
+       L74 199
+       C74 207 79 212 87 212
+       C94 212 99 207 99 199
+       L99 168
+       L106 168
+       L106 199
+       C106 207 111 212 118 212
+       C126 212 131 207 131 199
+       L131 134
+       L137 146
+       C140 152 147 154 153 151
+       C159 147 162 140 159 134
+       L148 114
+       C139 101 123 94 106 94
+       Z"
+    fill="#000000" />
+</svg>
