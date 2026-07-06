@@ -87,6 +87,7 @@ const PlayerMarker = ({ label }: { label: string }) => (
 export const GameBoard = ({
   state,
   currentPlayerId,
+  turnPlayerId,
   visiblePlayerIds,
   showTurnIndicator = false,
   canRoll = false,
@@ -126,6 +127,7 @@ export const GameBoard = ({
         state.lastDiceRoll.value
       ].join(":")
     : null;
+  const turnIndicatorPlayerId = turnPlayerId ?? currentPlayerId;
   actualPlayerPositionsRef.current = actualPlayerPositions;
 
   useEffect(() => {
@@ -185,7 +187,7 @@ export const GameBoard = ({
         {state.tiles.map((tile) => {
           const position = getTileGridPosition(tile.id);
           const tilePlayers = visualPlayersByTile[tile.id] ?? [];
-          const hasTurnToken = showTurnIndicator && tilePlayers.some((player) => player.id === currentPlayerId);
+          const hasTurnToken = showTurnIndicator && tilePlayers.some((player) => player.id === turnIndicatorPlayerId);
           return (
             <motion.div
               layout
@@ -212,7 +214,7 @@ export const GameBoard = ({
                   title={player.name}
                   style={getTokenStyle(tilePlayers, player)}
                 >
-                  {showTurnIndicator && player.id === currentPlayerId && (
+                  {showTurnIndicator && player.id === turnIndicatorPlayerId && (
                     <span className="turn-token-callout" aria-hidden="true">
                       <span className="turn-token-caret" />
                     </span>

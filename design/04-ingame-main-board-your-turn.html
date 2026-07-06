@@ -3,7 +3,7 @@
   DESIGN FRAME SPEC
   Frame: 04-ingame-main-board-your-turn
   Screen purpose:
-    In-game main board while another king is playing. The current player can inspect the map, status, and wait for the turn to advance.
+    In-game main board while the local prototype simulates two kings taking turns.
 
   Visual design:
     Black/white hand-drawn mobile wireframe matching the in-game board reference:
@@ -18,19 +18,20 @@
       4. Crown button - opens a local status popup.
 
   Interactive features:
-    - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, then reveals the final number.
+    - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, moves the active player, then reveals the final number.
+    - Two local prototype players alternate turns after each completed roll.
     - Crown button opens/closes a player status modal.
     - Map button is visible as a future production control.
 
   Button workflow:
     Map -> local no-op for this frame.
-    Tap to Scroll -> dice shake -> random pip changes -> final number appears in speech text.
+    Tap to Scroll -> dice shake -> random pip changes -> active player moves -> turn advances to next player.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
   Production mapping:
     Page/component target: GamePage, BoardFrame, PlayerHud, and StatusMenu.
-    Waiting state should come from boardgame.io currentPlayer, not local JS.
+    Waiting/turn state should come from boardgame.io currentPlayer, not local JS.
 -->
 <html lang="en">
   <head>
@@ -203,74 +204,76 @@
         transform: rotate(1.5deg);
       }
 
+      .tile.has-marker {
+        z-index: 3;
+      }
+
+      .tile.has-active-marker {
+        z-index: 8;
+      }
+
+      .king-token {
+        position: absolute;
+        left: var(--token-x, 50%);
+        top: var(--token-y, 50%);
+        z-index: 10;
+        display: block;
+        width: 22px;
+        height: 28px;
+        isolation: isolate;
+        pointer-events: none;
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+
+      .turn-token-callout {
+        position: absolute;
+        left: 50%;
+        bottom: 29px;
+        z-index: 11;
+        display: grid;
+        justify-items: center;
+        pointer-events: none;
+        transform: translateX(-50%);
+        transform-origin: center bottom;
+        animation: turn-token-callout-bob 1.05s ease-in-out infinite;
+      }
+
+      .turn-token-caret {
+        width: 0;
+        height: 0;
+        margin-top: 0;
+        border-right: 8px solid transparent;
+        border-left: 8px solid transparent;
+        border-top: 11px solid var(--ink);
+        filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.18));
+      }
+
+      @keyframes turn-token-callout-bob {
+        0%,
+        100% {
+          transform: translateX(-50%) translateY(0) scale(1);
+        }
+
+        50% {
+          transform: translateX(-50%) translateY(-3px) scale(1.04);
+        }
+      }
+
       .tile-marker {
         position: absolute;
         left: 50%;
         top: 50%;
-        width: 20px;
+        width: 22px;
         height: 28px;
-        transform: translate(-50%, -50%) scale(0.9);
-        pointer-events: none;
-        z-index: 1;
-      }
-
-      .tile-marker-part {
-        position: absolute;
-        background: var(--ink);
-      }
-
-      .tile-marker-head {
-        left: 50%;
-        top: 0px;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        transform: translateX(-50%);
-      }
-
-      .tile-marker-body {
-        left: 50%;
-        top: 9px;
-        width: 12px;
-        height: 10px;
-        border-radius: 999px 999px 5px 5px;
-        transform: translateX(-50%);
+        transform: translate(-50%, -50%);
         z-index: 2;
       }
 
-      .tile-marker-arm {
-        top: 10px;
-        width: 4px;
-        height: 12px;
-        border-radius: 999px;
-        transform-origin: 50% 2px;
-        z-index: 1;
-      }
-
-      .tile-marker-arm-left {
-        left: 4px;
-        transform: rotate(36deg);
-      }
-
-      .tile-marker-arm-right {
-        right: 4px;
-        transform: rotate(-36deg);
-      }
-
-      .tile-marker-leg {
-        top: 16px;
-        width: 4px;
-        height: 12px;
-        border-radius: 999px;
-        z-index: 1;
-      }
-
-      .tile-marker-leg-left {
-        left: 5px;
-      }
-
-      .tile-marker-leg-right {
-        right: 5px;
+      .tile-marker-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
 
       .board-center {
@@ -545,6 +548,10 @@
         white-space: nowrap;
       }
 
+      .stat-row.is-turn {
+        background: var(--shade);
+      }
+
       .nav-button,
       .crown-button {
         min-width: 0;
@@ -641,9 +648,165 @@
         text-align: center;
       }
 
-      .modal-card button {
+      .modal-card button,
+      .land-purchase-dialog button,
+      .land-ledger-close {
         min-height: 42px;
         cursor: pointer;
+      }
+
+      .tile-owner,
+      .tile-level {
+        position: absolute;
+        font-size: 8px;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .tile-owner {
+        left: 3px;
+        bottom: 2px;
+      }
+
+      .tile-level {
+        right: 3px;
+        bottom: 2px;
+      }
+
+      .land-purchase-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.38);
+      }
+
+      .land-purchase-modal[hidden] {
+        display: none;
+      }
+
+      .land-purchase-dialog {
+        display: grid;
+        gap: 14px;
+        width: min(100%, 320px);
+        padding: 16px;
+        background: var(--paper);
+        border: var(--stroke) solid var(--ink);
+        transform: rotate(-1deg);
+      }
+
+      .land-purchase-copy {
+        display: grid;
+        gap: 8px;
+        text-align: center;
+      }
+
+      .land-purchase-kicker {
+        justify-self: center;
+        width: max-content;
+        padding: 3px 8px;
+        background: var(--shade);
+        border: 2px solid var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .land-purchase-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .land-purchase-actions button,
+      .land-ledger-close {
+        background: var(--paper);
+        border: var(--stroke) solid var(--ink);
+        font-weight: 900;
+      }
+
+      .land-purchase-actions .primary-action {
+        background: var(--shade);
+      }
+
+      .land-purchase-actions button:disabled {
+        color: #777;
+        background: #e7e7e7;
+      }
+
+      .land-ledger-modal[hidden] {
+        display: none;
+      }
+
+      .land-ledger-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 10px;
+        padding: 12px;
+        background: var(--paper);
+      }
+
+      .land-ledger-header {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: start;
+      }
+
+      .land-ledger-header .tag:last-child {
+        justify-self: end;
+      }
+
+      .land-ledger-table {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        min-height: 0;
+        overflow: hidden;
+        border: 2.5px solid var(--ink);
+      }
+
+      .land-ledger-body {
+        min-height: 0;
+        overflow-y: auto;
+      }
+
+      .land-ledger-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.25fr 1.15fr;
+        align-items: center;
+        min-height: 42px;
+        padding: 0 10px;
+        border-bottom: 2px solid var(--ink);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .land-ledger-row-head {
+        min-height: 36px;
+        background: var(--shade);
+        font-weight: 950;
+      }
+
+      .land-ledger-row.is-owned-self {
+        background: #bfbfbf;
+        box-shadow: inset 5px 0 0 var(--ink);
+      }
+
+      .land-ledger-row span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .land-ledger-close {
+        justify-self: end;
+        min-height: 44px;
+        padding: 0 14px;
+        transform: rotate(1deg);
       }
 
       @media (max-width: 430px) {
@@ -686,8 +849,8 @@
   <body>
     <main class="phone screen-ingame-main-board-your-turn" aria-label="In-game board your turn frame">
       <header class="frame-top">
-        <span class="tag">Round 1</span>
-        <span class="tag center">R001</span>
+        <span class="tag" data-bind="round-label">Round 1</span>
+        <span class="tag center" data-bind="turn-label">P1 Turn</span>
         <button class="map-button" type="button" data-action="open-map" aria-label="Open map overview">Map</button>
       </header>
 
@@ -711,7 +874,7 @@
 
       <footer class="hud" aria-label="Player heads up display">
         <section class="panel player-card" aria-label="Current player">
-          <div class="player-name">Player Name</div>
+          <div class="player-name" data-bind="player-name">Player 1</div>
           <div class="avatar" aria-hidden="true">
             <div class="avatar-icon" aria-hidden="true">
               <div class="avatar-head"></div>
@@ -721,33 +884,84 @@
         </section>
 
         <section class="stats" aria-label="Player stats">
-          <div class="stat-row">health: 100</div>
-          <div class="stat-row">coin: 100</div>
-          <div class="stat-row">level: 1</div>
+          <div class="stat-row" data-bind="player-health">health: 100</div>
+          <div class="stat-row" data-bind="player-coin">coin: 100</div>
+          <div class="stat-row is-turn" data-bind="player-turn">turn: Player 1</div>
         </section>
 
         <button class="panel nav-button" type="button" data-nav="02-room-lobby.html" aria-label="Back to room lobby">
           <span class="back-disc" aria-hidden="true"></span>
         </button>
 
-        <button class="panel crown-button" type="button" data-modal-open="king-status-modal" aria-label="Open king status">
+        <button class="panel crown-button" type="button" data-modal-open="land-ledger-modal" aria-label="Open king status">
           <span class="crown" aria-hidden="true"></span>
         </button>
       </footer>
 
+      <section class="land-purchase-modal" data-modal="land-purchase-modal" hidden>
+        <div class="land-purchase-dialog" role="dialog" aria-modal="true" aria-labelledby="land-purchase-title">
+          <div class="land-purchase-copy">
+            <span class="land-purchase-kicker" data-bind="land-purchase-kicker">Tile 04</span>
+            <strong id="land-purchase-title">Buy this land?</strong>
+            <span data-bind="land-purchase-price">Price: 50 coin</span>
+          </div>
+          <div class="land-purchase-actions">
+            <button type="button" data-action="skip-tile-action">Skip</button>
+            <button type="button" class="primary-action" data-action="buy-land">Buy</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="land-ledger-modal" data-modal="land-ledger-modal" hidden>
+        <header class="land-ledger-header">
+          <span class="tag" data-bind="ledger-round-label">Round 1</span>
+          <strong class="tag center">Land</strong>
+          <span class="tag" data-bind="ledger-player-name">Player 1</span>
+        </header>
+
+        <section class="land-ledger-table" aria-label="Land ownership and levels">
+          <div class="land-ledger-row land-ledger-row-head">
+            <span>Name</span>
+            <span>Level</span>
+            <span>Plots</span>
+            <span>Plots LV</span>
+          </div>
+          <div class="land-ledger-body" data-bind="land-ledger-body"></div>
+        </section>
+
+        <button class="land-ledger-close" type="button" data-modal-close="land-ledger-modal">Close</button>
+      </section>
+
       <section class="modal" data-modal="king-status-modal" hidden>
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="king-status-title">
           <strong id="king-status-title">King Status</strong>
-          <span>Health 100 / Coin 100 / Level 1</span>
+          <span data-bind="status-summary">Player 1: Health 200 / Coin 200 / Tile 04</span>
           <button type="button" data-modal-close="king-status-modal">Close</button>
         </div>
       </section>
     </main>
 
     <script>
+      const boardSize = 40;
+      const startBonus = 50;
+      const maxKingLevel = 3;
+      const landEconomyBySegment = [
+        { price: 50, rents: [10, 20, 35], upgradeCosts: [40, 60] },
+        { price: 70, rents: [14, 28, 49], upgradeCosts: [56, 84] },
+        { price: 90, rents: [18, 36, 63], upgradeCosts: [72, 108] },
+        { price: 110, rents: [22, 44, 77], upgradeCosts: [88, 132] }
+      ];
+
       const frameState = {
-        ownedTiles: new Set([5, 8, 12, 27]),
-        pawnTile: 4,
+        tiles: createInitialTiles(),
+        players: [
+          { id: 1, name: "Player 1", health: 100, coin: 200, level: 1, tile: 4 },
+          { id: 2, name: "Player 2", health: 100, coin: 200, level: 1, tile: 22 }
+        ],
+        activePlayerIndex: 0,
+        round: 1,
+        phase: "rolling",
+        pendingTileId: null,
         isRolling: false,
         currentFace: 5
       };
@@ -759,9 +973,22 @@
         dice: document.querySelector("[data-dice-face]"),
         speechBubble: document.querySelector(".speech-bubble"),
         speechText: document.querySelector("[data-bind='roll-result']"),
+        roundLabel: document.querySelector("[data-bind='round-label']"),
+        turnLabel: document.querySelector("[data-bind='turn-label']"),
+        playerName: document.querySelector("[data-bind='player-name']"),
+        playerHealth: document.querySelector("[data-bind='player-health']"),
+        playerCoin: document.querySelector("[data-bind='player-coin']"),
+        playerTurn: document.querySelector("[data-bind='player-turn']"),
+        statusSummary: document.querySelector("[data-bind='status-summary']"),
+        landPurchaseKicker: document.querySelector("[data-bind='land-purchase-kicker']"),
+        landPurchasePrice: document.querySelector("[data-bind='land-purchase-price']"),
+        ledgerRoundLabel: document.querySelector("[data-bind='ledger-round-label']"),
+        ledgerPlayerName: document.querySelector("[data-bind='ledger-player-name']"),
+        landLedgerBody: document.querySelector("[data-bind='land-ledger-body']"),
+        buyLandButton: document.querySelector("[data-action='buy-land']"),
+        skipTileActionButton: document.querySelector("[data-action='skip-tile-action']"),
         backButton: document.querySelector("[data-nav='02-room-lobby.html']"),
-        openStatusButton: document.querySelector("[data-modal-open='king-status-modal']"),
-        closeStatusButton: document.querySelector("[data-modal-close='king-status-modal']")
+        openStatusButton: document.querySelector("[data-modal-open='land-ledger-modal']")
       };
 
       const diceFaces = {
@@ -781,12 +1008,20 @@
         */
         renderBoard();
         renderDiceFace(frameState.currentFace);
+        renderHud();
         hideSpeechResult();
         frameElements.mapButton.addEventListener("click", handleOpenMap);
         frameElements.waitButton.addEventListener("click", handleSimulateYourTurn);
+        frameElements.buyLandButton.addEventListener("click", handleBuyLand);
+        frameElements.skipTileActionButton.addEventListener("click", handleSkipTileAction);
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
-        frameElements.openStatusButton.addEventListener("click", () => openModal("king-status-modal"));
-        frameElements.closeStatusButton.addEventListener("click", () => closeModal("king-status-modal"));
+        frameElements.openStatusButton.addEventListener("click", () => {
+          renderLandLedger();
+          openModal("land-ledger-modal");
+        });
+        document.querySelectorAll("[data-modal-close]").forEach((button) => {
+          button.addEventListener("click", () => closeModal(button.dataset.modalClose));
+        });
         bindPressEffect(frameElements.backButton);
         bindPressEffect(frameElements.openStatusButton);
       }
@@ -805,34 +1040,163 @@
         button.addEventListener("blur", release);
       }
 
+      function createInitialTiles() {
+        return Array.from({ length: boardSize }, (_, index) => ({
+          id: index + 1,
+          type: index === 0 ? "start" : "land",
+          ownerId: null,
+          landLevel: 0
+        }));
+      }
+
+      function getTile(tileId) {
+        return frameState.tiles[tileId - 1];
+      }
+
+      function getLandEconomy(tileId) {
+        if (tileId <= 1 || tileId > boardSize) return null;
+        if (tileId <= 10) return landEconomyBySegment[0];
+        if (tileId <= 20) return landEconomyBySegment[1];
+        if (tileId <= 30) return landEconomyBySegment[2];
+        return landEconomyBySegment[3];
+      }
+
+      function getRentForTile(tile) {
+        const economy = getLandEconomy(tile.id);
+        if (!economy || tile.landLevel < 1) return 0;
+        return economy.rents[tile.landLevel - 1] ?? 0;
+      }
+
       function renderBoard() {
+        frameElements.board.querySelectorAll(".tile").forEach((tile) => tile.remove());
+
         for (let id = 1; id <= 40; id += 1) {
           const position = getTileGridPosition(id);
+          const tileState = getTile(id);
+          const playersOnTile = frameState.players.filter((player) => player.tile === id);
+          const hasActivePlayer = playersOnTile.some((player) => player.id === getActivePlayer().id);
           const tile = document.createElement("div");
           const tiltClass = id % 2 === 0 ? "is-tilted-right" : "is-tilted-left";
-          tile.className = `tile ${tiltClass}${frameState.ownedTiles.has(id) ? " is-owned" : ""}`;
+          tile.className = [
+            "tile",
+            tiltClass,
+            tileState.ownerId !== null ? "is-owned" : "",
+            playersOnTile.length > 0 ? "has-marker" : "",
+            hasActivePlayer ? "has-active-marker" : ""
+          ].filter(Boolean).join(" ");
           tile.style.gridColumn = position.column;
           tile.style.gridRow = position.row;
           tile.setAttribute("aria-label", `Tile ${id}`);
 
-          // Current player tile only shows the marker icon and intentionally hides its tile number.
-          if (id === frameState.pawnTile) {
-            const marker = document.createElement("span");
-            marker.className = "tile-marker";
-            marker.setAttribute("role", "img");
-            marker.setAttribute("aria-label", "Current player marker");
-            ["head", "body", "arm arm-left", "arm arm-right", "leg leg-left", "leg leg-right"].forEach((partName) => {
-              const part = document.createElement("span");
-              part.className = `tile-marker-part tile-marker-${partName.replaceAll(" ", " tile-marker-")}`;
-              marker.appendChild(part);
-            });
-            tile.appendChild(marker);
+          if (playersOnTile.length === 0) {
+            tile.append(String(id).padStart(2, "0"));
           } else {
-            tile.textContent = String(id).padStart(2, "0");
+            playersOnTile.forEach((player, index) => {
+              tile.appendChild(createKingToken(player, playersOnTile.length, index));
+            });
           }
 
+          renderTileOwnership(tile, tileState);
           frameElements.board.appendChild(tile);
         }
+      }
+
+      function renderTileOwnership(tileElement, tileState) {
+        if (tileState.ownerId === null) return;
+
+        const owner = document.createElement("span");
+        owner.className = "tile-owner";
+        owner.textContent = `P${tileState.ownerId}`;
+        tileElement.appendChild(owner);
+
+        const level = document.createElement("span");
+        level.className = "tile-level";
+        level.textContent = `L${tileState.landLevel}`;
+        tileElement.appendChild(level);
+      }
+
+      function createKingToken(player, playerCountOnTile, playerIndex) {
+        const token = document.createElement("span");
+        const isActive = player.id === getActivePlayer().id;
+        const offset = playerCountOnTile < 2 ? 0 : playerIndex === 0 ? -11 : 11;
+        token.className = "king-token";
+        token.title = player.name;
+        token.style.setProperty("--token-x", `calc(50% + ${offset}px)`);
+        token.style.setProperty("--token-y", "50%");
+
+        if (isActive) {
+          const callout = document.createElement("span");
+          callout.className = "turn-token-callout";
+          callout.setAttribute("aria-hidden", "true");
+
+          const caret = document.createElement("span");
+          caret.className = "turn-token-caret";
+          callout.appendChild(caret);
+          token.appendChild(callout);
+        }
+
+        const marker = document.createElement("span");
+        marker.className = "tile-marker";
+        marker.setAttribute("role", "img");
+        marker.setAttribute("aria-label", `${player.name} marker`);
+
+        const image = document.createElement("img");
+        image.className = "tile-marker-image";
+        image.src = "../apps/web/src/assets/icons/residents-icon.svg";
+        image.alt = "";
+        image.setAttribute("aria-hidden", "true");
+        marker.appendChild(image);
+
+        token.appendChild(marker);
+        return token;
+      }
+
+      function renderHud() {
+        const activePlayer = getActivePlayer();
+        frameElements.roundLabel.textContent = `Round ${frameState.round}`;
+        frameElements.turnLabel.textContent = `P${activePlayer.id} Turn`;
+        frameElements.playerName.textContent = activePlayer.name;
+        frameElements.playerHealth.textContent = `health: ${activePlayer.health}`;
+        frameElements.playerCoin.textContent = `coin: ${activePlayer.coin}`;
+        frameElements.playerTurn.textContent = `level: ${activePlayer.level}`;
+        frameElements.statusSummary.textContent =
+          `${activePlayer.name}: Health ${activePlayer.health} / Coin ${activePlayer.coin} / Level ${activePlayer.level} / Tile ${String(activePlayer.tile).padStart(2, "0")}`;
+        frameElements.waitButton.textContent = `P${activePlayer.id} Tap to Scroll`;
+      }
+
+      function getActivePlayer() {
+        return frameState.players[frameState.activePlayerIndex];
+      }
+
+      function renderLandLedger() {
+        const activePlayer = getActivePlayer();
+        frameElements.ledgerRoundLabel.textContent = `Round ${frameState.round}`;
+        frameElements.ledgerPlayerName.textContent = activePlayer.name;
+        frameElements.landLedgerBody.replaceChildren(
+          ...frameState.tiles
+            .filter((tile) => tile.type === "land")
+            .map((tile) => {
+              const owner = tile.ownerId !== null
+                ? frameState.players.find((player) => player.id === tile.ownerId)
+                : null;
+              const isOwnedByPlayer = tile.ownerId === activePlayer.id;
+              const row = document.createElement("div");
+              row.className = `land-ledger-row ${isOwnedByPlayer ? "is-owned-self" : ""}`;
+
+              [
+                String(tile.id).padStart(2, "0"),
+                String(tile.landLevel),
+                isOwnedByPlayer ? "Mine" : owner ? `P${owner.id}` : "-",
+                isOwnedByPlayer ? String(tile.landLevel) : "-"
+              ].forEach((value) => {
+                const cell = document.createElement("span");
+                cell.textContent = value;
+                row.appendChild(cell);
+              });
+
+              return row;
+            })
+        );
       }
 
       function getTileGridPosition(id) {
@@ -884,15 +1248,108 @@
           if (ticks >= maxTicks) {
             window.clearInterval(rollTimer);
             const finalFace = getRandomDiceFace();
+            const rollingPlayer = getActivePlayer();
             frameState.currentFace = finalFace;
+            const movement = movePlayer(rollingPlayer, finalFace);
             renderDiceFace(finalFace);
             showSpeechResult(finalFace);
+            resolvePostMoveAction(rollingPlayer, movement);
+            renderBoard();
+            renderHud();
             frameElements.dice.classList.remove("is-shaking");
-            frameElements.waitButton.disabled = false;
-            frameElements.waitButton.textContent = "Tap to Scroll";
             frameState.isRolling = false;
           }
         }, 140);
+      }
+
+      function movePlayer(player, steps) {
+        const nextTile = ((player.tile - 1 + steps) % 40) + 1;
+        const passedStart = nextTile < player.tile;
+        if (nextTile < player.tile) {
+          player.coin += startBonus;
+          player.level = Math.min(maxKingLevel, player.level + 1);
+        }
+        player.tile = nextTile;
+        return { to: nextTile, passedStart };
+      }
+
+      function resolvePostMoveAction(player, movement) {
+        const tile = getTile(movement.to);
+        if (!tile || tile.type !== "land") {
+          endTurn();
+          return;
+        }
+
+        if (tile.ownerId === null) {
+          openLandPurchase(tile, player);
+          return;
+        }
+
+        if (tile.ownerId !== player.id && tile.landLevel > 0) {
+          resolveRivalLandFee(player, tile);
+        }
+
+        endTurn();
+      }
+
+      function openLandPurchase(tile, player) {
+        const economy = getLandEconomy(tile.id);
+        frameState.phase = "tile-action";
+        frameState.pendingTileId = tile.id;
+        frameElements.landPurchaseKicker.textContent = `Tile ${String(tile.id).padStart(2, "0")}`;
+        frameElements.landPurchasePrice.textContent = `Price: ${economy.price} coin`;
+        frameElements.buyLandButton.disabled = player.coin - economy.price < 1;
+        frameElements.waitButton.disabled = true;
+        openModal("land-purchase-modal");
+      }
+
+      function handleBuyLand() {
+        if (frameState.phase !== "tile-action" || frameState.pendingTileId === null) return;
+
+        const player = getActivePlayer();
+        const tile = getTile(frameState.pendingTileId);
+        if (!tile) return;
+
+        const economy = getLandEconomy(tile.id);
+        if (!tile || tile.ownerId !== null || !economy || player.coin - economy.price < 1) return;
+
+        player.coin -= economy.price;
+        tile.ownerId = player.id;
+        tile.landLevel = 1;
+        finishTileAction();
+      }
+
+      function handleSkipTileAction() {
+        if (frameState.phase !== "tile-action") return;
+        finishTileAction();
+      }
+
+      function finishTileAction() {
+        closeModal("land-purchase-modal");
+        frameState.phase = "rolling";
+        frameState.pendingTileId = null;
+        endTurn();
+        renderBoard();
+        renderHud();
+      }
+
+      function resolveRivalLandFee(player, tile) {
+        const owner = frameState.players.find((item) => item.id === tile.ownerId);
+        const rent = getRentForTile(tile);
+        if (!owner || rent <= 0) return;
+
+        const paid = Math.min(player.coin, rent);
+        player.coin = Math.max(0, player.coin - rent);
+        owner.coin += paid;
+      }
+
+      function endTurn() {
+        frameElements.waitButton.disabled = false;
+        frameState.phase = "rolling";
+        frameState.activePlayerIndex = (frameState.activePlayerIndex + 1) % frameState.players.length;
+        if (frameState.activePlayerIndex === 0) {
+          frameState.round += 1;
+        }
       }
 
       function getRandomDiceFace() {
@@ -926,11 +1383,13 @@
       }
 
       function openModal(id) {
-        document.querySelector(`[data-modal='${id}']`).hidden = false;
+        const modal = document.querySelector(`[data-modal='${id}']`);
+        if (modal) modal.hidden = false;
       }
 
       function closeModal(id) {
-        document.querySelector(`[data-modal='${id}']`).hidden = true;
+        const modal = document.querySelector(`[data-modal='${id}']`);
+        if (modal) modal.hidden = true;
       }
 
       initializeFrame();

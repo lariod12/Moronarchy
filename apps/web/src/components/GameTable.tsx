@@ -54,8 +54,9 @@ export const GameTable = ({
   const startingPlayerMoveQueued = useRef(false);
   const winner = G.winnerId ?? ctx.gameover?.winner ?? null;
   const currentPlayer = G.players.find((player) => player.id === currentPlayerId);
+  const turnPlayer = G.players.find((player) => player.id === ctx.currentPlayer);
   const canRoll = isActive && G.phase === "rolling" && !currentPlayer?.defeated;
-  const showTurnIndicator = currentPlayerId === ctx.currentPlayer && !currentPlayer?.defeated;
+  const showTurnIndicator = Boolean(turnPlayer && !turnPlayer.defeated && G.phase !== "game-over");
   const currentTile = getPlayerTile(G, currentPlayerId);
   const currentLandEconomy = currentTile?.type === "land" ? getLandEconomy(currentTile.id) : null;
   const isCurrentPlayerTurn = isActive && currentPlayerId === ctx.currentPlayer && !currentPlayer?.defeated;

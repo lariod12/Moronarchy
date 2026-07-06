@@ -37,6 +37,21 @@ describe("GameBoard", () => {
     expect(container.querySelector(".turn-token-caret")?.closest(".tile")).toHaveClass("has-turn-token");
   });
 
+  it("renders the turn indicator on the production turn player, not only the local player", () => {
+    const { container } = render(
+      <GameBoard
+        state={createInitialState(["0", "1"])}
+        currentPlayerId="0"
+        turnPlayerId="1"
+        showTurnIndicator
+      />
+    );
+
+    const turnToken = container.querySelector(".turn-token-caret")?.closest(".king-token");
+
+    expect(turnToken).toHaveAttribute("title", "Player 2");
+  });
+
   it("walks the moving marker through each tile instead of crossing the board", () => {
     vi.useFakeTimers();
 
