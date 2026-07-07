@@ -25,14 +25,14 @@
     - Reads optional query params for room and countdown continuity.
     - Countdown popup is visible immediately on load over the reused lobby screen.
     - Default countdown starts at 3.
-    - Auto-count runs 3 -> 2 -> 1 -> navigate to 04-ingame-main-board-your-turn.html.
+    - Auto-count runs 3 -> 2 -> 1 -> navigate to 04-ingame-main-board.html.
     - Clicking the popup also advances the countdown so the frame is quick to test.
     - Lobby background stays visible but dimmed and non-interactive behind the popup.
     - Player 1 and Player 2 both show Ready bubbles; Player 1 keeps the host/current dashed card treatment.
 
   Button workflow:
     Initial state: countdown popup open over the ready-to-start lobby.
-    Countdown popup click: decrement once; if value reaches 1, navigate to 04-ingame-main-board-your-turn.html.
+    Countdown popup click: decrement once; if value reaches 1, navigate to 04-ingame-main-board.html.
     Auto countdown: after load, advance every 1 second until navigation.
 
   Production mapping:
@@ -534,7 +534,7 @@
       function advanceCountdown() {
         if (frameState.countdownValue <= 1) {
           cleanupCountdownTimer();
-          navigateToFrame("04-ingame-main-board-your-turn.html", { room: frameState.roomCode });
+          navigateToFrame("04-ingame-main-board.html", { room: frameState.roomCode });
           return;
         }
 

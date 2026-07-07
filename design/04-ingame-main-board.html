@@ -1,7 +1,7 @@
 ﻿<!doctype html>
 <!--
   DESIGN FRAME SPEC
-  Frame: 04-ingame-main-board-your-turn
+  Frame: 04-ingame-main-board
   Screen purpose:
     In-game main board while the local prototype simulates two kings taking turns.
 
@@ -13,19 +13,21 @@
     Inputs: 0
     Buttons: 4
       1. Map - future map overview shortcut.
-      2. Tap to Scroll - shakes the dice, randomizes pips, then reveals the speech result.
+      2. Tap to Scroll - shakes the dice, randomizes pips, moves the active player, and resolves the tile action.
       3. Back - returns to 02-room-lobby.html.
       4. Crown button - opens a local status popup.
 
   Interactive features:
     - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, moves the active player, then reveals the final number.
     - Two local prototype players alternate turns after each completed roll.
+    - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
+    - Rival land resolves a fee locally and returns to the next active turn in this same frame.
     - Crown button opens/closes a player status modal.
     - Map button is visible as a future production control.
 
   Button workflow:
     Map -> local no-op for this frame.
-    Tap to Scroll -> dice shake -> random pip changes -> active player moves -> turn advances to next player.
+    Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> turn advances to next player.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
@@ -37,7 +39,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>04 In Game Main Board Your Turn</title>
+      <title>04 In Game Main Board</title>
     <style>
       :root {
         --ink: #050505;
@@ -847,7 +849,7 @@
     </style>
   </head>
   <body>
-    <main class="phone screen-ingame-main-board-your-turn" aria-label="In-game board your turn frame">
+    <main class="phone screen-ingame-main-board" aria-label="In-game main board frame">
       <header class="frame-top">
         <span class="tag" data-bind="round-label">Round 1</span>
         <span class="tag center" data-bind="turn-label">P1 Turn</span>
@@ -867,7 +869,7 @@
               <span class="pip pip--bottom-left"></span>
               <span class="pip pip--bottom-right"></span>
             </div>
-            <button class="tap-scroll" type="button" data-action="simulate-your-turn">Tap to Scroll</button>
+            <button class="tap-scroll" type="button" data-action="simulate-main-board-turn">Tap to Scroll</button>
           </div>
         </div>
       </section>
@@ -969,7 +971,7 @@
       const frameElements = {
         board: document.querySelector("[data-board]"),
         mapButton: document.querySelector("[data-action='open-map']"),
-        waitButton: document.querySelector("[data-action='simulate-your-turn']"),
+        waitButton: document.querySelector("[data-action='simulate-main-board-turn']"),
         dice: document.querySelector("[data-dice-face]"),
         speechBubble: document.querySelector(".speech-bubble"),
         speechText: document.querySelector("[data-bind='roll-result']"),
@@ -1011,7 +1013,7 @@
         renderHud();
         hideSpeechResult();
         frameElements.mapButton.addEventListener("click", handleOpenMap);
-        frameElements.waitButton.addEventListener("click", handleSimulateYourTurn);
+        frameElements.waitButton.addEventListener("click", handleSimulateMainBoardTurn);
         frameElements.buyLandButton.addEventListener("click", handleBuyLand);
         frameElements.skipTileActionButton.addEventListener("click", handleSkipTileAction);
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
@@ -1220,7 +1222,7 @@
         */
       }
 
-      function handleSimulateYourTurn() {
+      function handleSimulateMainBoardTurn() {
         if (frameState.isRolling) return;
 
         /*
