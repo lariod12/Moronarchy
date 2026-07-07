@@ -11,23 +11,32 @@
 
   Visible controls:
     Inputs: 0
-    Buttons: 4
+    Buttons: 6
       1. Map - future map overview shortcut.
       2. Tap to Scroll - shakes the dice, randomizes pips, moves the active player, and resolves the tile action.
       3. Back - returns to 02-room-lobby.html.
       4. Crown button - opens a local status popup.
+      5. Start Turn - closes the "your turn" notice for the active player.
+      6. End Turn - confirms the completed turn before the next player notice appears.
 
   Interactive features:
     - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, moves the active player, then reveals the final number.
     - Two local prototype players alternate turns after each completed roll.
     - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
     - Rival land resolves a fee locally and returns to the next active turn in this same frame.
+    - Every new active turn opens a player-specific "your turn" notice.
+    - Every completed turn opens an "end turn" notice before control passes to the next player.
+    - Every popup uses a short in/out transition before it is hidden or replaced.
+    - Dice result appears in the speech bubble first, then king-token movement starts.
+    - Post-roll action popups wait until the king-token move animation finishes.
     - Crown button opens/closes a player status modal.
     - Map button is visible as a future production control.
 
   Button workflow:
     Map -> local no-op for this frame.
-    Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> turn advances to next player.
+    Start Turn -> close turn notice.
+    End Turn -> confirm current turn completion -> switch active player -> show next player's turn notice.
+    Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
@@ -194,8 +203,19 @@
         box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
       }
 
-      .tile.is-owned {
+      .tile.is-owned-self {
+        color: var(--ink);
         background: #d0d0d0;
+      }
+
+      .tile.is-owned-rival {
+        color: var(--paper);
+        background: var(--ink);
+        box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35), inset 0 0 0 2px var(--paper);
+      }
+
+      .tile.is-owned-rival .turn-token-caret {
+        border-top-color: var(--paper);
       }
 
       .tile.is-tilted-left {
@@ -225,6 +245,95 @@
         isolation: isolate;
         pointer-events: none;
         transform: translate(-50%, -50%) scale(0.9);
+      }
+
+      .king-token.is-moving-target {
+        visibility: hidden;
+      }
+
+      .moving-king-token {
+        left: 0;
+        top: 0;
+        z-index: 34;
+        transform: translate(var(--move-x, 50%), var(--move-y, 50%)) translate(-50%, -50%) scale(0.9);
+        transition: transform var(--king-step-duration, 280ms) cubic-bezier(0.2, 0.82, 0.2, 1);
+      }
+
+      .moving-king-token .tile-marker {
+        transform: translate(-50%, -50%);
+      }
+
+      .moving-king-token .tile-marker.is-hopping {
+        animation: king-token-hop var(--king-hop-duration, 280ms) ease-in-out 1;
+      }
+
+      .king-token.is-landing .tile-marker {
+        animation: king-token-hop 360ms ease-out 1;
+      }
+
+      .motion-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 33;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .coin-particle,
+      .effect-label,
+      .tile-claim-stamp {
+        position: absolute;
+        left: var(--effect-x, 50%);
+        top: var(--effect-y, 50%);
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+      }
+
+      .coin-particle {
+        z-index: 36;
+        display: grid;
+        place-items: center;
+        width: 16px;
+        height: 16px;
+        background: var(--paper);
+        border: 2px solid var(--ink);
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 900;
+        line-height: 1;
+        animation: coin-drop 620ms cubic-bezier(0.16, 0.9, 0.24, 1) both;
+      }
+
+      .coin-particle.is-flying {
+        animation-name: coin-fly;
+      }
+
+      .effect-label {
+        z-index: 37;
+        padding: 3px 7px;
+        background: var(--paper);
+        border: 2px solid var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+        line-height: 1;
+        white-space: nowrap;
+        animation: effect-label-float 760ms ease-out both;
+      }
+
+      .tile-claim-stamp {
+        z-index: 35;
+        padding: 4px 8px;
+        background: var(--shade);
+        border: 2px solid var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+        line-height: 1;
+        animation: tile-claim-pop 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      .stat-row.is-bumping,
+      .tag.is-bumping {
+        animation: hud-value-bump 420ms ease-out both;
       }
 
       .turn-token-callout {
@@ -258,6 +367,101 @@
 
         50% {
           transform: translateX(-50%) translateY(-3px) scale(1.04);
+        }
+      }
+
+      @keyframes king-token-hop {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) translateY(0);
+        }
+
+        50% {
+          transform: translate(-50%, -50%) translateY(-7px);
+        }
+      }
+
+      @keyframes coin-drop {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) translateY(-18px) scale(0.78) rotate(-9deg);
+        }
+
+        32% {
+          opacity: 1;
+          transform: translate(-50%, -50%) translateY(-4px) scale(1.08) rotate(5deg);
+        }
+
+        100% {
+          opacity: 0;
+          transform:
+            translate(-50%, -50%)
+            translate(var(--coin-dx, 0), var(--coin-dy, 34px))
+            scale(0.88)
+            rotate(var(--coin-rotate, 18deg));
+        }
+      }
+
+      @keyframes coin-fly {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) translate(0, 0) scale(0.82);
+        }
+
+        25% {
+          opacity: 1;
+          transform: translate(-50%, -50%) translate(calc(var(--coin-dx, 0) * 0.35), -24px) scale(1.04);
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) translate(var(--coin-dx, 0), var(--coin-dy, 0)) scale(0.86);
+        }
+      }
+
+      @keyframes effect-label-float {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) translateY(10px) scale(0.92);
+        }
+
+        18%,
+        72% {
+          opacity: 1;
+          transform: translate(-50%, -50%) translateY(-7px) scale(1);
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) translateY(-24px) scale(0.96);
+        }
+      }
+
+      @keyframes tile-claim-pop {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) rotate(-8deg) scale(0.72);
+        }
+
+        42% {
+          opacity: 1;
+          transform: translate(-50%, -50%) rotate(3deg) scale(1.08);
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) rotate(-1deg) scale(1);
+        }
+      }
+
+      @keyframes hud-value-bump {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+
+        40% {
+          transform: translateY(-2px) scale(1.05);
         }
       }
 
@@ -300,8 +504,10 @@
         left: 53px;
         top: -34px;
         z-index: 3;
-        width: 58px;
-        height: 32px;
+        width: auto;
+        min-width: 58px;
+        max-width: 92px;
+        min-height: 32px;
         display: grid;
         place-items: center;
         padding: 4px 11px;
@@ -318,10 +524,10 @@
 
       .speech-text {
         display: block;
-        max-width: 38px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        max-width: 70px;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
       }
 
       .speech-bubble[hidden] {
@@ -627,6 +833,15 @@
         box-shadow: 23px -11px 0 var(--ink), 46px 0 0 var(--ink);
       }
 
+      :root {
+        --modal-scrim-open-duration: 180ms;
+        --modal-scrim-close-duration: 130ms;
+        --modal-card-open-duration: 220ms;
+        --modal-card-close-duration: 130ms;
+        --land-ledger-open-duration: 180ms;
+        --land-ledger-close-duration: 130ms;
+      }
+
       .modal[hidden] {
         display: none;
       }
@@ -634,10 +849,20 @@
       .modal {
         position: fixed;
         inset: 0;
+        z-index: 30;
         display: grid;
         place-items: center;
         padding: 18px;
         background: rgba(0, 0, 0, 0.42);
+      }
+
+      [data-modal][data-state="opening"] {
+        animation: modal-scrim-in var(--modal-scrim-open-duration) ease-out both;
+      }
+
+      [data-modal][data-state="closing"] {
+        pointer-events: none;
+        animation: modal-scrim-out var(--modal-scrim-close-duration) ease-in both;
       }
 
       .modal-card {
@@ -650,11 +875,87 @@
         text-align: center;
       }
 
+      .modal[data-state="opening"] .modal-card,
+      .land-purchase-modal[data-state="opening"] .land-purchase-dialog {
+        animation: popup-card-in var(--modal-card-open-duration) cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+      }
+
+      .modal[data-state="closing"] .modal-card,
+      .land-purchase-modal[data-state="closing"] .land-purchase-dialog {
+        animation: popup-card-out var(--modal-card-close-duration) ease-in both;
+      }
+
       .modal-card button,
       .land-purchase-dialog button,
       .land-ledger-close {
         min-height: 42px;
         cursor: pointer;
+      }
+
+      .turn-notice-modal {
+        z-index: 36;
+      }
+
+      .turn-notice-card {
+        --popup-tilt: -1deg;
+        gap: 12px;
+        width: min(100%, 300px);
+        min-height: 176px;
+        align-content: center;
+        transform: rotate(-1deg);
+      }
+
+      .turn-notice-kicker {
+        justify-self: center;
+        width: max-content;
+        padding: 3px 8px;
+        background: var(--shade);
+        border: 2px solid var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .turn-notice-title {
+        font-size: 26px;
+        line-height: 1.08;
+      }
+
+      .turn-notice-copy {
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .turn-notice-card button {
+        background: var(--shade);
+        transform: rotate(1deg);
+      }
+
+      .end-turn-modal {
+        z-index: 35;
+      }
+
+      .end-turn-card {
+        --popup-tilt: 1deg;
+        gap: 12px;
+        width: min(100%, 288px);
+        min-height: 168px;
+        align-content: center;
+        transform: rotate(1deg);
+      }
+
+      .end-turn-title {
+        font-size: 24px;
+        line-height: 1.08;
+      }
+
+      .end-turn-copy {
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .end-turn-card button {
+        background: var(--shade);
+        transform: rotate(-1deg);
       }
 
       .tile-owner,
@@ -663,6 +964,11 @@
         font-size: 8px;
         font-weight: 900;
         line-height: 1;
+      }
+
+      .tile.is-owned-rival .tile-owner,
+      .tile.is-owned-rival .tile-level {
+        color: var(--paper);
       }
 
       .tile-owner {
@@ -690,13 +996,33 @@
       }
 
       .land-purchase-dialog {
+        --popup-tilt: -1deg;
+        position: relative;
         display: grid;
         gap: 14px;
         width: min(100%, 320px);
-        padding: 16px;
+        padding: 18px 16px 16px;
         background: var(--paper);
         border: var(--stroke) solid var(--ink);
         transform: rotate(-1deg);
+      }
+
+      .land-purchase-close {
+        position: absolute;
+        top: -18px;
+        right: -14px;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        background: var(--paper);
+        border: var(--stroke) solid var(--ink);
+        font-size: 20px;
+        font-weight: 900;
+        line-height: 1;
+        cursor: pointer;
+        transform: rotate(4deg);
       }
 
       .land-purchase-copy {
@@ -722,6 +1048,7 @@
       }
 
       .land-purchase-actions button,
+      .land-purchase-close,
       .land-ledger-close {
         background: var(--paper);
         border: var(--stroke) solid var(--ink);
@@ -750,6 +1077,15 @@
         gap: 10px;
         padding: 12px;
         background: var(--paper);
+      }
+
+      .land-ledger-modal[data-state="opening"] {
+        animation: land-ledger-in var(--land-ledger-open-duration) ease-out both;
+      }
+
+      .land-ledger-modal[data-state="closing"] {
+        pointer-events: none;
+        animation: land-ledger-out var(--land-ledger-close-duration) ease-in both;
       }
 
       .land-ledger-header {
@@ -846,6 +1182,78 @@
           font-size: 13px;
         }
       }
+
+      @keyframes modal-scrim-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes modal-scrim-out {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+
+      @keyframes popup-card-in {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.94) rotate(var(--popup-tilt, 0deg));
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1) rotate(var(--popup-tilt, 0deg));
+        }
+      }
+
+      @keyframes popup-card-out {
+        from {
+          opacity: 1;
+          transform: translateY(0) scale(1) rotate(var(--popup-tilt, 0deg));
+        }
+        to {
+          opacity: 0;
+          transform: translateY(16px) scale(0.96) rotate(var(--popup-tilt, 0deg));
+        }
+      }
+
+      @keyframes land-ledger-in {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes land-ledger-out {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        [data-modal][data-state],
+        .modal[data-state] .modal-card,
+        .land-purchase-modal[data-state] .land-purchase-dialog,
+        .land-ledger-modal[data-state],
+        .moving-king-token,
+        .moving-king-token .tile-marker.is-hopping,
+        .king-token.is-landing .tile-marker,
+        .coin-particle,
+        .effect-label,
+        .tile-claim-stamp,
+        .stat-row.is-bumping,
+        .tag.is-bumping {
+          animation-duration: 1ms;
+          transition-duration: 1ms;
+        }
+      }
     </style>
   </head>
   <body>
@@ -857,6 +1265,7 @@
       </header>
 
       <section class="board" data-board aria-label="40 tile game board">
+        <div class="motion-layer" data-motion-layer aria-hidden="true"></div>
         <div class="board-center">
           <div class="dice-callout" aria-label="Dice result preview">
             <div class="speech-bubble" hidden aria-live="polite">
@@ -900,8 +1309,31 @@
         </button>
       </footer>
 
+      <section class="modal turn-notice-modal" data-modal="turn-notice-modal" hidden>
+        <div class="modal-card turn-notice-card" role="dialog" aria-modal="true" aria-labelledby="turn-notice-title">
+          <span class="turn-notice-kicker" data-bind="turn-notice-round">Round 1</span>
+          <strong class="turn-notice-title" id="turn-notice-title">
+            <span data-bind="turn-notice-player">Player 1</span>, your turn
+          </strong>
+          <span class="turn-notice-copy">Roll when ready.</span>
+          <button type="button" data-action="start-active-turn">Start Turn</button>
+        </div>
+      </section>
+
+      <section class="modal end-turn-modal" data-modal="end-turn-modal" hidden>
+        <div class="modal-card end-turn-card" role="dialog" aria-modal="true" aria-labelledby="end-turn-title">
+          <span class="turn-notice-kicker" data-bind="end-turn-round">Round 1</span>
+          <strong class="end-turn-title" id="end-turn-title">
+            <span data-bind="end-turn-player">Player 1</span> end turn
+          </strong>
+          <span class="end-turn-copy">Pass control to the next player.</span>
+          <button type="button" data-action="confirm-end-turn">End Turn</button>
+        </div>
+      </section>
+
       <section class="land-purchase-modal" data-modal="land-purchase-modal" hidden>
         <div class="land-purchase-dialog" role="dialog" aria-modal="true" aria-labelledby="land-purchase-title">
+          <button class="land-purchase-close" type="button" data-action="review-land-purchase" aria-label="Close buy decision and review board">x</button>
           <div class="land-purchase-copy">
             <span class="land-purchase-kicker" data-bind="land-purchase-kicker">Tile 04</span>
             <strong id="land-purchase-title">Buy this land?</strong>
@@ -965,11 +1397,14 @@
         phase: "rolling",
         pendingTileId: null,
         isRolling: false,
+        movingPlayerId: null,
+        landingPlayerId: null,
         currentFace: 5
       };
 
       const frameElements = {
         board: document.querySelector("[data-board]"),
+        motionLayer: document.querySelector("[data-motion-layer]"),
         mapButton: document.querySelector("[data-action='open-map']"),
         waitButton: document.querySelector("[data-action='simulate-main-board-turn']"),
         dice: document.querySelector("[data-dice-face]"),
@@ -984,11 +1419,18 @@
         statusSummary: document.querySelector("[data-bind='status-summary']"),
         landPurchaseKicker: document.querySelector("[data-bind='land-purchase-kicker']"),
         landPurchasePrice: document.querySelector("[data-bind='land-purchase-price']"),
+        turnNoticeRound: document.querySelector("[data-bind='turn-notice-round']"),
+        turnNoticePlayer: document.querySelector("[data-bind='turn-notice-player']"),
+        startTurnButton: document.querySelector("[data-action='start-active-turn']"),
+        endTurnRound: document.querySelector("[data-bind='end-turn-round']"),
+        endTurnPlayer: document.querySelector("[data-bind='end-turn-player']"),
+        confirmEndTurnButton: document.querySelector("[data-action='confirm-end-turn']"),
         ledgerRoundLabel: document.querySelector("[data-bind='ledger-round-label']"),
         ledgerPlayerName: document.querySelector("[data-bind='ledger-player-name']"),
         landLedgerBody: document.querySelector("[data-bind='land-ledger-body']"),
         buyLandButton: document.querySelector("[data-action='buy-land']"),
         skipTileActionButton: document.querySelector("[data-action='skip-tile-action']"),
+        reviewLandPurchaseButton: document.querySelector("[data-action='review-land-purchase']"),
         backButton: document.querySelector("[data-nav='02-room-lobby.html']"),
         openStatusButton: document.querySelector("[data-modal-open='land-ledger-modal']")
       };
@@ -1001,6 +1443,15 @@
         5: ["top-left", "top-right", "center", "bottom-left", "bottom-right"],
         6: ["top-left", "top-right", "middle-left", "middle-right", "bottom-left", "bottom-right"]
       };
+
+      const modalTransitionMs = 180;
+      const modalTimers = new Map();
+      const diceRollMs = 980;
+      const diceTickMs = 110;
+      const rollResultHoldMs = 650;
+      const landingSettleMs = 520;
+      const outcomeEffectMs = 760;
+      const kingMoveAnimationMs = 280;
 
       function initializeFrame() {
         /*
@@ -1016,6 +1467,9 @@
         frameElements.waitButton.addEventListener("click", handleSimulateMainBoardTurn);
         frameElements.buyLandButton.addEventListener("click", handleBuyLand);
         frameElements.skipTileActionButton.addEventListener("click", handleSkipTileAction);
+        frameElements.reviewLandPurchaseButton.addEventListener("click", handleReviewLandPurchase);
+        frameElements.startTurnButton.addEventListener("click", handleStartActiveTurn);
+        frameElements.confirmEndTurnButton.addEventListener("click", handleConfirmEndTurn);
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
         frameElements.openStatusButton.addEventListener("click", () => {
           renderLandLedger();
@@ -1026,6 +1480,7 @@
         });
         bindPressEffect(frameElements.backButton);
         bindPressEffect(frameElements.openStatusButton);
+        openTurnNotice();
       }
 
       function bindPressEffect(button) {
@@ -1071,34 +1526,41 @@
 
       function renderBoard() {
         frameElements.board.querySelectorAll(".tile").forEach((tile) => tile.remove());
+        const activePlayer = getActivePlayer();
 
         for (let id = 1; id <= 40; id += 1) {
           const position = getTileGridPosition(id);
           const tileState = getTile(id);
           const playersOnTile = frameState.players.filter((player) => player.tile === id);
-          const hasActivePlayer = playersOnTile.some((player) => player.id === getActivePlayer().id);
+          const hasActivePlayer = playersOnTile.some((player) => player.id === activePlayer.id);
+          const includesMovingPlayer = playersOnTile.some((player) => player.id === frameState.movingPlayerId);
+          const ownershipViewClass = tileState.ownerId === activePlayer.id
+            ? "is-owned-self"
+            : tileState.ownerId !== null
+              ? "is-owned-rival"
+              : "";
           const tile = document.createElement("div");
           const tiltClass = id % 2 === 0 ? "is-tilted-right" : "is-tilted-left";
           tile.className = [
             "tile",
             tiltClass,
-            tileState.ownerId !== null ? "is-owned" : "",
+            ownershipViewClass,
             playersOnTile.length > 0 ? "has-marker" : "",
             hasActivePlayer ? "has-active-marker" : ""
           ].filter(Boolean).join(" ");
           tile.style.gridColumn = position.column;
           tile.style.gridRow = position.row;
+          tile.dataset.tileId = String(id);
           tile.setAttribute("aria-label", `Tile ${id}`);
 
-          if (playersOnTile.length === 0) {
+          if (playersOnTile.length === 0 || includesMovingPlayer) {
             tile.append(String(id).padStart(2, "0"));
-          } else {
-            playersOnTile.forEach((player, index) => {
-              tile.appendChild(createKingToken(player, playersOnTile.length, index));
-            });
           }
 
-          renderTileOwnership(tile, tileState);
+          playersOnTile.forEach((player, index) => {
+            tile.appendChild(createKingToken(player, playersOnTile.length, index));
+          });
+
           frameElements.board.appendChild(tile);
         }
       }
@@ -1121,7 +1583,11 @@
         const token = document.createElement("span");
         const isActive = player.id === getActivePlayer().id;
         const offset = playerCountOnTile < 2 ? 0 : playerIndex === 0 ? -11 : 11;
-        token.className = "king-token";
+        token.className = [
+          "king-token",
+          frameState.movingPlayerId === player.id ? "is-moving-target" : "",
+          frameState.landingPlayerId === player.id ? "is-landing" : ""
+        ].filter(Boolean).join(" ");
         token.title = player.name;
         token.style.setProperty("--token-x", `calc(50% + ${offset}px)`);
         token.style.setProperty("--token-y", "50%");
@@ -1155,6 +1621,7 @@
 
       function renderHud() {
         const activePlayer = getActivePlayer();
+        const pendingTile = frameState.pendingTileId ? getTile(frameState.pendingTileId) : null;
         frameElements.roundLabel.textContent = `Round ${frameState.round}`;
         frameElements.turnLabel.textContent = `P${activePlayer.id} Turn`;
         frameElements.playerName.textContent = activePlayer.name;
@@ -1163,7 +1630,13 @@
         frameElements.playerTurn.textContent = `level: ${activePlayer.level}`;
         frameElements.statusSummary.textContent =
           `${activePlayer.name}: Health ${activePlayer.health} / Coin ${activePlayer.coin} / Level ${activePlayer.level} / Tile ${String(activePlayer.tile).padStart(2, "0")}`;
-        frameElements.waitButton.textContent = `P${activePlayer.id} Tap to Scroll`;
+        frameElements.waitButton.textContent = pendingTile && frameState.phase === "tile-action"
+          ? `Decide Tile ${String(pendingTile.id).padStart(2, "0")}`
+          : `P${activePlayer.id} Tap to Scroll`;
+        frameElements.turnNoticeRound.textContent = `Round ${frameState.round}`;
+        frameElements.turnNoticePlayer.textContent = activePlayer.name;
+        frameElements.endTurnRound.textContent = `Round ${frameState.round}`;
+        frameElements.endTurnPlayer.textContent = activePlayer.name;
       }
 
       function getActivePlayer() {
@@ -1222,7 +1695,39 @@
         */
       }
 
-      function handleSimulateMainBoardTurn() {
+      function handleStartActiveTurn() {
+        closeModal("turn-notice-modal", () => {
+          if (frameState.phase === "rolling") {
+            frameElements.waitButton.disabled = false;
+          }
+        });
+      }
+
+      function openTurnNotice() {
+        renderBoard();
+        renderHud();
+        frameElements.waitButton.disabled = true;
+        openModal("turn-notice-modal");
+      }
+
+      function openEndTurnNotice() {
+        renderHud();
+        openModal("end-turn-modal");
+      }
+
+      function handleConfirmEndTurn() {
+        closeModal("end-turn-modal", () => {
+          advanceToNextPlayerTurn();
+          openTurnNotice();
+        });
+      }
+
+      async function handleSimulateMainBoardTurn() {
+        if (frameState.phase === "tile-action" && frameState.pendingTileId !== null) {
+          reopenPendingLandPurchase();
+          return;
+        }
+
         if (frameState.isRolling) return;
 
         /*
@@ -1236,32 +1741,345 @@
         frameElements.waitButton.disabled = true;
         frameElements.waitButton.textContent = "Rolling...";
         hideSpeechResult();
+        clearMotionLayer();
 
         frameElements.dice.classList.remove("is-shaking");
         void frameElements.dice.offsetWidth;
         frameElements.dice.classList.add("is-shaking");
 
-        let ticks = 0;
-        const maxTicks = 14;
-        const rollTimer = window.setInterval(() => {
-          ticks += 1;
-          renderDiceFace(getRandomDiceFace());
+        const finalFace = await playDiceRoll();
+        const rollingPlayer = getActivePlayer();
+        const fromTileId = rollingPlayer.tile;
+        frameState.currentFace = finalFace;
+        const movement = movePlayer(rollingPlayer, finalFace);
 
-          if (ticks >= maxTicks) {
+        renderDiceFace(finalFace);
+        showSpeechResult(finalFace);
+        frameElements.dice.classList.remove("is-shaking");
+
+        await waitForRollResultRead();
+        await playTokenMove(rollingPlayer, fromTileId, movement.to, movement.steps);
+        await playLandingCadence(rollingPlayer, movement);
+
+        frameState.isRolling = false;
+        await resolvePostMoveAction(rollingPlayer, movement);
+        renderHud();
+      }
+
+      function playDiceRoll() {
+        return new Promise((resolve) => {
+          const rollTimer = window.setInterval(() => {
+            renderDiceFace(getRandomDiceFace());
+          }, diceTickMs);
+
+          window.setTimeout(() => {
             window.clearInterval(rollTimer);
-            const finalFace = getRandomDiceFace();
-            const rollingPlayer = getActivePlayer();
-            frameState.currentFace = finalFace;
-            const movement = movePlayer(rollingPlayer, finalFace);
-            renderDiceFace(finalFace);
-            showSpeechResult(finalFace);
-            resolvePostMoveAction(rollingPlayer, movement);
-            renderBoard();
-            renderHud();
-            frameElements.dice.classList.remove("is-shaking");
-            frameState.isRolling = false;
+            resolve(getRandomDiceFace());
+          }, getDiceRollDuration());
+        });
+      }
+
+      function waitForRollResultRead() {
+        return wait(getRollResultHoldDuration());
+      }
+
+      function wait(duration) {
+        return new Promise((resolve) => {
+          window.setTimeout(resolve, duration);
+        });
+      }
+
+      function playTokenMove(player, fromTileId, toTileId, stepCount) {
+        return new Promise((resolve) => {
+          animateKingMove(player, fromTileId, toTileId, stepCount, resolve);
+        });
+      }
+
+      function animateKingMove(player, fromTileId, toTileId, stepCount, afterMove) {
+        frameState.movingPlayerId = player.id;
+        renderBoard();
+        renderHud();
+
+        const path = getKingMovementPath(fromTileId, stepCount || getTileStepCount(fromTileId, toTileId));
+        const ghostToken = createMovingKingToken(player, fromTileId);
+
+        if (!ghostToken) {
+          finishKingMove(afterMove);
+          return;
+        }
+
+        frameElements.board.appendChild(ghostToken);
+        const tokenMarker = ghostToken.querySelector(".tile-marker");
+        const stepDuration = getKingMoveDuration();
+
+        if (path.length === 0) {
+          ghostToken.remove();
+          finishKingMove(afterMove);
+          return;
+        }
+
+        let stepIndex = 0;
+        const stepToNextTile = () => {
+          const nextTileId = path[stepIndex];
+          const nextTile = frameElements.board.querySelector(`[data-tile-id='${nextTileId}']`);
+
+          if (!nextTile) {
+            ghostToken.remove();
+            finishKingMove(afterMove);
+            return;
           }
-        }, 140);
+
+          const tileCenter = getTileCenter(nextTile);
+          window.requestAnimationFrame(() => {
+            ghostToken.style.setProperty("--move-x", `${tileCenter.x}px`);
+            ghostToken.style.setProperty("--move-y", `${tileCenter.y}px`);
+            ghostToken.style.setProperty("--king-step-duration", `${stepDuration}ms`);
+            if (tokenMarker) {
+              tokenMarker.classList.remove("is-hopping");
+              void tokenMarker.offsetWidth;
+              tokenMarker.classList.add("is-hopping");
+            }
+          });
+
+          stepIndex += 1;
+          if (stepIndex < path.length) {
+            window.setTimeout(stepToNextTile, stepDuration);
+          } else {
+            window.setTimeout(() => {
+              ghostToken.remove();
+              finishKingMove(afterMove);
+            }, stepDuration);
+          }
+        };
+
+        stepToNextTile();
+      }
+
+      function getTileCenter(tile) {
+        const boardRect = frameElements.board.getBoundingClientRect();
+        const tileRect = tile.getBoundingClientRect();
+        return {
+          x: tileRect.left - boardRect.left + tileRect.width / 2,
+          y: tileRect.top - boardRect.top + tileRect.height / 2
+        };
+      }
+
+      function getTileStepCount(fromTileId, toTileId) {
+        const diff = (toTileId - fromTileId + boardSize) % boardSize;
+        return diff === 0 ? boardSize : diff;
+      }
+
+      function getKingMovementPath(startTileId, stepCount) {
+        const path = [];
+        let currentTileId = startTileId;
+        const steps = Math.max(0, Math.min(stepCount, boardSize));
+
+        for (let i = 0; i < steps; i += 1) {
+          currentTileId = (currentTileId % boardSize) + 1;
+          path.push(currentTileId);
+        }
+
+        return path;
+      }
+
+      function createMovingKingToken(player, fromTileId) {
+        const fromTile = frameElements.board.querySelector(`[data-tile-id='${fromTileId}']`);
+        if (!fromTile) return null;
+
+        const tileCenter = getTileCenter(fromTile);
+        const token = document.createElement("span");
+        token.className = "king-token moving-king-token";
+        token.title = `${player.name} moving`;
+        token.style.setProperty("--move-x", `${tileCenter.x}px`);
+        token.style.setProperty("--move-y", `${tileCenter.y}px`);
+        token.style.setProperty("--king-step-duration", `${getKingMoveDuration()}ms`);
+        token.style.setProperty("--king-hop-duration", `${getKingMoveDuration()}ms`);
+
+        const marker = document.createElement("span");
+        marker.className = "tile-marker";
+        marker.setAttribute("role", "img");
+        marker.setAttribute("aria-label", `${player.name} moving marker`);
+
+        const image = document.createElement("img");
+        image.className = "tile-marker-image";
+        image.src = "../apps/web/src/assets/icons/residents-icon.svg";
+        image.alt = "";
+        image.setAttribute("aria-hidden", "true");
+        marker.appendChild(image);
+        token.appendChild(marker);
+        return token;
+      }
+
+      async function playLandingCadence(player, movement) {
+        frameState.landingPlayerId = player.id;
+        renderBoard();
+        showSpeechResult(movement.passedStart ? "Bonus" : "Arrived");
+
+        if (movement.passedStart) {
+          renderHud();
+          await playOutcomeEffect("bonus", {
+            player,
+            tile: getTile(movement.to),
+            amount: startBonus
+          });
+        } else {
+          await wait(getLandingSettleDuration());
+        }
+
+        frameState.landingPlayerId = null;
+        renderBoard();
+      }
+
+      async function finishTurnAfterEffects() {
+        await wait(getLandingSettleDuration());
+        endTurn();
+      }
+
+      async function playOutcomeEffect(type, context = {}) {
+        const tile = context.tile || getTile(context.player?.tile);
+        const center = tile ? getTileCenterById(tile.id) : null;
+
+        if (!center) {
+          await wait(getReducedMotion() ? 20 : getOutcomeEffectDuration());
+          return;
+        }
+
+        if (getReducedMotion()) {
+          if (type === "buy") createEffectLabel("Bought", center.x, center.y);
+          if (type === "rent") createEffectLabel("Rent", center.x, center.y);
+          if (type === "bonus") createEffectLabel(`+${context.amount}`, center.x, center.y);
+          renderHud();
+          await wait(80);
+          clearMotionLayer();
+          return;
+        }
+
+        if (type === "bonus") {
+          createEffectLabel(`+${context.amount}`, center.x, center.y - 10);
+          createCoinBurst(center.x, center.y, "drop", 5);
+          bumpElement(frameElements.playerCoin);
+          await wait(getOutcomeEffectDuration());
+          clearMotionLayer();
+          return;
+        }
+
+        if (type === "buy") {
+          createEffectLabel(`-${context.amount}`, center.x, center.y - 10);
+          createCoinBurst(center.x, center.y, "drop", 7);
+          createTileClaimStamp(tile, context.player);
+          bumpElement(frameElements.playerCoin);
+          await wait(getOutcomeEffectDuration());
+          clearMotionLayer();
+          return;
+        }
+
+        if (type === "rent") {
+          const ownerCenter = getTileCenterById(context.owner?.tile || tile.id);
+          createEffectLabel(`-${context.paid}`, center.x, center.y - 10);
+          createCoinBurst(center.x, center.y, "fly", 6, ownerCenter);
+          bumpElement(frameElements.playerCoin);
+          await wait(getOutcomeEffectDuration());
+          clearMotionLayer();
+        }
+      }
+
+      function createCoinBurst(x, y, mode, count, target = null) {
+        const offsets = [
+          [-18, 30, -18],
+          [2, 38, 12],
+          [18, 28, 24],
+          [-8, 48, -28],
+          [12, 46, 30],
+          [-24, 40, -12],
+          [26, 36, 18]
+        ];
+
+        for (let index = 0; index < count; index += 1) {
+          const [dx, dy, rotate] = offsets[index % offsets.length];
+          const targetDx = target ? target.x - x + dx * 0.15 : dx;
+          const targetDy = target ? target.y - y + dy * 0.15 : dy;
+          createCoinParticle(x, y, targetDx, targetDy, rotate, mode === "fly");
+        }
+      }
+
+      function createCoinParticle(x, y, dx, dy, rotate, isFlying = false) {
+        const coin = document.createElement("span");
+        coin.className = `coin-particle ${isFlying ? "is-flying" : ""}`;
+        coin.textContent = "$";
+        coin.style.setProperty("--effect-x", `${x}px`);
+        coin.style.setProperty("--effect-y", `${y}px`);
+        coin.style.setProperty("--coin-dx", `${dx}px`);
+        coin.style.setProperty("--coin-dy", `${dy}px`);
+        coin.style.setProperty("--coin-rotate", `${rotate}deg`);
+        frameElements.motionLayer.appendChild(coin);
+      }
+
+      function createEffectLabel(text, x, y) {
+        const label = document.createElement("span");
+        label.className = "effect-label";
+        label.textContent = text;
+        label.style.setProperty("--effect-x", `${x}px`);
+        label.style.setProperty("--effect-y", `${y}px`);
+        frameElements.motionLayer.appendChild(label);
+      }
+
+      function createTileClaimStamp(tile, player) {
+        const center = getTileCenterById(tile.id);
+        if (!center) return;
+
+        const stamp = document.createElement("span");
+        stamp.className = "tile-claim-stamp";
+        stamp.textContent = `P${player.id} L${tile.landLevel}`;
+        stamp.style.setProperty("--effect-x", `${center.x}px`);
+        stamp.style.setProperty("--effect-y", `${center.y}px`);
+        frameElements.motionLayer.appendChild(stamp);
+      }
+
+      function bumpElement(element) {
+        if (!element) return;
+        element.classList.remove("is-bumping");
+        void element.offsetWidth;
+        element.classList.add("is-bumping");
+        window.setTimeout(() => element.classList.remove("is-bumping"), getOutcomeEffectDuration());
+      }
+
+      function clearMotionLayer() {
+        frameElements.motionLayer.replaceChildren();
+      }
+
+      function getTileCenterById(tileId) {
+        const tile = frameElements.board.querySelector(`[data-tile-id='${tileId}']`);
+        return tile ? getTileCenter(tile) : null;
+      }
+
+      function finishKingMove(afterMove) {
+        frameState.movingPlayerId = null;
+        renderBoard();
+        if (afterMove) afterMove();
+      }
+
+      function getKingMoveDuration() {
+        return getReducedMotion() ? 1 : kingMoveAnimationMs;
+      }
+
+      function getRollResultHoldDuration() {
+        return getReducedMotion() ? 80 : rollResultHoldMs;
+      }
+
+      function getDiceRollDuration() {
+        return getReducedMotion() ? 120 : diceRollMs;
+      }
+
+      function getLandingSettleDuration() {
+        return getReducedMotion() ? 40 : landingSettleMs;
+      }
+
+      function getOutcomeEffectDuration() {
+        return getReducedMotion() ? 80 : outcomeEffectMs;
+      }
+
+      function getReducedMotion() {
+        return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       }
 
       function movePlayer(player, steps) {
@@ -1272,40 +2090,77 @@
           player.level = Math.min(maxKingLevel, player.level + 1);
         }
         player.tile = nextTile;
-        return { to: nextTile, passedStart };
+        return { to: nextTile, passedStart, steps };
       }
 
-      function resolvePostMoveAction(player, movement) {
+      async function resolvePostMoveAction(player, movement) {
         const tile = getTile(movement.to);
         if (!tile || tile.type !== "land") {
-          endTurn();
+          showSpeechResult("Arrived");
+          await finishTurnAfterEffects();
           return;
         }
 
         if (tile.ownerId === null) {
+          showSpeechResult("Buy?");
           openLandPurchase(tile, player);
           return;
         }
 
         if (tile.ownerId !== player.id && tile.landLevel > 0) {
-          resolveRivalLandFee(player, tile);
+          const rentResult = resolveRivalLandFee(player, tile);
+          showSpeechResult("Paid rent");
+          renderHud();
+          await playOutcomeEffect("rent", {
+            player,
+            tile,
+            owner: rentResult.owner,
+            paid: rentResult.paid
+          });
+        } else {
+          showSpeechResult("Owned");
         }
 
-        endTurn();
+        await finishTurnAfterEffects();
       }
 
       function openLandPurchase(tile, player) {
-        const economy = getLandEconomy(tile.id);
         frameState.phase = "tile-action";
         frameState.pendingTileId = tile.id;
-        frameElements.landPurchaseKicker.textContent = `Tile ${String(tile.id).padStart(2, "0")}`;
-        frameElements.landPurchasePrice.textContent = `Price: ${economy.price} coin`;
-        frameElements.buyLandButton.disabled = player.coin - economy.price < 1;
-        frameElements.waitButton.disabled = true;
+        updateLandPurchasePanel(tile, player);
+        frameElements.waitButton.disabled = false;
+        renderHud();
         openModal("land-purchase-modal");
       }
 
-      function handleBuyLand() {
+      function updateLandPurchasePanel(tile, player) {
+        const economy = getLandEconomy(tile.id);
+        frameElements.landPurchaseKicker.textContent = `Tile ${String(tile.id).padStart(2, "0")}`;
+        frameElements.landPurchasePrice.textContent = `Price: ${economy.price} coin`;
+        frameElements.buyLandButton.disabled = player.coin - economy.price < 1;
+      }
+
+      function handleReviewLandPurchase() {
+        if (frameState.phase !== "tile-action" || frameState.pendingTileId === null) return;
+        closeModal("land-purchase-modal", () => {
+          renderHud();
+          frameElements.waitButton.disabled = false;
+        });
+      }
+
+      function reopenPendingLandPurchase() {
+        if (frameState.phase !== "tile-action" || frameState.pendingTileId === null) return;
+
+        const tile = getTile(frameState.pendingTileId);
+        const player = getActivePlayer();
+        if (!tile) return;
+
+        updateLandPurchasePanel(tile, player);
+        renderHud();
+        openModal("land-purchase-modal");
+      }
+
+      async function handleBuyLand() {
         if (frameState.phase !== "tile-action" || frameState.pendingTileId === null) return;
 
         const player = getActivePlayer();
@@ -1318,7 +2173,16 @@
         player.coin -= economy.price;
         tile.ownerId = player.id;
         tile.landLevel = 1;
-        finishTileAction();
+        finishTileAction(async () => {
+          showSpeechResult("Bought");
+          renderBoard();
+          renderHud();
+          await playOutcomeEffect("buy", {
+            player,
+            tile,
+            amount: economy.price
+          });
+        });
       }
 
       function handleSkipTileAction() {
@@ -1326,28 +2190,38 @@
         finishTileAction();
       }
 
-      function finishTileAction() {
-        closeModal("land-purchase-modal");
-        frameState.phase = "rolling";
-        frameState.pendingTileId = null;
-        endTurn();
-        renderBoard();
-        renderHud();
+      function finishTileAction(afterCloseEffect = null) {
+        closeModal("land-purchase-modal", async () => {
+          frameState.phase = "rolling";
+          frameState.pendingTileId = null;
+          renderBoard();
+          renderHud();
+          if (afterCloseEffect) {
+            await afterCloseEffect();
+          }
+          await finishTurnAfterEffects();
+          renderHud();
+        });
       }
 
       function resolveRivalLandFee(player, tile) {
         const owner = frameState.players.find((item) => item.id === tile.ownerId);
         const rent = getRentForTile(tile);
-        if (!owner || rent <= 0) return;
+        if (!owner || rent <= 0) return { owner: null, paid: 0 };
 
         const paid = Math.min(player.coin, rent);
         player.coin = Math.max(0, player.coin - rent);
         owner.coin += paid;
+        return { owner, paid };
       }
 
       function endTurn() {
         frameElements.waitButton.disabled = false;
         frameState.phase = "rolling";
+        openEndTurnNotice();
+      }
+
+      function advanceToNextPlayerTurn() {
         frameState.activePlayerIndex = (frameState.activePlayerIndex + 1) % frameState.players.length;
         if (frameState.activePlayerIndex === 0) {
           frameState.round += 1;
@@ -1386,12 +2260,42 @@
 
       function openModal(id) {
         const modal = document.querySelector(`[data-modal='${id}']`);
-        if (modal) modal.hidden = false;
+        if (!modal) return;
+
+        window.clearTimeout(modalTimers.get(id));
+        modalTimers.delete(id);
+        modal.hidden = false;
+        modal.dataset.state = "opening";
+        modalTimers.set(id, window.setTimeout(() => {
+          if (modal.dataset.state === "opening") {
+            delete modal.dataset.state;
+          }
+          modalTimers.delete(id);
+        }, modalTransitionMs));
       }
 
-      function closeModal(id) {
+      function closeModal(id, afterClose = null) {
         const modal = document.querySelector(`[data-modal='${id}']`);
-        if (modal) modal.hidden = true;
+        if (!modal) {
+          if (afterClose) afterClose();
+          return;
+        }
+
+        window.clearTimeout(modalTimers.get(id));
+        modalTimers.delete(id);
+
+        if (modal.hidden) {
+          if (afterClose) afterClose();
+          return;
+        }
+
+        modal.dataset.state = "closing";
+        modalTimers.set(id, window.setTimeout(() => {
+          modal.hidden = true;
+          delete modal.dataset.state;
+          modalTimers.delete(id);
+          if (afterClose) afterClose();
+        }, modalTransitionMs));
       }
 
       initializeFrame();
