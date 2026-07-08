@@ -1338,6 +1338,7 @@
             <span class="land-purchase-kicker" data-bind="land-purchase-kicker">Tile 04</span>
             <strong id="land-purchase-title">Buy this land?</strong>
             <span data-bind="land-purchase-price">Price: 50 coin</span>
+            <span data-bind="land-purchase-plots">Plots owned: 10</span>
           </div>
           <div class="land-purchase-actions">
             <button type="button" data-action="skip-tile-action">Skip</button>
@@ -1385,6 +1386,8 @@
         { price: 90, rents: [18, 36, 63], upgradeCosts: [72, 108] },
         { price: 110, rents: [22, 44, 77], upgradeCosts: [88, 132] }
       ];
+      const initialOwnedPlotsPerPlayer = 10;
+      const initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer();
 
       const frameState = {
         tiles: createInitialTiles(),
@@ -1419,6 +1422,7 @@
         statusSummary: document.querySelector("[data-bind='status-summary']"),
         landPurchaseKicker: document.querySelector("[data-bind='land-purchase-kicker']"),
         landPurchasePrice: document.querySelector("[data-bind='land-purchase-price']"),
+        landPurchasePlots: document.querySelector("[data-bind='land-purchase-plots']"),
         turnNoticeRound: document.querySelector("[data-bind='turn-notice-round']"),
         turnNoticePlayer: document.querySelector("[data-bind='turn-notice-player']"),
         startTurnButton: document.querySelector("[data-action='start-active-turn']"),
@@ -1498,16 +1502,60 @@
       }
 
       function createInitialTiles() {
-        return Array.from({ length: boardSize }, (_, index) => ({
-          id: index + 1,
-          type: index === 0 ? "start" : "land",
-          ownerId: null,
-          landLevel: 0
-        }));
+        return Array.from({ length: boardSize }, (_, index) => {
+          const tileId = index + 1;
+          const ownedByPlayer = Object.entries(initialOwnedTileIdsByPlayer).find(([, tileIds]) =>
+            tileIds.includes(tileId)
+          );
+
+          return {
+            id: tileId,
+            type: index === 0 ? "start" : "land",
+            ownerId: ownedByPlayer ? Number(ownedByPlayer[0]) : null,
+            landLevel: ownedByPlayer ? 1 : 0
+          };
+        });
+      }
+
+      function createInitialOwnedTileIdsByPlayer() {
+        const reservedTileIdsByPlayer = {
+          1: [4],
+          2: [22]
+        };
+        const ownedTileIdsByPlayer = {
+          1: [...reservedTileIdsByPlayer[1]],
+          2: [...reservedTileIdsByPlayer[2]]
+        };
+        const excludedTileIds = new Set([
+          ...reservedTileIdsByPlayer[1],
+          ...reservedTileIdsByPlayer[2]
+        ]);
+        const candidateTileIds = Array.from({ length: boardSize - 1 }, (_, index) => index + 2)
+          .filter((tileId) => !excludedTileIds.has(tileId));
+        const spreadSteps = [2, 5, 7, 9, 11, 13, 15];
+        const spreadStep = spreadSteps[Math.floor(Math.random() * spreadSteps.length)];
+        const startIndex = Math.floor(Math.random() * candidateTileIds.length);
+        const direction = Math.random() < 0.5 ? 1 : -1;
+        const totalAdditionalTiles = (initialOwnedPlotsPerPlayer - 1) * 2;
+
+        for (let index = 0; index < totalAdditionalTiles; index += 1) {
+          const candidateIndex =
+            (startIndex + direction * index * spreadStep + candidateTileIds.length * 20) % candidateTileIds.length;
+          const tileId = candidateTileIds[candidateIndex];
+          const playerId = index % 2 === 0 ? 1 : 2;
+          ownedTileIdsByPlayer[playerId].push(tileId);
+        }
+
+        Object.values(ownedTileIdsByPlayer).forEach((tileIds) => tileIds.sort((left, right) => left - right));
+        return ownedTileIdsByPlayer;
       }
 
       function getTile(tileId) {
         return frameState.tiles[tileId - 1];
+      }
+
+      function getOwnedPlotCount(playerId) {
+        return frameState.tiles.filter((tile) => tile.type === "land" && tile.ownerId === playerId).length;
       }
 
       function getLandEconomy(tileId) {
@@ -1629,7 +1677,7 @@
         frameElements.playerCoin.textContent = `coin: ${activePlayer.coin}`;
         frameElements.playerTurn.textContent = `level: ${activePlayer.level}`;
         frameElements.statusSummary.textContent =
-          `${activePlayer.name}: Health ${activePlayer.health} / Coin ${activePlayer.coin} / Level ${activePlayer.level} / Tile ${String(activePlayer.tile).padStart(2, "0")}`;
+          `${activePlayer.name}: Health ${activePlayer.health} / Coin ${activePlayer.coin} / Plots ${getOwnedPlotCount(activePlayer.id)} / Level ${activePlayer.level} / Tile ${String(activePlayer.tile).padStart(2, "0")}`;
         frameElements.waitButton.textContent = pendingTile && frameState.phase === "tile-action"
           ? `Decide Tile ${String(pendingTile.id).padStart(2, "0")}`
           : `P${activePlayer.id} Tap to Scroll`;
@@ -1913,7 +1961,6 @@
       async function playLandingCadence(player, movement) {
         frameState.landingPlayerId = player.id;
         renderBoard();
-        showSpeechResult(movement.passedStart ? "Bonus" : "Arrived");
 
         if (movement.passedStart) {
           renderHud();
@@ -2096,7 +2143,6 @@
       async function resolvePostMoveAction(player, movement) {
         const tile = getTile(movement.to);
         if (!tile || tile.type !== "land") {
-          showSpeechResult("Arrived");
           await finishTurnAfterEffects();
           return;
         }
@@ -2137,6 +2183,7 @@
         const economy = getLandEconomy(tile.id);
         frameElements.landPurchaseKicker.textContent = `Tile ${String(tile.id).padStart(2, "0")}`;
         frameElements.landPurchasePrice.textContent = `Price: ${economy.price} coin`;
+        frameElements.landPurchasePlots.textContent = `Plots owned: ${getOwnedPlotCount(player.id)}`;
         frameElements.buyLandButton.disabled = player.coin - economy.price < 1;
       }
 
