@@ -11,17 +11,21 @@
 
   Visible controls:
     Inputs: 0
-    Buttons: 6
+    Buttons: 8
       1. Map - future map overview shortcut.
       2. Tap to Scroll - shakes the dice, randomizes pips, moves the active player, and resolves the tile action.
       3. Back - returns to 02-room-lobby.html.
       4. Crown button - opens a local status popup.
       5. Start Turn - closes the "your turn" notice for the active player.
       6. End Turn - confirms the completed turn before the next player notice appears.
+      7. P1 Device - assigns this tab as Player 1 for mock multiplayer.
+      8. P2 Device - assigns this tab as Player 2 for mock multiplayer.
 
   Interactive features:
     - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, moves the active player, then reveals the final number.
     - Two local prototype players alternate turns after each completed roll.
+    - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
+    - Only the tab assigned to the active player can roll, buy, skip, or end the turn.
     - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
     - Rival land resolves a fee locally and returns to the next active turn in this same frame.
     - Every new active turn opens a player-specific "your turn" notice.
@@ -37,12 +41,14 @@
     Start Turn -> close turn notice.
     End Turn -> confirm current turn completion -> switch active player -> show next player's turn notice.
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
+    P1/P2 Device -> assign this browser tab's controllable player.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
   Production mapping:
     Page/component target: GamePage, BoardFrame, PlayerHud, and StatusMenu.
     Waiting/turn state should come from boardgame.io currentPlayer, not local JS.
+    Mock multiplayer adapter should map to Socket.IO room events or boardgame.io multiplayer sync.
 -->
 <html lang="en">
   <head>
@@ -96,7 +102,7 @@
       .phone {
         position: relative;
         display: grid;
-        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
         gap: 8px;
         width: min(100%, 430px);
         min-height: calc(100vh - 20px);
@@ -172,6 +178,40 @@
       .map-button:active,
       .tap-scroll:active {
         transform: translateY(1px);
+      }
+
+      .connection-strip {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 6px;
+        min-height: 28px;
+      }
+
+      .seat-button,
+      .connection-status {
+        min-height: 26px;
+        padding: 4px 7px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        font-size: 11px;
+        font-weight: 900;
+        line-height: 1;
+        text-align: center;
+      }
+
+      .seat-button {
+        cursor: pointer;
+      }
+
+      .seat-button.is-active {
+        color: var(--paper);
+        background: var(--ink);
+      }
+
+      .connection-status {
+        min-width: 86px;
+        background: var(--wash);
       }
 
       /* Board perimeter: 40 Monopoly-style tiles wrapped around an empty play field. */
@@ -1264,6 +1304,12 @@
         <button class="map-button" type="button" data-action="open-map" aria-label="Open map overview">Map</button>
       </header>
 
+      <section class="connection-strip" aria-label="Mock multiplayer connection">
+        <button class="seat-button" type="button" data-player-seat="1">P1 Device</button>
+        <span class="connection-status" data-bind="connection-status">Mock Socket</span>
+        <button class="seat-button" type="button" data-player-seat="2">P2 Device</button>
+      </section>
+
       <section class="board" data-board aria-label="40 tile game board">
         <div class="motion-layer" data-motion-layer aria-hidden="true"></div>
         <div class="board-center">
@@ -1380,6 +1426,11 @@
       const boardSize = 40;
       const startBonus = 50;
       const maxKingLevel = 3;
+      const multiplayerRoomId = "moronarchy-03-main-board-design";
+      const sharedStateStorageKey = `${multiplayerRoomId}:state`;
+      const initialOwnedTileStorageKey = `${multiplayerRoomId}:initial-owned-tiles`;
+      const localPlayerStorageKey = `${multiplayerRoomId}:local-player-id`;
+      const tabInstanceId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const landEconomyBySegment = [
         { price: 50, rents: [10, 20, 35], upgradeCosts: [40, 60] },
         { price: 70, rents: [14, 28, 49], upgradeCosts: [56, 84] },
@@ -1388,6 +1439,9 @@
       ];
       const initialOwnedPlotsPerPlayer = 10;
       const initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer();
+      let localPlayerId = getInitialLocalPlayerId();
+      let stateRevision = 0;
+      let multiplayerChannel = null;
 
       const frameState = {
         tiles: createInitialTiles(),
@@ -1415,6 +1469,8 @@
         speechText: document.querySelector("[data-bind='roll-result']"),
         roundLabel: document.querySelector("[data-bind='round-label']"),
         turnLabel: document.querySelector("[data-bind='turn-label']"),
+        connectionStatus: document.querySelector("[data-bind='connection-status']"),
+        playerSeatButtons: document.querySelectorAll("[data-player-seat]"),
         playerName: document.querySelector("[data-bind='player-name']"),
         playerHealth: document.querySelector("[data-bind='player-health']"),
         playerCoin: document.querySelector("[data-bind='player-coin']"),
@@ -1463,6 +1519,7 @@
           - waiting state comes from boardgame.io currentPlayer
           - Tap to Scroll is a prototype shortcut for frame review only
         */
+        initializeMultiplayer();
         renderBoard();
         renderDiceFace(frameState.currentFace);
         renderHud();
@@ -1474,6 +1531,9 @@
         frameElements.reviewLandPurchaseButton.addEventListener("click", handleReviewLandPurchase);
         frameElements.startTurnButton.addEventListener("click", handleStartActiveTurn);
         frameElements.confirmEndTurnButton.addEventListener("click", handleConfirmEndTurn);
+        frameElements.playerSeatButtons.forEach((button) => {
+          button.addEventListener("click", () => setLocalPlayerId(Number(button.dataset.playerSeat)));
+        });
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
         frameElements.openStatusButton.addEventListener("click", () => {
           renderLandLedger();
@@ -1501,6 +1561,205 @@
         button.addEventListener("blur", release);
       }
 
+      function initializeMultiplayer() {
+        if ("BroadcastChannel" in window) {
+          multiplayerChannel = new BroadcastChannel(multiplayerRoomId);
+          multiplayerChannel.addEventListener("message", (event) => handleMultiplayerMessage(event.data));
+        }
+
+        window.addEventListener("storage", (event) => {
+          if (event.key !== sharedStateStorageKey || !event.newValue) return;
+          handleMultiplayerMessage(readJson(event.newValue));
+        });
+
+        const sharedState = readJson(readStorage("local", sharedStateStorageKey));
+        if (sharedState?.type === "state") {
+          applySharedFrameState(sharedState);
+        } else {
+          publishFrameState("room-created");
+        }
+
+        renderConnectionStatus();
+      }
+
+      function getInitialLocalPlayerId() {
+        const requestedPlayerId = Number(new URLSearchParams(window.location.search).get("player"));
+        if (isValidPlayerId(requestedPlayerId)) {
+          writeStorage("session", localPlayerStorageKey, String(requestedPlayerId));
+          return requestedPlayerId;
+        }
+
+        const savedPlayerId = Number(readStorage("session", localPlayerStorageKey));
+        return isValidPlayerId(savedPlayerId) ? savedPlayerId : 1;
+      }
+
+      function setLocalPlayerId(playerId) {
+        if (!isValidPlayerId(playerId)) return;
+        localPlayerId = playerId;
+        writeStorage("session", localPlayerStorageKey, String(playerId));
+        renderConnectionStatus();
+        renderBoard();
+        renderHud();
+        syncLocalTurnPrompt("seat-change");
+      }
+
+      function isValidPlayerId(playerId) {
+        return playerId === 1 || playerId === 2;
+      }
+
+      function handleMultiplayerMessage(message) {
+        if (!message || message.type !== "state" || message.sourceId === tabInstanceId) return;
+        if (message.revision <= stateRevision) return;
+        applySharedFrameState(message);
+      }
+
+      function applySharedFrameState(message) {
+        const snapshot = message.state;
+        if (!snapshot) return;
+
+        stateRevision = message.revision;
+        frameState.tiles = snapshot.tiles.map((tile) => ({ ...tile }));
+        frameState.players = snapshot.players.map((player) => ({ ...player }));
+        frameState.activePlayerIndex = snapshot.activePlayerIndex;
+        frameState.round = snapshot.round;
+        frameState.phase = snapshot.phase;
+        frameState.pendingTileId = snapshot.pendingTileId;
+        frameState.currentFace = snapshot.currentFace;
+        frameState.isRolling = false;
+        frameState.movingPlayerId = null;
+        frameState.landingPlayerId = null;
+
+        clearMotionLayer();
+        renderBoard();
+        renderDiceFace(frameState.currentFace);
+        renderHud();
+        syncLocalTurnPrompt(message.reason);
+      }
+
+      function publishFrameState(reason) {
+        stateRevision = Math.max(Date.now(), stateRevision + 1);
+        const message = {
+          type: "state",
+          sourceId: tabInstanceId,
+          revision: stateRevision,
+          reason,
+          state: serializeFrameState()
+        };
+
+        writeStorage("local", sharedStateStorageKey, JSON.stringify(message));
+        if (multiplayerChannel) {
+          multiplayerChannel.postMessage(message);
+        }
+        renderConnectionStatus();
+      }
+
+      function serializeFrameState() {
+        return {
+          tiles: frameState.tiles.map((tile) => ({
+            id: tile.id,
+            type: tile.type,
+            ownerId: tile.ownerId,
+            landLevel: tile.landLevel
+          })),
+          players: frameState.players.map((player) => ({ ...player })),
+          activePlayerIndex: frameState.activePlayerIndex,
+          round: frameState.round,
+          phase: frameState.phase,
+          pendingTileId: frameState.pendingTileId,
+          currentFace: frameState.currentFace
+        };
+      }
+
+      function renderConnectionStatus() {
+        const activePlayer = getActivePlayer();
+        const isMine = activePlayer.id === localPlayerId;
+        frameElements.connectionStatus.textContent = isMine ? `You P${localPlayerId}` : `Wait P${activePlayer.id}`;
+        frameElements.playerSeatButtons.forEach((button) => {
+          const playerId = Number(button.dataset.playerSeat);
+          button.classList.toggle("is-active", playerId === localPlayerId);
+          button.setAttribute("aria-pressed", String(playerId === localPlayerId));
+        });
+      }
+
+      function canLocalPlayerAct() {
+        return getActivePlayer().id === localPlayerId;
+      }
+
+      function applyTurnAccess() {
+        const canAct = canLocalPlayerAct();
+        frameElements.startTurnButton.disabled = !canAct;
+        frameElements.confirmEndTurnButton.disabled = !canAct;
+        frameElements.buyLandButton.disabled = frameElements.buyLandButton.disabled || !canAct;
+        frameElements.skipTileActionButton.disabled = !canAct;
+
+        if (!canAct) {
+          frameElements.waitButton.disabled = true;
+          frameElements.waitButton.textContent = `Waiting P${getActivePlayer().id}`;
+          return;
+        }
+
+        if (frameState.phase === "tile-action" && frameState.pendingTileId !== null) {
+          frameElements.waitButton.disabled = false;
+          return;
+        }
+
+        if (frameState.phase === "rolling" && !frameState.isRolling && !isModalOpen("turn-notice-modal") && !isModalOpen("end-turn-modal")) {
+          frameElements.waitButton.disabled = false;
+        }
+      }
+
+      function syncLocalTurnPrompt(reason) {
+        renderConnectionStatus();
+
+        if (frameState.phase === "tile-action" && frameState.pendingTileId !== null) {
+          if (canLocalPlayerAct()) {
+            reopenPendingLandPurchase();
+          } else {
+            closeModal("land-purchase-modal");
+          }
+          return;
+        }
+
+        closeModal("land-purchase-modal");
+        closeModal("end-turn-modal");
+
+        if (canLocalPlayerAct() && (reason === "turn-advanced" || reason === "seat-change")) {
+          openTurnNotice();
+        } else if (!canLocalPlayerAct()) {
+          closeModal("turn-notice-modal");
+        }
+      }
+
+      function isModalOpen(id) {
+        const modal = document.querySelector(`[data-modal='${id}']`);
+        return Boolean(modal && !modal.hidden);
+      }
+
+      function readStorage(type, key) {
+        try {
+          return window[`${type}Storage`].getItem(key);
+        } catch (_error) {
+          return null;
+        }
+      }
+
+      function writeStorage(type, key, value) {
+        try {
+          window[`${type}Storage`].setItem(key, value);
+        } catch (_error) {
+          // Storage can be unavailable in some local preview modes; BroadcastChannel still carries live sync.
+        }
+      }
+
+      function readJson(value) {
+        if (!value) return null;
+        try {
+          return JSON.parse(value);
+        } catch (_error) {
+          return null;
+        }
+      }
+
       function createInitialTiles() {
         return Array.from({ length: boardSize }, (_, index) => {
           const tileId = index + 1;
@@ -1518,6 +1777,11 @@
       }
 
       function createInitialOwnedTileIdsByPlayer() {
+        const savedTileIds = readJson(readStorage("local", initialOwnedTileStorageKey));
+        if (savedTileIds?.[1]?.length === initialOwnedPlotsPerPlayer && savedTileIds?.[2]?.length === initialOwnedPlotsPerPlayer) {
+          return savedTileIds;
+        }
+
         const reservedTileIdsByPlayer = {
           1: [4],
           2: [22]
@@ -1547,6 +1811,7 @@
         }
 
         Object.values(ownedTileIdsByPlayer).forEach((tileIds) => tileIds.sort((left, right) => left - right));
+        writeStorage("local", initialOwnedTileStorageKey, JSON.stringify(ownedTileIdsByPlayer));
         return ownedTileIdsByPlayer;
       }
 
@@ -1582,7 +1847,7 @@
           const playersOnTile = frameState.players.filter((player) => player.tile === id);
           const hasActivePlayer = playersOnTile.some((player) => player.id === activePlayer.id);
           const includesMovingPlayer = playersOnTile.some((player) => player.id === frameState.movingPlayerId);
-          const ownershipViewClass = tileState.ownerId === activePlayer.id
+          const ownershipViewClass = tileState.ownerId === localPlayerId
             ? "is-owned-self"
             : tileState.ownerId !== null
               ? "is-owned-rival"
@@ -1685,6 +1950,8 @@
         frameElements.turnNoticePlayer.textContent = activePlayer.name;
         frameElements.endTurnRound.textContent = `Round ${frameState.round}`;
         frameElements.endTurnPlayer.textContent = activePlayer.name;
+        renderConnectionStatus();
+        applyTurnAccess();
       }
 
       function getActivePlayer() {
@@ -1744,8 +2011,10 @@
       }
 
       function handleStartActiveTurn() {
+        if (!canLocalPlayerAct()) return;
+
         closeModal("turn-notice-modal", () => {
-          if (frameState.phase === "rolling") {
+          if (frameState.phase === "rolling" && canLocalPlayerAct()) {
             frameElements.waitButton.disabled = false;
           }
         });
@@ -1754,23 +2023,33 @@
       function openTurnNotice() {
         renderBoard();
         renderHud();
+        if (!canLocalPlayerAct()) {
+          closeModal("turn-notice-modal");
+          return;
+        }
         frameElements.waitButton.disabled = true;
         openModal("turn-notice-modal");
       }
 
       function openEndTurnNotice() {
         renderHud();
+        if (!canLocalPlayerAct()) return;
         openModal("end-turn-modal");
       }
 
       function handleConfirmEndTurn() {
+        if (!canLocalPlayerAct()) return;
+
         closeModal("end-turn-modal", () => {
           advanceToNextPlayerTurn();
+          publishFrameState("turn-advanced");
           openTurnNotice();
         });
       }
 
       async function handleSimulateMainBoardTurn() {
+        if (!canLocalPlayerAct()) return;
+
         if (frameState.phase === "tile-action" && frameState.pendingTileId !== null) {
           reopenPendingLandPurchase();
           return;
@@ -1808,6 +2087,7 @@
         await waitForRollResultRead();
         await playTokenMove(rollingPlayer, fromTileId, movement.to, movement.steps);
         await playLandingCadence(rollingPlayer, movement);
+        publishFrameState("player-moved");
 
         frameState.isRolling = false;
         await resolvePostMoveAction(rollingPlayer, movement);
@@ -2155,6 +2435,7 @@
 
         if (tile.ownerId !== player.id && tile.landLevel > 0) {
           const rentResult = resolveRivalLandFee(player, tile);
+          publishFrameState("rent-paid");
           showSpeechResult("Paid rent");
           renderHud();
           await playOutcomeEffect("rent", {
@@ -2176,6 +2457,7 @@
         updateLandPurchasePanel(tile, player);
         frameElements.waitButton.disabled = false;
         renderHud();
+        publishFrameState("tile-action-opened");
         openModal("land-purchase-modal");
       }
 
@@ -2208,6 +2490,7 @@
       }
 
       async function handleBuyLand() {
+        if (!canLocalPlayerAct()) return;
         if (frameState.phase !== "tile-action" || frameState.pendingTileId === null) return;
 
         const player = getActivePlayer();
@@ -2220,6 +2503,7 @@
         player.coin -= economy.price;
         tile.ownerId = player.id;
         tile.landLevel = 1;
+        publishFrameState("land-bought");
         finishTileAction(async () => {
           showSpeechResult("Bought");
           renderBoard();
@@ -2233,6 +2517,7 @@
       }
 
       function handleSkipTileAction() {
+        if (!canLocalPlayerAct()) return;
         if (frameState.phase !== "tile-action") return;
         finishTileAction();
       }
@@ -2241,6 +2526,7 @@
         closeModal("land-purchase-modal", async () => {
           frameState.phase = "rolling";
           frameState.pendingTileId = null;
+          publishFrameState("tile-action-finished");
           renderBoard();
           renderHud();
           if (afterCloseEffect) {
@@ -2265,6 +2551,7 @@
       function endTurn() {
         frameElements.waitButton.disabled = false;
         frameState.phase = "rolling";
+        publishFrameState("turn-ending");
         openEndTurnNotice();
       }
 
