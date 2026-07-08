@@ -2,17 +2,16 @@
 
 This folder is for design review before production implementation.
 
-Start from `index.html` to review the current click-through prototype. The design set is intentionally small now: keep only the main screens needed to understand and finish the core workflow, and put in-game interaction states inside `04-ingame-main-board.html` instead of splitting every state into separate files.
+Start from `index.html` to review the current click-through prototype. The design set is intentionally small now: keep only the main screens needed to understand and finish the core workflow, and put in-game interaction states inside `03-ingame-main-board.html` instead of splitting every state into separate files.
 
 ## Current Frames
 
 - `index.html` - prototype hub for reviewers and developers.
 1. `01-welcome-create-join.html` - welcome, player name, create/join room.
-2. `02-room-lobby.html` - room lobby, chat, ready/start flow.
-3. `03-game-starting.html` - game starting countdown transition.
-4. `04-ingame-main-board.html` - main in-game board with turn flow, dice roll, tile movement, land purchase, fee resolution, HUD, and status popup.
+2. `02-room-lobby.html` - room lobby, chat, ready/start flow, and in-place game starting countdown.
+3. `03-ingame-main-board.html` - main in-game board with turn flow, dice roll, tile movement, land purchase, fee resolution, HUD, and status popup.
 
-Do not add separate `05+` in-game state frames unless the screen becomes a genuinely different primary interface. Prefer improving `04-ingame-main-board.html` so the main board workflow is complete and easy to port.
+Do not add separate `04+` in-game state frames unless the screen becomes a genuinely different primary interface. Prefer improving `03-ingame-main-board.html` so the main board workflow is complete and easy to port.
 
 ## Design Rules
 
@@ -29,11 +28,10 @@ Do not add separate `05+` in-game state frames unless the screen becomes a genui
 index.html
   -> 01-welcome-create-join.html
   -> 02-room-lobby.html
-  -> 03-game-starting.html
-  -> 04-ingame-main-board.html
+  -> 03-ingame-main-board.html
 ```
 
-Inside `04-ingame-main-board.html`, the prototype should demonstrate the main loop:
+Inside `03-ingame-main-board.html`, the prototype should demonstrate the main loop:
 
 ```text
 Tap to Scroll
@@ -81,7 +79,7 @@ function navigateToFrame(fileName, params = {}) {}
 
 ## Main Board Scope
 
-`04-ingame-main-board.html` is the source of truth for the in-game board design. Keep these pieces together unless the product needs a truly separate screen:
+`03-ingame-main-board.html` is the source of truth for the in-game board design. Keep these pieces together unless the product needs a truly separate screen:
 
 - board shell and tile layout
 - current round/player labels
