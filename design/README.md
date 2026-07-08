@@ -4,6 +4,8 @@ This folder is for design review before production implementation.
 
 Start from `index.html` to review the current click-through prototype. The design set is intentionally small now: keep only the main screens needed to understand and finish the core workflow, and put in-game interaction states inside `03-ingame-main-board.html` instead of splitting every state into separate files.
 
+Before changing an interactive frame, use the project design validation workflow: define the task goal, expected results, and test workflow, get approval, then compare the finished result against that contract. See `../docs/design-task-validation-workflow.md`.
+
 ## Current Frames
 
 - `index.html` - prototype hub for reviewers and developers.
@@ -96,6 +98,8 @@ Production implementation should turn the repeated structure into shared React c
 ## Visual Verification
 
 UI design tasks are not complete until the changed frame is visually checked.
+
+For interactive or multiplayer design tasks, visual review must be combined with the three-layer workflow in `../docs/design-task-validation-workflow.md`: logic/state checks, UI/DOM checks, and browser/manual checks.
 
 For every design HTML change that affects layout, spacing, position, visibility, or animation:
 

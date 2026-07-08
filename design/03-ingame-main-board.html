@@ -11,7 +11,7 @@
 
   Visible controls:
     Inputs: 0
-    Buttons: 8
+    Buttons: 9
       1. Map - future map overview shortcut.
       2. Tap to Scroll - shakes the dice, randomizes pips, moves the active player, and resolves the tile action.
       3. Back - returns to 02-room-lobby.html.
@@ -20,12 +20,14 @@
       6. End Turn - confirms the completed turn before the next player notice appears.
       7. P1 Device - assigns this tab as Player 1 for mock multiplayer.
       8. P2 Device - assigns this tab as Player 2 for mock multiplayer.
+      9. Debug - opens cheat controls for multiplayer design scenarios.
 
   Interactive features:
     - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, moves the active player, then reveals the final number.
     - Two local prototype players alternate turns after each completed roll.
     - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
     - Only the tab assigned to the active player can roll, buy, skip, or end the turn.
+    - Debug opens a cheat modal for fast scenario setup, player state edits, land edits, and room reset.
     - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
     - Rival land resolves a fee locally and returns to the next active turn in this same frame.
     - Every new active turn opens a player-specific "your turn" notice.
@@ -42,6 +44,7 @@
     End Turn -> confirm current turn completion -> switch active player -> show next player's turn notice.
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
     P1/P2 Device -> assign this browser tab's controllable player.
+    Debug -> open cheat/debug modal -> apply selected state change -> sync mock multiplayer room.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
@@ -182,13 +185,14 @@
 
       .connection-strip {
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
+        grid-template-columns: 1fr auto auto 1fr;
         align-items: center;
         gap: 6px;
         min-height: 28px;
       }
 
       .seat-button,
+      .debug-button,
       .connection-status {
         min-height: 26px;
         padding: 4px 7px;
@@ -200,13 +204,18 @@
         text-align: center;
       }
 
-      .seat-button {
+      .seat-button,
+      .debug-button {
         cursor: pointer;
       }
 
       .seat-button.is-active {
         color: var(--paper);
         background: var(--ink);
+      }
+
+      .debug-button {
+        transform: rotate(-1deg);
       }
 
       .connection-status {
@@ -998,6 +1007,98 @@
         transform: rotate(-1deg);
       }
 
+      .debug-modal {
+        z-index: 38;
+      }
+
+      .debug-card {
+        --popup-tilt: -1deg;
+        width: min(100%, 360px);
+        max-height: min(86vh, 680px);
+        overflow-y: auto;
+        gap: 12px;
+        text-align: left;
+        transform: rotate(-1deg);
+      }
+
+      .debug-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .debug-title {
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .debug-block {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 2px solid var(--ink);
+        background: var(--wash);
+      }
+
+      .debug-block-title {
+        font-size: 12px;
+        font-weight: 950;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .debug-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .debug-field {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .debug-field input,
+      .debug-field select {
+        min-width: 0;
+        min-height: 34px;
+        padding: 4px 6px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .debug-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .debug-actions button,
+      .debug-header button {
+        min-height: 36px;
+        padding: 5px 8px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .debug-actions .is-primary,
+      .debug-header button {
+        background: var(--shade);
+      }
+
+      .debug-actions .is-selected {
+        color: var(--paper);
+        background: var(--ink);
+      }
+
       .tile-owner,
       .tile-level {
         position: absolute;
@@ -1307,6 +1408,7 @@
       <section class="connection-strip" aria-label="Mock multiplayer connection">
         <button class="seat-button" type="button" data-player-seat="1">P1 Device</button>
         <span class="connection-status" data-bind="connection-status">Mock Socket</span>
+        <button class="debug-button" type="button" data-action="open-debug">Debug</button>
         <button class="seat-button" type="button" data-player-seat="2">P2 Device</button>
       </section>
 
@@ -1420,6 +1522,103 @@
           <button type="button" data-modal-close="king-status-modal">Close</button>
         </div>
       </section>
+
+      <section class="modal debug-modal" data-modal="debug-modal" hidden>
+        <div class="modal-card debug-card" role="dialog" aria-modal="true" aria-labelledby="debug-title">
+          <header class="debug-header">
+            <strong class="debug-title" id="debug-title">Debug</strong>
+            <button type="button" data-modal-close="debug-modal">Close</button>
+          </header>
+
+          <section class="debug-block" aria-label="Debug scenarios">
+            <span class="debug-block-title">Scenario</span>
+            <div class="debug-actions">
+              <button type="button" data-debug-scenario="rival-land">Rival Land</button>
+              <button type="button" data-debug-scenario="cannot-buy">Cannot Buy</button>
+              <button type="button" data-debug-scenario="empty-land">Empty Land</button>
+              <button type="button" data-debug-scenario="broke-player">Broke Player</button>
+            </div>
+          </section>
+
+          <section class="debug-block" aria-label="Debug player controls">
+            <span class="debug-block-title">Player</span>
+            <div class="debug-grid">
+              <label class="debug-field">
+                Player
+                <select data-debug-control="player">
+                  <option value="1">Player 1</option>
+                  <option value="2">Player 2</option>
+                </select>
+              </label>
+              <label class="debug-field">
+                Coin
+                <input type="number" min="0" step="10" data-debug-control="coin" value="200" />
+              </label>
+              <label class="debug-field">
+                Tile
+                <input type="number" min="1" max="40" step="1" data-debug-control="player-tile" value="4" />
+              </label>
+              <label class="debug-field">
+                Turn
+                <select data-debug-control="turn-player">
+                  <option value="1">Player 1</option>
+                  <option value="2">Player 2</option>
+                </select>
+              </label>
+            </div>
+            <div class="debug-actions">
+              <button type="button" data-debug-action="set-coin">Set Coin</button>
+              <button type="button" data-debug-action="move-player">Move Player</button>
+              <button type="button" class="is-primary" data-debug-action="set-turn">Set Turn</button>
+              <button type="button" data-debug-action="sync-panel">Refresh</button>
+            </div>
+          </section>
+
+          <section class="debug-block" aria-label="Debug land controls">
+            <span class="debug-block-title">Land</span>
+            <div class="debug-grid">
+              <label class="debug-field">
+                Tile
+                <input type="number" min="1" max="40" step="1" data-debug-control="land-tile" value="2" />
+              </label>
+              <label class="debug-field">
+                Owner
+                <select data-debug-control="land-owner">
+                  <option value="">None</option>
+                  <option value="1">Player 1</option>
+                  <option value="2">Player 2</option>
+                </select>
+              </label>
+              <label class="debug-field">
+                Level
+                <select data-debug-control="land-level">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                </select>
+              </label>
+            </div>
+            <div class="debug-actions">
+              <button type="button" class="is-primary" data-debug-action="apply-land">Apply Land</button>
+            </div>
+          </section>
+
+          <section class="debug-block" aria-label="Debug room controls">
+            <span class="debug-block-title">Room</span>
+            <div class="debug-actions">
+              <button type="button" class="is-primary" data-debug-action="reset-room">Reset Room</button>
+            </div>
+          </section>
+
+          <section class="debug-block" aria-label="Apply selected debug scenario">
+            <span class="debug-block-title">Apply</span>
+            <div class="debug-actions">
+              <button type="button" class="is-primary" data-debug-action="apply-scenario">Apply Scenario</button>
+            </div>
+          </section>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -1442,13 +1641,11 @@
       let localPlayerId = getInitialLocalPlayerId();
       let stateRevision = 0;
       let multiplayerChannel = null;
+      let selectedDebugScenario = "rival-land";
 
       const frameState = {
         tiles: createInitialTiles(),
-        players: [
-          { id: 1, name: "Player 1", health: 100, coin: 200, level: 1, tile: 4 },
-          { id: 2, name: "Player 2", health: 100, coin: 200, level: 1, tile: 22 }
-        ],
+        players: createInitialPlayers(),
         activePlayerIndex: 0,
         round: 1,
         phase: "rolling",
@@ -1471,6 +1668,16 @@
         turnLabel: document.querySelector("[data-bind='turn-label']"),
         connectionStatus: document.querySelector("[data-bind='connection-status']"),
         playerSeatButtons: document.querySelectorAll("[data-player-seat]"),
+        debugButton: document.querySelector("[data-action='open-debug']"),
+        debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
+        debugActionButtons: document.querySelectorAll("[data-debug-action]"),
+        debugPlayerSelect: document.querySelector("[data-debug-control='player']"),
+        debugCoinInput: document.querySelector("[data-debug-control='coin']"),
+        debugPlayerTileInput: document.querySelector("[data-debug-control='player-tile']"),
+        debugTurnPlayerSelect: document.querySelector("[data-debug-control='turn-player']"),
+        debugLandTileInput: document.querySelector("[data-debug-control='land-tile']"),
+        debugLandOwnerSelect: document.querySelector("[data-debug-control='land-owner']"),
+        debugLandLevelSelect: document.querySelector("[data-debug-control='land-level']"),
         playerName: document.querySelector("[data-bind='player-name']"),
         playerHealth: document.querySelector("[data-bind='player-health']"),
         playerCoin: document.querySelector("[data-bind='player-coin']"),
@@ -1533,6 +1740,15 @@
         frameElements.confirmEndTurnButton.addEventListener("click", handleConfirmEndTurn);
         frameElements.playerSeatButtons.forEach((button) => {
           button.addEventListener("click", () => setLocalPlayerId(Number(button.dataset.playerSeat)));
+        });
+        frameElements.debugButton.addEventListener("click", openDebugModal);
+        frameElements.debugPlayerSelect.addEventListener("change", renderDebugPanel);
+        frameElements.debugLandTileInput.addEventListener("change", renderDebugPanel);
+        frameElements.debugScenarioButtons.forEach((button) => {
+          button.addEventListener("click", () => handleDebugScenario(button.dataset.debugScenario));
+        });
+        frameElements.debugActionButtons.forEach((button) => {
+          button.addEventListener("click", () => handleDebugAction(button.dataset.debugAction));
         });
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
         frameElements.openStatusButton.addEventListener("click", () => {
@@ -1633,6 +1849,9 @@
         renderBoard();
         renderDiceFace(frameState.currentFace);
         renderHud();
+        if (isModalOpen("debug-modal")) {
+          renderDebugPanel();
+        }
         syncLocalTurnPrompt(message.reason);
       }
 
@@ -1758,6 +1977,242 @@
         } catch (_error) {
           return null;
         }
+      }
+
+      function openDebugModal() {
+        renderDebugPanel();
+        openModal("debug-modal");
+      }
+
+      function renderDebugPanel() {
+        const subjectPlayer = getDebugSubjectPlayer();
+        const activePlayer = getActivePlayer();
+        const landTile = getDebugLandTile();
+
+        frameElements.debugPlayerSelect.value = String(subjectPlayer.id);
+        frameElements.debugCoinInput.value = String(subjectPlayer.coin);
+        frameElements.debugPlayerTileInput.value = String(subjectPlayer.tile);
+        frameElements.debugTurnPlayerSelect.value = String(activePlayer.id);
+        frameElements.debugLandTileInput.value = String(landTile.id);
+        frameElements.debugLandOwnerSelect.value = landTile.ownerId === null ? "" : String(landTile.ownerId);
+        frameElements.debugLandLevelSelect.value = String(landTile.landLevel);
+        frameElements.debugScenarioButtons.forEach((button) => {
+          button.classList.toggle("is-selected", button.dataset.debugScenario === selectedDebugScenario);
+          button.setAttribute("aria-pressed", String(button.dataset.debugScenario === selectedDebugScenario));
+        });
+      }
+
+      function getDebugSubjectPlayer() {
+        const selectedPlayerId = Number(frameElements.debugPlayerSelect.value);
+        return frameState.players.find((player) => player.id === selectedPlayerId) || getActivePlayer();
+      }
+
+      function getDebugLandTile() {
+        const tileId = getClampedNumber(frameElements.debugLandTileInput.value, 2, boardSize, 2);
+        return getTile(tileId) || getTile(2);
+      }
+
+      function handleDebugScenario(scenario) {
+        selectedDebugScenario = scenario;
+        renderDebugPanel();
+      }
+
+      function applySelectedDebugScenario() {
+        const player = getDebugSubjectPlayer();
+
+        if (selectedDebugScenario === "rival-land") {
+          applyDebugRivalLand(player);
+          return;
+        }
+
+        if (selectedDebugScenario === "cannot-buy") {
+          applyDebugPurchaseScenario(player, false);
+          return;
+        }
+
+        if (selectedDebugScenario === "empty-land") {
+          applyDebugPurchaseScenario(player, true);
+          return;
+        }
+
+        if (selectedDebugScenario === "broke-player") {
+          player.coin = 0;
+          applyDebugState("debug-broke-player");
+        }
+      }
+
+      function handleDebugAction(action) {
+        if (action === "sync-panel") {
+          renderDebugPanel();
+          return;
+        }
+
+        if (action === "apply-scenario") {
+          closeModal("debug-modal");
+          applySelectedDebugScenario();
+          return;
+        }
+
+        if (action === "set-coin") {
+          const player = getDebugSubjectPlayer();
+          player.coin = getClampedNumber(frameElements.debugCoinInput.value, 0, 9999, player.coin);
+          applyDebugState("debug-set-coin");
+          return;
+        }
+
+        if (action === "move-player") {
+          const player = getDebugSubjectPlayer();
+          player.tile = getClampedNumber(frameElements.debugPlayerTileInput.value, 1, boardSize, player.tile);
+          applyDebugState("debug-move-player");
+          return;
+        }
+
+        if (action === "set-turn") {
+          setActivePlayerById(Number(frameElements.debugTurnPlayerSelect.value));
+          frameState.phase = "rolling";
+          frameState.pendingTileId = null;
+          applyDebugState("debug-set-turn");
+          return;
+        }
+
+        if (action === "apply-land") {
+          applyDebugLandEdit();
+          return;
+        }
+
+        if (action === "reset-room") {
+          resetDebugRoom();
+        }
+      }
+
+      function applyDebugRivalLand(player) {
+        const tile = findRivalLandTile(player.id) || makeDebugRivalLand(player.id);
+        const owner = frameState.players.find((item) => item.id === tile.ownerId);
+        const rent = getRentForTile(tile);
+        const paid = Math.min(player.coin, rent);
+
+        setActivePlayerById(player.id);
+        player.tile = tile.id;
+        player.coin = Math.max(0, player.coin - rent);
+        if (owner) {
+          owner.coin += paid;
+        }
+        frameState.phase = "rolling";
+        frameState.pendingTileId = null;
+        showSpeechResult("Paid rent");
+        applyDebugState("debug-rival-land");
+      }
+
+      function applyDebugPurchaseScenario(player, canBuy) {
+        const tile = findEmptyLandTile() || makeDebugEmptyLand();
+        const economy = getLandEconomy(tile.id);
+        const targetCoin = canBuy ? Math.max(player.coin, economy.price + 20) : Math.max(0, economy.price - 1);
+
+        setActivePlayerById(player.id);
+        player.tile = tile.id;
+        player.coin = targetCoin;
+        tile.ownerId = null;
+        tile.landLevel = 0;
+        frameState.phase = "tile-action";
+        frameState.pendingTileId = tile.id;
+
+        closeGameplayModals();
+        updateLandPurchasePanel(tile, player);
+        renderBoard();
+        renderHud();
+        renderDiceFace(frameState.currentFace);
+        renderDebugPanel();
+        publishFrameState(canBuy ? "debug-empty-land" : "debug-cannot-buy");
+        openModal("land-purchase-modal");
+      }
+
+      function applyDebugLandEdit() {
+        const tile = getDebugLandTile();
+        const ownerValue = frameElements.debugLandOwnerSelect.value;
+        const ownerId = ownerValue === "" ? null : Number(ownerValue);
+        const landLevel = getClampedNumber(frameElements.debugLandLevelSelect.value, 0, maxKingLevel, 0);
+
+        tile.ownerId = ownerId;
+        tile.landLevel = ownerId === null ? 0 : Math.max(1, landLevel);
+        applyDebugState("debug-apply-land");
+      }
+
+      function applyDebugState(reason) {
+        closeGameplayModals();
+        frameState.isRolling = false;
+        frameState.movingPlayerId = null;
+        frameState.landingPlayerId = null;
+        renderBoard();
+        renderHud();
+        renderDiceFace(frameState.currentFace);
+        renderDebugPanel();
+        publishFrameState(reason);
+      }
+
+      function resetDebugRoom() {
+        frameState.tiles = createInitialTiles();
+        frameState.players = createInitialPlayers();
+        frameState.activePlayerIndex = 0;
+        frameState.round = 1;
+        frameState.phase = "rolling";
+        frameState.pendingTileId = null;
+        frameState.isRolling = false;
+        frameState.movingPlayerId = null;
+        frameState.landingPlayerId = null;
+        frameState.currentFace = 5;
+        hideSpeechResult();
+        applyDebugState("debug-reset-room");
+      }
+
+      function setActivePlayerById(playerId) {
+        const playerIndex = frameState.players.findIndex((player) => player.id === playerId);
+        if (playerIndex >= 0) {
+          frameState.activePlayerIndex = playerIndex;
+        }
+      }
+
+      function findEmptyLandTile() {
+        return frameState.tiles.find((tile) => tile.type === "land" && tile.ownerId === null);
+      }
+
+      function findRivalLandTile(playerId) {
+        return frameState.tiles.find((tile) =>
+          tile.type === "land" && tile.ownerId !== null && tile.ownerId !== playerId && tile.landLevel > 0
+        );
+      }
+
+      function makeDebugEmptyLand() {
+        const tile = frameState.tiles.find((item) => item.type === "land" && item.id !== 1) || getTile(2);
+        tile.ownerId = null;
+        tile.landLevel = 0;
+        return tile;
+      }
+
+      function makeDebugRivalLand(playerId) {
+        const rivalPlayer = frameState.players.find((player) => player.id !== playerId) || frameState.players[0];
+        const tile = makeDebugEmptyLand();
+        tile.ownerId = rivalPlayer.id;
+        tile.landLevel = 1;
+        return tile;
+      }
+
+      function closeGameplayModals() {
+        closeModal("land-purchase-modal");
+        closeModal("end-turn-modal");
+        closeModal("turn-notice-modal");
+      }
+
+      function getClampedNumber(value, min, max, fallback) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed)) return fallback;
+        return Math.max(min, Math.min(max, Math.round(parsed)));
+      }
+
+      function createInitialPlayers() {
+        return [
+          { id: 1, name: "Player 1", health: 100, coin: 200, level: 1, tile: 4 },
+          { id: 2, name: "Player 2", health: 100, coin: 200, level: 1, tile: 22 }
+        ];
       }
 
       function createInitialTiles() {

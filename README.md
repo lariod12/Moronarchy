@@ -36,12 +36,15 @@ docs/
 - [Development guide](docs/development-guide.md): how to update rules, UI, lobby flow, tests, and future features.
 - [Game rules](docs/game-rules.md): MVP gameplay rules and economy.
 - [Tech stack](docs/tech-stack.md): selected libraries, environment variables, and future visual layers.
+- [Design task validation workflow](docs/design-task-validation-workflow.md): goal/expected-result approval and three-layer testing for interactive design tasks.
 
 ## Design Preview
 
 Use `design/index.html` and `design/*.html` for quick interactive UI exploration before touching production React code.
 
 The design folder is intentionally simple: `index.html` is the click-through prototype hub, and each standalone HTML file is one screen/frame with layout, CSS, local demo state, function names, and interaction notes. Approved designs can later be implemented in `apps/web`.
+
+Before changing an interactive design frame, define the goal, expected results, and test workflow first. After the task, compare the actual result against that contract using the three-layer validation workflow in [docs/design-task-validation-workflow.md](docs/design-task-validation-workflow.md).
 
 For real mobile-device UI testing, run:
 
