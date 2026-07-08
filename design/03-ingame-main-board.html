@@ -11,7 +11,7 @@
 
   Visible controls:
     Inputs: 0
-    Buttons: 9
+    Buttons: 12
       1. Map - future map overview shortcut.
       2. Tap to Scroll - shakes the dice, randomizes pips, moves the active player, and resolves the tile action.
       3. Back - returns to 02-room-lobby.html.
@@ -21,6 +21,9 @@
       7. P1 Device - assigns this tab as Player 1 for mock multiplayer.
       8. P2 Device - assigns this tab as Player 2 for mock multiplayer.
       9. Debug - opens cheat controls for multiplayer design scenarios.
+      10. Auto Play - starts bot-vs-bot debug autoplay.
+      11. Pause - pauses autoplay after the current step.
+      12. Step Once - runs one bot turn.
 
   Interactive features:
     - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, moves the active player, then reveals the final number.
@@ -28,6 +31,7 @@
     - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
     - Only the tab assigned to the active player can roll, buy, skip, or end the turn.
     - Debug opens a cheat modal for fast scenario setup, player state edits, land edits, and room reset.
+    - Auto Play lets one tab host bot-vs-bot turns while other tabs watch synced state.
     - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
     - Rival land resolves a fee locally and returns to the next active turn in this same frame.
     - Every new active turn opens a player-specific "your turn" notice.
@@ -45,6 +49,7 @@
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
     P1/P2 Device -> assign this browser tab's controllable player.
     Debug -> open cheat/debug modal -> apply selected state change -> sync mock multiplayer room.
+    Auto Play -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
@@ -1007,6 +1012,42 @@
         transform: rotate(-1deg);
       }
 
+      .game-over-modal {
+        z-index: 44;
+      }
+
+      .game-over-card {
+        --popup-tilt: 1deg;
+        width: min(100%, 330px);
+        gap: 12px;
+        transform: rotate(1deg);
+      }
+
+      .game-over-title {
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .game-over-copy {
+        display: grid;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .game-over-winner {
+        padding: 8px 10px;
+        border: 2px solid var(--ink);
+        background: var(--shade);
+        font-size: 18px;
+        font-weight: 950;
+      }
+
+      .game-over-card button {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
       .debug-modal {
         z-index: 38;
       }
@@ -1479,6 +1520,19 @@
         </div>
       </section>
 
+      <section class="modal game-over-modal" data-modal="game-over-modal" hidden>
+        <div class="modal-card game-over-card" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
+          <span class="turn-notice-kicker" data-bind="game-over-round">Round 1</span>
+          <strong class="game-over-title" id="game-over-title">Game Over</strong>
+          <div class="game-over-copy">
+            <span class="game-over-winner" data-bind="game-over-winner">Winner: Player 2</span>
+            <span data-bind="game-over-defeated">Player 1 ran out of coin.</span>
+            <span data-bind="game-over-reason">Forced rent reduced coin to 0.</span>
+          </div>
+          <button type="button" data-action="reset-game-over-room">Reset Room</button>
+        </div>
+      </section>
+
       <section class="land-purchase-modal" data-modal="land-purchase-modal" hidden>
         <div class="land-purchase-dialog" role="dialog" aria-modal="true" aria-labelledby="land-purchase-title">
           <button class="land-purchase-close" type="button" data-action="review-land-purchase" aria-label="Close buy decision and review board">x</button>
@@ -1617,6 +1671,34 @@
               <button type="button" class="is-primary" data-debug-action="apply-scenario">Apply Scenario</button>
             </div>
           </section>
+
+          <section class="debug-block" aria-label="Auto play controls">
+            <span class="debug-block-title">Auto Play</span>
+            <div class="debug-grid">
+              <label class="debug-field">
+                Status
+                <span class="connection-status" data-bind="auto-play-status">Stopped</span>
+              </label>
+              <label class="debug-field">
+                Speed
+                <select data-debug-control="auto-speed">
+                  <option value="slow">Slow</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="fast">Fast</option>
+                </select>
+              </label>
+            </div>
+            <div class="debug-actions" aria-label="Auto play view controls">
+              <button type="button" class="is-primary" data-debug-action="view-follow-turn">Follow Turn</button>
+              <button type="button" data-debug-action="view-player-1">View P1</button>
+              <button type="button" data-debug-action="view-player-2">View P2</button>
+            </div>
+            <div class="debug-actions">
+              <button type="button" class="is-primary" data-debug-action="auto-play">Play</button>
+              <button type="button" data-debug-action="auto-pause">Pause</button>
+              <button type="button" data-debug-action="auto-step">Step Once</button>
+            </div>
+          </section>
         </div>
       </section>
     </main>
@@ -1642,6 +1724,13 @@
       let stateRevision = 0;
       let multiplayerChannel = null;
       let selectedDebugScenario = "rival-land";
+      let autoPlayEnabled = false;
+      let autoPlayPaused = false;
+      let autoPlayTimer = null;
+      let autoPlayHostId = null;
+      let autoPlaySpeed = "normal";
+      let autoPlayViewMode = "follow-turn";
+      let isAutoPlayStepRunning = false;
 
       const frameState = {
         tiles: createInitialTiles(),
@@ -1653,6 +1742,9 @@
         isRolling: false,
         movingPlayerId: null,
         landingPlayerId: null,
+        winnerId: null,
+        defeatedPlayerId: null,
+        gameOverReason: null,
         currentFace: 5
       };
 
@@ -1678,6 +1770,9 @@
         debugLandTileInput: document.querySelector("[data-debug-control='land-tile']"),
         debugLandOwnerSelect: document.querySelector("[data-debug-control='land-owner']"),
         debugLandLevelSelect: document.querySelector("[data-debug-control='land-level']"),
+        autoPlayStatus: document.querySelector("[data-bind='auto-play-status']"),
+        autoPlaySpeedSelect: document.querySelector("[data-debug-control='auto-speed']"),
+        autoPlayViewButtons: document.querySelectorAll("[data-debug-action='view-follow-turn'], [data-debug-action^='view-player-']"),
         playerName: document.querySelector("[data-bind='player-name']"),
         playerHealth: document.querySelector("[data-bind='player-health']"),
         playerCoin: document.querySelector("[data-bind='player-coin']"),
@@ -1692,6 +1787,11 @@
         endTurnRound: document.querySelector("[data-bind='end-turn-round']"),
         endTurnPlayer: document.querySelector("[data-bind='end-turn-player']"),
         confirmEndTurnButton: document.querySelector("[data-action='confirm-end-turn']"),
+        gameOverRound: document.querySelector("[data-bind='game-over-round']"),
+        gameOverWinner: document.querySelector("[data-bind='game-over-winner']"),
+        gameOverDefeated: document.querySelector("[data-bind='game-over-defeated']"),
+        gameOverReason: document.querySelector("[data-bind='game-over-reason']"),
+        resetGameOverRoomButton: document.querySelector("[data-action='reset-game-over-room']"),
         ledgerRoundLabel: document.querySelector("[data-bind='ledger-round-label']"),
         ledgerPlayerName: document.querySelector("[data-bind='ledger-player-name']"),
         landLedgerBody: document.querySelector("[data-bind='land-ledger-body']"),
@@ -1730,6 +1830,7 @@
         renderBoard();
         renderDiceFace(frameState.currentFace);
         renderHud();
+        renderAutoPlayControls();
         hideSpeechResult();
         frameElements.mapButton.addEventListener("click", handleOpenMap);
         frameElements.waitButton.addEventListener("click", handleSimulateMainBoardTurn);
@@ -1738,12 +1839,17 @@
         frameElements.reviewLandPurchaseButton.addEventListener("click", handleReviewLandPurchase);
         frameElements.startTurnButton.addEventListener("click", handleStartActiveTurn);
         frameElements.confirmEndTurnButton.addEventListener("click", handleConfirmEndTurn);
+        frameElements.resetGameOverRoomButton.addEventListener("click", resetDebugRoom);
         frameElements.playerSeatButtons.forEach((button) => {
           button.addEventListener("click", () => setLocalPlayerId(Number(button.dataset.playerSeat)));
         });
         frameElements.debugButton.addEventListener("click", openDebugModal);
         frameElements.debugPlayerSelect.addEventListener("change", renderDebugPanel);
         frameElements.debugLandTileInput.addEventListener("change", renderDebugPanel);
+        frameElements.autoPlaySpeedSelect.addEventListener("change", () => {
+          autoPlaySpeed = frameElements.autoPlaySpeedSelect.value;
+          renderAutoPlayControls();
+        });
         frameElements.debugScenarioButtons.forEach((button) => {
           button.addEventListener("click", () => handleDebugScenario(button.dataset.debugScenario));
         });
@@ -1840,6 +1946,9 @@
         frameState.round = snapshot.round;
         frameState.phase = snapshot.phase;
         frameState.pendingTileId = snapshot.pendingTileId;
+        frameState.winnerId = snapshot.winnerId ?? null;
+        frameState.defeatedPlayerId = snapshot.defeatedPlayerId ?? null;
+        frameState.gameOverReason = snapshot.gameOverReason ?? null;
         frameState.currentFace = snapshot.currentFace;
         frameState.isRolling = false;
         frameState.movingPlayerId = null;
@@ -1849,10 +1958,22 @@
         renderBoard();
         renderDiceFace(frameState.currentFace);
         renderHud();
+        if (isGameOver()) {
+          stopAutoPlayForGameOver();
+          closeGameplayModals();
+          renderGameOverModal();
+          openModal("game-over-modal");
+        }
         if (isModalOpen("debug-modal")) {
           renderDebugPanel();
         }
         syncLocalTurnPrompt(message.reason);
+        if (message.reason?.startsWith("auto-play-")) {
+          syncAutoPlayViewToActivePlayer();
+        }
+        if (!isGameOver() && autoPlayEnabled && !autoPlayPaused && autoPlayHostId === tabInstanceId) {
+          scheduleAutoPlayStep();
+        }
       }
 
       function publishFrameState(reason) {
@@ -1885,12 +2006,25 @@
           round: frameState.round,
           phase: frameState.phase,
           pendingTileId: frameState.pendingTileId,
+          winnerId: frameState.winnerId,
+          defeatedPlayerId: frameState.defeatedPlayerId,
+          gameOverReason: frameState.gameOverReason,
           currentFace: frameState.currentFace
         };
       }
 
       function renderConnectionStatus() {
         const activePlayer = getActivePlayer();
+        if (isGameOver()) {
+          frameElements.connectionStatus.textContent = `Winner P${frameState.winnerId}`;
+          frameElements.playerSeatButtons.forEach((button) => {
+            const playerId = Number(button.dataset.playerSeat);
+            button.classList.toggle("is-active", playerId === localPlayerId);
+            button.setAttribute("aria-pressed", String(playerId === localPlayerId));
+          });
+          return;
+        }
+
         const isMine = activePlayer.id === localPlayerId;
         frameElements.connectionStatus.textContent = isMine ? `You P${localPlayerId}` : `Wait P${activePlayer.id}`;
         frameElements.playerSeatButtons.forEach((button) => {
@@ -1901,7 +2035,7 @@
       }
 
       function canLocalPlayerAct() {
-        return getActivePlayer().id === localPlayerId;
+        return !isGameOver() && getActivePlayer().id === localPlayerId;
       }
 
       function applyTurnAccess() {
@@ -1910,6 +2044,12 @@
         frameElements.confirmEndTurnButton.disabled = !canAct;
         frameElements.buyLandButton.disabled = frameElements.buyLandButton.disabled || !canAct;
         frameElements.skipTileActionButton.disabled = !canAct;
+
+        if (isGameOver()) {
+          frameElements.waitButton.disabled = true;
+          frameElements.waitButton.textContent = "Game Over";
+          return;
+        }
 
         if (!canAct) {
           frameElements.waitButton.disabled = true;
@@ -1929,6 +2069,13 @@
 
       function syncLocalTurnPrompt(reason) {
         renderConnectionStatus();
+
+        if (isGameOver()) {
+          closeGameplayModals();
+          renderGameOverModal();
+          openModal("game-over-modal");
+          return;
+        }
 
         if (frameState.phase === "tile-action" && frameState.pendingTileId !== null) {
           if (canLocalPlayerAct()) {
@@ -2000,6 +2147,7 @@
           button.classList.toggle("is-selected", button.dataset.debugScenario === selectedDebugScenario);
           button.setAttribute("aria-pressed", String(button.dataset.debugScenario === selectedDebugScenario));
         });
+        renderAutoPlayControls();
       }
 
       function getDebugSubjectPlayer() {
@@ -2050,6 +2198,33 @@
         if (action === "apply-scenario") {
           closeModal("debug-modal");
           applySelectedDebugScenario();
+          return;
+        }
+
+        if (action === "auto-play") {
+          startAutoPlay();
+          return;
+        }
+
+        if (action === "auto-pause") {
+          pauseAutoPlay();
+          return;
+        }
+
+        if (action === "auto-step") {
+          runAutoPlayStep(true);
+          return;
+        }
+
+        if (action === "view-follow-turn") {
+          autoPlayViewMode = "follow-turn";
+          syncAutoPlayViewToActivePlayer();
+          return;
+        }
+
+        if (action.startsWith("view-player-")) {
+          autoPlayViewMode = "fixed";
+          setDebugViewPlayerId(Number(action.replace("view-player-", "")));
           return;
         }
 
@@ -2104,6 +2279,7 @@
       }
 
       function applyDebugPurchaseScenario(player, canBuy) {
+        pauseAutoPlay();
         const tile = findEmptyLandTile() || makeDebugEmptyLand();
         const economy = getLandEconomy(tile.id);
         const targetCoin = canBuy ? Math.max(player.coin, economy.price + 20) : Math.max(0, economy.price - 1);
@@ -2138,6 +2314,7 @@
       }
 
       function applyDebugState(reason) {
+        pauseAutoPlay();
         closeGameplayModals();
         frameState.isRolling = false;
         frameState.movingPlayerId = null;
@@ -2159,9 +2336,257 @@
         frameState.isRolling = false;
         frameState.movingPlayerId = null;
         frameState.landingPlayerId = null;
+        frameState.winnerId = null;
+        frameState.defeatedPlayerId = null;
+        frameState.gameOverReason = null;
         frameState.currentFace = 5;
         hideSpeechResult();
+        closeModal("game-over-modal");
         applyDebugState("debug-reset-room");
+      }
+
+      function startAutoPlay() {
+        if (isGameOver()) {
+          closeModal("debug-modal");
+          renderGameOverModal();
+          openModal("game-over-modal");
+          return;
+        }
+
+        autoPlayEnabled = true;
+        autoPlayPaused = false;
+        autoPlayHostId = tabInstanceId;
+        autoPlayViewMode = "follow-turn";
+        autoPlaySpeed = frameElements.autoPlaySpeedSelect.value;
+        syncAutoPlayViewToActivePlayer();
+        closeModal("debug-modal");
+        closeGameplayModals();
+        renderAutoPlayControls();
+        scheduleAutoPlayStep();
+      }
+
+      function pauseAutoPlay() {
+        autoPlayPaused = true;
+        autoPlayEnabled = false;
+        clearAutoPlayTimer();
+        renderAutoPlayControls();
+      }
+
+      function scheduleAutoPlayStep() {
+        clearAutoPlayTimer();
+        if (isGameOver()) {
+          stopAutoPlayForGameOver();
+          return;
+        }
+        if (!autoPlayEnabled || autoPlayPaused || autoPlayHostId !== tabInstanceId || isAutoPlayStepRunning) return;
+
+        autoPlayTimer = window.setTimeout(() => {
+          autoPlayTimer = null;
+          runAutoPlayStep(false);
+        }, getAutoPlayDelay());
+      }
+
+      async function runAutoPlayStep(runOnce = false) {
+        if (isAutoPlayStepRunning || isGameOver()) return;
+
+        autoPlayHostId = tabInstanceId;
+        autoPlaySpeed = frameElements.autoPlaySpeedSelect.value;
+        if (runOnce) {
+          autoPlayEnabled = false;
+          autoPlayPaused = true;
+        }
+
+        clearAutoPlayTimer();
+        isAutoPlayStepRunning = true;
+        renderAutoPlayControls();
+
+        try {
+          await runAutoPlayTurn();
+        } finally {
+          isAutoPlayStepRunning = false;
+          if (runOnce) {
+            autoPlayPaused = true;
+            autoPlayEnabled = false;
+          }
+          renderAutoPlayControls();
+          if (autoPlayEnabled && !autoPlayPaused) {
+            scheduleAutoPlayStep();
+          }
+        }
+      }
+
+      async function runAutoPlayTurn() {
+        if (isGameOver()) return;
+        closeGameplayModals();
+
+        if (frameState.phase === "tile-action" && frameState.pendingTileId !== null) {
+          await resolveAutoPlayTileAction(getActivePlayer());
+          if (isGameOver()) return;
+          confirmAutoPlayEndTurn("auto-play-pending-action");
+          return;
+        }
+
+        if (frameState.phase !== "rolling" || frameState.isRolling) return;
+
+        const rollingPlayer = getActivePlayer();
+        const fromTileId = rollingPlayer.tile;
+        frameState.isRolling = true;
+        frameElements.waitButton.disabled = true;
+        frameElements.waitButton.textContent = "Auto...";
+        hideSpeechResult();
+        clearMotionLayer();
+
+        frameElements.dice.classList.remove("is-shaking");
+        void frameElements.dice.offsetWidth;
+        frameElements.dice.classList.add("is-shaking");
+
+        const finalFace = getRandomDiceFace();
+        await wait(getAutoPlayRollDuration());
+        frameState.currentFace = finalFace;
+        const movement = movePlayer(rollingPlayer, finalFace);
+        renderDiceFace(finalFace);
+        showSpeechResult(finalFace);
+        frameElements.dice.classList.remove("is-shaking");
+
+        await wait(getAutoPlayReadDuration());
+        await playTokenMove(rollingPlayer, fromTileId, movement.to, movement.steps);
+        await playLandingCadence(rollingPlayer, movement);
+        publishFrameState("auto-play-player-moved");
+
+        frameState.isRolling = false;
+        await resolveAutoPlayTileAction(rollingPlayer);
+        if (isGameOver()) return;
+        confirmAutoPlayEndTurn("auto-play-turn-complete");
+      }
+
+      async function resolveAutoPlayTileAction(player) {
+        const tile = getTile(player.tile);
+        if (!tile || tile.type !== "land") {
+          await wait(getAutoPlaySettleDuration());
+          return;
+        }
+
+        const economy = getLandEconomy(tile.id);
+        if (tile.ownerId === null && economy) {
+          if (player.coin - economy.price >= 1) {
+            player.coin -= economy.price;
+            tile.ownerId = player.id;
+            tile.landLevel = 1;
+            showSpeechResult("Bought");
+            renderBoard();
+            renderHud();
+            publishFrameState("auto-play-land-bought");
+            await playOutcomeEffect("buy", { player, tile, amount: economy.price });
+          } else {
+            showSpeechResult("Skip");
+            publishFrameState("auto-play-land-skipped");
+            await wait(getAutoPlaySettleDuration());
+          }
+          return;
+        }
+
+        if (tile.ownerId !== player.id && tile.landLevel > 0) {
+          const rentResult = resolveRivalLandFee(player, tile);
+          showSpeechResult("Paid rent");
+          renderHud();
+          publishFrameState("auto-play-rent-paid");
+          await playOutcomeEffect("rent", {
+            player,
+            tile,
+            owner: rentResult.owner,
+            paid: rentResult.paid
+          });
+          checkRentDefeat(player, rentResult, "auto-play-rent-defeat");
+          return;
+        }
+
+        showSpeechResult("Owned");
+        publishFrameState("auto-play-owned-land");
+        await wait(getAutoPlaySettleDuration());
+      }
+
+      function confirmAutoPlayEndTurn(reason) {
+        if (isGameOver()) return;
+        frameState.phase = "rolling";
+        frameState.pendingTileId = null;
+        advanceToNextPlayerTurn();
+        syncAutoPlayViewToActivePlayer();
+        renderBoard();
+        renderHud();
+        publishFrameState(reason);
+      }
+
+      function renderAutoPlayControls() {
+        if (!frameElements.autoPlayStatus || !frameElements.autoPlaySpeedSelect) return;
+
+        const status = isAutoPlayStepRunning
+          ? "Running"
+          : autoPlayEnabled && !autoPlayPaused
+            ? "Running"
+            : autoPlayPaused
+              ? "Paused"
+              : "Stopped";
+        frameElements.autoPlayStatus.textContent = status;
+        frameElements.autoPlaySpeedSelect.value = autoPlaySpeed;
+        frameElements.autoPlayViewButtons.forEach((button) => {
+          const action = button.dataset.debugAction;
+          const isSelected = action === "view-follow-turn"
+            ? autoPlayViewMode === "follow-turn"
+            : autoPlayViewMode === "fixed" && Number(action.replace("view-player-", "")) === localPlayerId;
+          button.classList.toggle("is-selected", isSelected);
+          button.setAttribute("aria-pressed", String(isSelected));
+        });
+      }
+
+      function syncAutoPlayViewToActivePlayer() {
+        if (autoPlayViewMode !== "follow-turn" || isGameOver()) return;
+        setDebugViewPlayerId(getActivePlayer().id);
+      }
+
+      function setDebugViewPlayerId(playerId) {
+        if (!isValidPlayerId(playerId)) return;
+
+        localPlayerId = playerId;
+        writeStorage("session", localPlayerStorageKey, String(playerId));
+        closeModal("turn-notice-modal");
+        closeModal("end-turn-modal");
+        renderConnectionStatus();
+        renderBoard();
+        renderHud();
+        renderAutoPlayControls();
+        if (isModalOpen("debug-modal")) {
+          renderDebugPanel();
+        }
+      }
+
+      function clearAutoPlayTimer() {
+        if (!autoPlayTimer) return;
+        window.clearTimeout(autoPlayTimer);
+        autoPlayTimer = null;
+      }
+
+      function getAutoPlayDelay() {
+        if (autoPlaySpeed === "slow") return 1200;
+        if (autoPlaySpeed === "fast") return 260;
+        return 650;
+      }
+
+      function getAutoPlayRollDuration() {
+        if (autoPlaySpeed === "slow") return getDiceRollDuration();
+        if (autoPlaySpeed === "fast") return 160;
+        return 420;
+      }
+
+      function getAutoPlayReadDuration() {
+        if (autoPlaySpeed === "slow") return getRollResultHoldDuration();
+        if (autoPlaySpeed === "fast") return 90;
+        return 240;
+      }
+
+      function getAutoPlaySettleDuration() {
+        if (autoPlaySpeed === "slow") return getLandingSettleDuration();
+        if (autoPlaySpeed === "fast") return 80;
+        return 180;
       }
 
       function setActivePlayerById(playerId) {
@@ -2200,6 +2625,66 @@
         closeModal("land-purchase-modal");
         closeModal("end-turn-modal");
         closeModal("turn-notice-modal");
+      }
+
+      function isGameOver() {
+        return frameState.phase === "game-over" || frameState.winnerId !== null;
+      }
+
+      function stopAutoPlayForGameOver() {
+        autoPlayEnabled = false;
+        autoPlayPaused = false;
+        clearAutoPlayTimer();
+        renderAutoPlayControls();
+      }
+
+      function checkRentDefeat(player, rentResult, reason) {
+        if (!player || player.coin > 0) return false;
+
+        const winner = frameState.players.find((item) => item.id !== player.id);
+        if (!winner) return false;
+
+        const ownerName = rentResult.owner ? rentResult.owner.name : "the land owner";
+        const paid = rentResult.paid || 0;
+        endGame({
+          winnerId: winner.id,
+          defeatedPlayerId: player.id,
+          reason: `${player.name} paid ${paid} rent to ${ownerName} and ran out of coin.`,
+          publishReason: reason
+        });
+        return true;
+      }
+
+      function endGame({ winnerId, defeatedPlayerId, reason, publishReason }) {
+        stopAutoPlayForGameOver();
+        closeGameplayModals();
+        frameState.phase = "game-over";
+        frameState.pendingTileId = null;
+        frameState.isRolling = false;
+        frameState.movingPlayerId = null;
+        frameState.landingPlayerId = null;
+        frameState.winnerId = winnerId;
+        frameState.defeatedPlayerId = defeatedPlayerId;
+        frameState.gameOverReason = reason;
+        showSpeechResult("Game Over");
+        renderBoard();
+        renderHud();
+        renderDiceFace(frameState.currentFace);
+        renderGameOverModal();
+        publishFrameState(publishReason || "game-over");
+        openModal("game-over-modal");
+      }
+
+      function renderGameOverModal() {
+        const winner = frameState.players.find((player) => player.id === frameState.winnerId);
+        const defeated = frameState.players.find((player) => player.id === frameState.defeatedPlayerId);
+
+        frameElements.gameOverRound.textContent = `Round ${frameState.round}`;
+        frameElements.gameOverWinner.textContent = winner ? `Winner: ${winner.name}` : "Winner: -";
+        frameElements.gameOverDefeated.textContent = defeated
+          ? `${defeated.name} is defeated with ${defeated.coin} coin.`
+          : "A player is defeated.";
+        frameElements.gameOverReason.textContent = frameState.gameOverReason || "Forced rent reduced coin to 0.";
       }
 
       function getClampedNumber(value, min, max, fallback) {
@@ -2391,7 +2876,7 @@
         const activePlayer = getActivePlayer();
         const pendingTile = frameState.pendingTileId ? getTile(frameState.pendingTileId) : null;
         frameElements.roundLabel.textContent = `Round ${frameState.round}`;
-        frameElements.turnLabel.textContent = `P${activePlayer.id} Turn`;
+        frameElements.turnLabel.textContent = isGameOver() ? "Game Over" : `P${activePlayer.id} Turn`;
         frameElements.playerName.textContent = activePlayer.name;
         frameElements.playerHealth.textContent = `health: ${activePlayer.health}`;
         frameElements.playerCoin.textContent = `coin: ${activePlayer.coin}`;
@@ -2476,6 +2961,11 @@
       }
 
       function openTurnNotice() {
+        if (isGameOver()) {
+          renderGameOverModal();
+          openModal("game-over-modal");
+          return;
+        }
         renderBoard();
         renderHud();
         if (!canLocalPlayerAct()) {
@@ -2487,6 +2977,7 @@
       }
 
       function openEndTurnNotice() {
+        if (isGameOver()) return;
         renderHud();
         if (!canLocalPlayerAct()) return;
         openModal("end-turn-modal");
@@ -2899,6 +3390,7 @@
             owner: rentResult.owner,
             paid: rentResult.paid
           });
+          if (checkRentDefeat(player, rentResult, "rent-defeat")) return;
         } else {
           showSpeechResult("Owned");
         }

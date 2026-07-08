@@ -123,6 +123,8 @@ Use these expectations when validating the main-board cheat/debug mode.
 | `Set Turn` | Active player changes to selected turn player. | Correct tab can act; other tab waits. |
 | `Apply Land` | Selected tile owner/level updates. | Tile background changes according to each tab's local player perspective. |
 | `Reset Room` | Round, players, phase, dice face, and initial ownership reset. | Both tabs show the reset board and turn state. |
+| `Auto Play` | Host tab advances bot turns, resolves buy/skip/rent, publishes synced state, and ends the game if forced rent reduces a player to `0` coin. | Both tabs show bot movement; pause stops after the current step; play resumes from current state; bankruptcy opens Game Over with the correct winner and stops autoplay. |
+| `Auto Play View` | Auto Play defaults to following the active turn view, while manual P1/P2 view overrides remain local-only. | Owned/rival tile backgrounds change when the active bot changes, and manual view switches do not change room state, active turn, or bot host. |
 
 ## Design Frame Rule
 
