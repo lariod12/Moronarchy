@@ -183,14 +183,13 @@
 
       .connection-strip {
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
+        grid-template-columns: 1fr 1fr;
         align-items: center;
         gap: 6px;
         min-height: 28px;
       }
 
-      .seat-button,
-      .connection-status {
+      .seat-button {
         min-height: 26px;
         padding: 4px 7px;
         border: 2px solid var(--ink);
@@ -201,18 +200,12 @@
         text-align: center;
       }
 
-      .seat-button {
         cursor: pointer;
       }
 
       .seat-button.is-active {
         color: var(--paper);
         background: var(--ink);
-      }
-
-      .connection-status {
-        min-width: 86px;
-        background: var(--wash);
       }
 
       /* Board perimeter: 40 Monopoly-style tiles wrapped around an empty play field. */
@@ -1456,7 +1449,6 @@
 
       <section class="connection-strip" aria-label="Mock multiplayer connection">
         <button class="seat-button" type="button" data-player-seat="1">P1 Device</button>
-        <span class="connection-status" data-bind="connection-status">Mock Socket</span>
         <button class="seat-button" type="button" data-player-seat="2">P2 Device</button>
       </section>
 
@@ -1669,7 +1661,6 @@
         speechText: document.querySelector("[data-bind='roll-result']"),
         roundLabel: document.querySelector("[data-bind='round-label']"),
         turnLabel: document.querySelector("[data-bind='turn-label']"),
-        connectionStatus: document.querySelector("[data-bind='connection-status']"),
         playerSeatButtons: document.querySelectorAll("[data-player-seat]"),
         debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
         debugActionButtons: document.querySelectorAll("[data-debug-action]"),
@@ -1913,19 +1904,6 @@
       }
 
       function renderConnectionStatus() {
-        const activePlayer = getActivePlayer();
-        if (isGameOver()) {
-          frameElements.connectionStatus.textContent = `Winner P${frameState.winnerId}`;
-          frameElements.playerSeatButtons.forEach((button) => {
-            const playerId = Number(button.dataset.playerSeat);
-            button.classList.toggle("is-active", playerId === localPlayerId);
-            button.setAttribute("aria-pressed", String(playerId === localPlayerId));
-          });
-          return;
-        }
-
-        const isMine = activePlayer.id === localPlayerId;
-        frameElements.connectionStatus.textContent = isMine ? `You P${localPlayerId}` : `Wait P${activePlayer.id}`;
         frameElements.playerSeatButtons.forEach((button) => {
           const playerId = Number(button.dataset.playerSeat);
           button.classList.toggle("is-active", playerId === localPlayerId);
