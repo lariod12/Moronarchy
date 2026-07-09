@@ -12,7 +12,7 @@
   Visible controls:
     Inputs: 0
     Main buttons:
-      - Map, Tap to Scroll, Back, Crown/Land, P1 Device, P2 Device, Debug.
+      - Map, Tap to Scroll, Back, Crown/Land, P1 Device, P2 Device.
       - Debug scenario buttons: Rival Land, Cannot Buy, Empty Land, Broke Player.
       - Debug auto buttons: Play, Pause, Reset.
 
@@ -38,8 +38,7 @@
     Start Turn -> manual fallback only; close turn notice.
     End Turn -> manual fallback only; switch active player -> show next player's turn notice.
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
-    P1/P2 Device -> assign this browser tab's controllable player.
-    Debug -> open scenario/auto modal.
+    P1/P2 Device -> switch the player view without opening a turn notice.
     Scenario button -> select scenario and keep the debug modal open.
     Play -> apply selected scenario -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
     Pause -> stop autoplay after the current step.
@@ -184,14 +183,13 @@
 
       .connection-strip {
         display: grid;
-        grid-template-columns: 1fr auto auto 1fr;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: 6px;
         min-height: 28px;
       }
 
       .seat-button,
-      .debug-button,
       .connection-status {
         min-height: 26px;
         padding: 4px 7px;
@@ -203,18 +201,13 @@
         text-align: center;
       }
 
-      .seat-button,
-      .debug-button {
+      .seat-button {
         cursor: pointer;
       }
 
       .seat-button.is-active {
         color: var(--paper);
         background: var(--ink);
-      }
-
-      .debug-button {
-        transform: rotate(-1deg);
       }
 
       .connection-status {
@@ -1464,7 +1457,6 @@
       <section class="connection-strip" aria-label="Mock multiplayer connection">
         <button class="seat-button" type="button" data-player-seat="1">P1 Device</button>
         <span class="connection-status" data-bind="connection-status">Mock Socket</span>
-        <button class="debug-button" type="button" data-action="open-debug">Debug</button>
         <button class="seat-button" type="button" data-player-seat="2">P2 Device</button>
       </section>
 
@@ -1679,7 +1671,6 @@
         turnLabel: document.querySelector("[data-bind='turn-label']"),
         connectionStatus: document.querySelector("[data-bind='connection-status']"),
         playerSeatButtons: document.querySelectorAll("[data-player-seat]"),
-        debugButton: document.querySelector("[data-action='open-debug']"),
         debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
         debugActionButtons: document.querySelectorAll("[data-debug-action]"),
         autoPlayStatus: document.querySelector("[data-bind='auto-play-status']"),
@@ -1753,7 +1744,6 @@
         frameElements.playerSeatButtons.forEach((button) => {
           button.addEventListener("click", () => setLocalPlayerId(Number(button.dataset.playerSeat)));
         });
-        frameElements.debugButton.addEventListener("click", openDebugModal);
         frameElements.debugScenarioButtons.forEach((button) => {
           button.addEventListener("click", () => handleDebugScenario(button.dataset.debugScenario));
         });
@@ -1827,10 +1817,11 @@
         if (!isValidPlayerId(playerId)) return;
         localPlayerId = playerId;
         writeStorage("session", localPlayerStorageKey, String(playerId));
+        closeModal("turn-notice-modal");
+        closeModal("end-turn-modal");
         renderConnectionStatus();
         renderBoard();
         renderHud();
-        syncLocalTurnPrompt("seat-change");
       }
 
       function isValidPlayerId(playerId) {
@@ -1997,7 +1988,7 @@
         closeModal("land-purchase-modal");
         closeModal("end-turn-modal");
 
-        if (canLocalPlayerAct() && (reason === "turn-advanced" || reason === "seat-change")) {
+        if (canLocalPlayerAct() && reason === "turn-advanced") {
           openTurnNotice();
         } else if (!canLocalPlayerAct()) {
           closeModal("turn-notice-modal");
