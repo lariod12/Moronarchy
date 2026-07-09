@@ -21,7 +21,7 @@
     - Tap to Scroll remains as a manual prototype fallback when autoplay is paused.
     - Two local prototype players alternate turns after each completed roll.
     - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
-    - Debug opens a small scenario and autoplay control modal.
+    - Debug opens a side control panel on wide screens, or a centered popup on narrow screens.
     - Scenario buttons only select the scenario; Play applies it, closes the debug modal, and starts autoplay.
     - Auto Play lets one tab host bot-vs-bot turns while other tabs watch synced state.
     - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
@@ -1126,6 +1126,35 @@
         background: var(--ink);
       }
 
+      @media (min-width: 1120px) {
+        .debug-modal {
+          inset: 14px auto auto calc(50% + 235px);
+          display: block;
+          width: min(330px, calc(50vw - 255px));
+          max-height: calc(100vh - 28px);
+          padding: 0;
+          overflow: visible;
+          background: transparent;
+          pointer-events: none;
+        }
+
+        .debug-modal[data-state="opening"],
+        .debug-modal[data-state="closing"] {
+          animation-name: none;
+        }
+
+        .debug-modal .debug-card {
+          width: 100%;
+          max-height: calc(100vh - 28px);
+          pointer-events: auto;
+          box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.18);
+        }
+
+        .debug-modal [data-modal-close="debug-modal"] {
+          display: none;
+        }
+      }
+
       .tile-owner,
       .tile-level {
         position: absolute;
@@ -1737,7 +1766,10 @@
           openModal("land-ledger-modal");
         });
         document.querySelectorAll("[data-modal-close]").forEach((button) => {
-          button.addEventListener("click", () => closeModal(button.dataset.modalClose));
+          button.addEventListener("click", () => {
+            if (button.dataset.modalClose === "debug-modal" && isDebugSidePanelMode()) return;
+            closeModal(button.dataset.modalClose);
+          });
         });
         bindPressEffect(frameElements.backButton);
         bindPressEffect(frameElements.openStatusButton);
@@ -2007,6 +2039,15 @@
         openModal("debug-modal");
       }
 
+      function closeDebugModalIfFloating() {
+        if (isDebugSidePanelMode()) return;
+        closeModal("debug-modal");
+      }
+
+      function isDebugSidePanelMode() {
+        return window.matchMedia("(min-width: 1120px)").matches;
+      }
+
       function renderDebugPanel() {
         frameElements.debugScenarioButtons.forEach((button) => {
           button.classList.toggle("is-selected", button.dataset.debugScenario === selectedDebugScenario);
@@ -2156,7 +2197,7 @@
 
       function startAutoPlay() {
         if (isGameOver()) {
-          closeModal("debug-modal");
+          closeDebugModalIfFloating();
           renderGameOverModal();
           openModal("game-over-modal");
           return;
@@ -2167,7 +2208,7 @@
         autoPlayHostId = tabInstanceId;
         autoPlayViewMode = "follow-turn";
         syncAutoPlayViewToActivePlayer();
-        closeModal("debug-modal");
+        closeDebugModalIfFloating();
         closeGameplayModals();
         renderAutoPlayControls();
         scheduleAutoPlayStep();
@@ -3354,6 +3395,11 @@
       }
 
       function closeModal(id, afterClose = null) {
+        if (id === "debug-modal" && isDebugSidePanelMode()) {
+          if (afterClose) afterClose();
+          return;
+        }
+
         const modal = document.querySelector(`[data-modal='${id}']`);
         if (!modal) {
           if (afterClose) afterClose();
