@@ -11,31 +11,22 @@
 
   Visible controls:
     Inputs: 0
-    Buttons: 12
-      1. Map - future map overview shortcut.
-      2. Tap to Scroll - shakes the dice, randomizes pips, moves the active player, and resolves the tile action.
-      3. Back - returns to 02-room-lobby.html.
-      4. Crown button - opens a local status popup.
-      5. Start Turn - closes the "your turn" notice for the active player.
-      6. End Turn - confirms the completed turn before the next player notice appears.
-      7. P1 Device - assigns this tab as Player 1 for mock multiplayer.
-      8. P2 Device - assigns this tab as Player 2 for mock multiplayer.
-      9. Debug - opens cheat controls for multiplayer design scenarios.
-      10. Auto Play - starts bot-vs-bot debug autoplay.
-      11. Pause - pauses autoplay after the current step.
-      12. Step Once - runs one bot turn.
+    Main buttons:
+      - Map, Tap to Scroll, Back, Crown/Land, P1 Device, P2 Device, Debug.
+      - Debug scenario buttons: Rival Land, Cannot Buy, Empty Land, Broke Player.
+      - Debug auto buttons: Play, Pause, Reset.
 
   Interactive features:
-    - Tap to Scroll hides speech text, shakes the dice, randomizes pip faces, moves the active player, then reveals the final number.
+    - The frame starts paused with the debug modal open so reviewers can choose a scenario first.
+    - Tap to Scroll remains as a manual prototype fallback when autoplay is paused.
     - Two local prototype players alternate turns after each completed roll.
     - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
-    - Only the tab assigned to the active player can roll, buy, skip, or end the turn.
-    - Debug opens a cheat modal for fast scenario setup, player state edits, land edits, and room reset.
+    - Debug opens a small scenario and autoplay control modal.
+    - Scenario buttons only select the scenario; Play applies it, closes the debug modal, and starts autoplay.
     - Auto Play lets one tab host bot-vs-bot turns while other tabs watch synced state.
     - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
     - Rival land resolves a fee locally and returns to the next active turn in this same frame.
-    - Every new active turn opens a player-specific "your turn" notice.
-    - Every completed turn opens an "end turn" notice before control passes to the next player.
+    - Manual "your turn" and "end turn" notices are bypassed while autoplay is running.
     - Every popup uses a short in/out transition before it is hidden or replaced.
     - Dice result appears in the speech bubble first, then king-token movement starts.
     - Post-roll action popups wait until the king-token move animation finishes.
@@ -44,12 +35,15 @@
 
   Button workflow:
     Map -> local no-op for this frame.
-    Start Turn -> close turn notice.
-    End Turn -> confirm current turn completion -> switch active player -> show next player's turn notice.
+    Start Turn -> manual fallback only; close turn notice.
+    End Turn -> manual fallback only; switch active player -> show next player's turn notice.
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
     P1/P2 Device -> assign this browser tab's controllable player.
-    Debug -> open cheat/debug modal -> apply selected state change -> sync mock multiplayer room.
-    Auto Play -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
+    Debug -> open scenario/auto modal.
+    Scenario button -> select scenario and keep the debug modal open.
+    Play -> apply selected scenario -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
+    Pause -> stop autoplay after the current step.
+    Reset -> reset the room, stay paused, and keep the debug modal open.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
@@ -1054,8 +1048,8 @@
 
       .debug-card {
         --popup-tilt: -1deg;
-        width: min(100%, 360px);
-        max-height: min(86vh, 680px);
+        width: min(100%, 330px);
+        max-height: min(86vh, 520px);
         overflow-y: auto;
         gap: 12px;
         text-align: left;
@@ -1089,35 +1083,27 @@
         text-transform: uppercase;
       }
 
-      .debug-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-
-      .debug-field {
-        display: grid;
-        gap: 4px;
-        min-width: 0;
-        font-size: 11px;
-        font-weight: 900;
-      }
-
-      .debug-field input,
-      .debug-field select {
-        min-width: 0;
-        min-height: 34px;
-        padding: 4px 6px;
-        border: 2px solid var(--ink);
-        background: var(--paper);
-        font-size: 13px;
-        font-weight: 900;
-      }
-
       .debug-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
+      }
+
+      .debug-actions.is-auto {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .debug-status {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 5px 8px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        font-size: 12px;
+        font-weight: 950;
       }
 
       .debug-actions button,
@@ -1594,109 +1580,13 @@
             </div>
           </section>
 
-          <section class="debug-block" aria-label="Debug player controls">
-            <span class="debug-block-title">Player</span>
-            <div class="debug-grid">
-              <label class="debug-field">
-                Player
-                <select data-debug-control="player">
-                  <option value="1">Player 1</option>
-                  <option value="2">Player 2</option>
-                </select>
-              </label>
-              <label class="debug-field">
-                Coin
-                <input type="number" min="0" step="10" data-debug-control="coin" value="200" />
-              </label>
-              <label class="debug-field">
-                Tile
-                <input type="number" min="1" max="40" step="1" data-debug-control="player-tile" value="4" />
-              </label>
-              <label class="debug-field">
-                Turn
-                <select data-debug-control="turn-player">
-                  <option value="1">Player 1</option>
-                  <option value="2">Player 2</option>
-                </select>
-              </label>
-            </div>
-            <div class="debug-actions">
-              <button type="button" data-debug-action="set-coin">Set Coin</button>
-              <button type="button" data-debug-action="move-player">Move Player</button>
-              <button type="button" class="is-primary" data-debug-action="set-turn">Set Turn</button>
-              <button type="button" data-debug-action="sync-panel">Refresh</button>
-            </div>
-          </section>
-
-          <section class="debug-block" aria-label="Debug land controls">
-            <span class="debug-block-title">Land</span>
-            <div class="debug-grid">
-              <label class="debug-field">
-                Tile
-                <input type="number" min="1" max="40" step="1" data-debug-control="land-tile" value="2" />
-              </label>
-              <label class="debug-field">
-                Owner
-                <select data-debug-control="land-owner">
-                  <option value="">None</option>
-                  <option value="1">Player 1</option>
-                  <option value="2">Player 2</option>
-                </select>
-              </label>
-              <label class="debug-field">
-                Level
-                <select data-debug-control="land-level">
-                  <option value="0">0</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                </select>
-              </label>
-            </div>
-            <div class="debug-actions">
-              <button type="button" class="is-primary" data-debug-action="apply-land">Apply Land</button>
-            </div>
-          </section>
-
-          <section class="debug-block" aria-label="Debug room controls">
-            <span class="debug-block-title">Room</span>
-            <div class="debug-actions">
-              <button type="button" class="is-primary" data-debug-action="reset-room">Reset Room</button>
-            </div>
-          </section>
-
-          <section class="debug-block" aria-label="Apply selected debug scenario">
-            <span class="debug-block-title">Apply</span>
-            <div class="debug-actions">
-              <button type="button" class="is-primary" data-debug-action="apply-scenario">Apply Scenario</button>
-            </div>
-          </section>
-
           <section class="debug-block" aria-label="Auto play controls">
-            <span class="debug-block-title">Auto Play</span>
-            <div class="debug-grid">
-              <label class="debug-field">
-                Status
-                <span class="connection-status" data-bind="auto-play-status">Stopped</span>
-              </label>
-              <label class="debug-field">
-                Speed
-                <select data-debug-control="auto-speed">
-                  <option value="slow">Slow</option>
-                  <option value="normal" selected>Normal</option>
-                  <option value="fast">Fast</option>
-                </select>
-              </label>
-            </div>
-            <div class="debug-actions" aria-label="Auto play view controls">
-              <button type="button" class="is-primary" data-debug-action="view-follow-turn">Follow Turn</button>
-              <button type="button" data-debug-action="view-player-1">View P1</button>
-              <button type="button" data-debug-action="view-player-2">View P2</button>
-            </div>
-            <div class="debug-actions">
+            <span class="debug-block-title">Auto</span>
+            <span class="debug-status">Status <span data-bind="auto-play-status">Running</span></span>
+            <div class="debug-actions is-auto">
               <button type="button" class="is-primary" data-debug-action="auto-play">Play</button>
               <button type="button" data-debug-action="auto-pause">Pause</button>
-              <button type="button" data-debug-action="auto-step">Step Once</button>
+              <button type="button" data-debug-action="reset-room">Reset</button>
             </div>
           </section>
         </div>
@@ -1763,16 +1653,7 @@
         debugButton: document.querySelector("[data-action='open-debug']"),
         debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
         debugActionButtons: document.querySelectorAll("[data-debug-action]"),
-        debugPlayerSelect: document.querySelector("[data-debug-control='player']"),
-        debugCoinInput: document.querySelector("[data-debug-control='coin']"),
-        debugPlayerTileInput: document.querySelector("[data-debug-control='player-tile']"),
-        debugTurnPlayerSelect: document.querySelector("[data-debug-control='turn-player']"),
-        debugLandTileInput: document.querySelector("[data-debug-control='land-tile']"),
-        debugLandOwnerSelect: document.querySelector("[data-debug-control='land-owner']"),
-        debugLandLevelSelect: document.querySelector("[data-debug-control='land-level']"),
         autoPlayStatus: document.querySelector("[data-bind='auto-play-status']"),
-        autoPlaySpeedSelect: document.querySelector("[data-debug-control='auto-speed']"),
-        autoPlayViewButtons: document.querySelectorAll("[data-debug-action='view-follow-turn'], [data-debug-action^='view-player-']"),
         playerName: document.querySelector("[data-bind='player-name']"),
         playerHealth: document.querySelector("[data-bind='player-health']"),
         playerCoin: document.querySelector("[data-bind='player-coin']"),
@@ -1839,17 +1720,11 @@
         frameElements.reviewLandPurchaseButton.addEventListener("click", handleReviewLandPurchase);
         frameElements.startTurnButton.addEventListener("click", handleStartActiveTurn);
         frameElements.confirmEndTurnButton.addEventListener("click", handleConfirmEndTurn);
-        frameElements.resetGameOverRoomButton.addEventListener("click", resetDebugRoom);
+        frameElements.resetGameOverRoomButton.addEventListener("click", () => resetDebugRoom());
         frameElements.playerSeatButtons.forEach((button) => {
           button.addEventListener("click", () => setLocalPlayerId(Number(button.dataset.playerSeat)));
         });
         frameElements.debugButton.addEventListener("click", openDebugModal);
-        frameElements.debugPlayerSelect.addEventListener("change", renderDebugPanel);
-        frameElements.debugLandTileInput.addEventListener("change", renderDebugPanel);
-        frameElements.autoPlaySpeedSelect.addEventListener("change", () => {
-          autoPlaySpeed = frameElements.autoPlaySpeedSelect.value;
-          renderAutoPlayControls();
-        });
         frameElements.debugScenarioButtons.forEach((button) => {
           button.addEventListener("click", () => handleDebugScenario(button.dataset.debugScenario));
         });
@@ -1866,7 +1741,8 @@
         });
         bindPressEffect(frameElements.backButton);
         bindPressEffect(frameElements.openStatusButton);
-        openTurnNotice();
+        pauseAutoPlay();
+        openDebugModal();
       }
 
       function bindPressEffect(button) {
@@ -2132,17 +2008,6 @@
       }
 
       function renderDebugPanel() {
-        const subjectPlayer = getDebugSubjectPlayer();
-        const activePlayer = getActivePlayer();
-        const landTile = getDebugLandTile();
-
-        frameElements.debugPlayerSelect.value = String(subjectPlayer.id);
-        frameElements.debugCoinInput.value = String(subjectPlayer.coin);
-        frameElements.debugPlayerTileInput.value = String(subjectPlayer.tile);
-        frameElements.debugTurnPlayerSelect.value = String(activePlayer.id);
-        frameElements.debugLandTileInput.value = String(landTile.id);
-        frameElements.debugLandOwnerSelect.value = landTile.ownerId === null ? "" : String(landTile.ownerId);
-        frameElements.debugLandLevelSelect.value = String(landTile.landLevel);
         frameElements.debugScenarioButtons.forEach((button) => {
           button.classList.toggle("is-selected", button.dataset.debugScenario === selectedDebugScenario);
           button.setAttribute("aria-pressed", String(button.dataset.debugScenario === selectedDebugScenario));
@@ -2151,13 +2016,7 @@
       }
 
       function getDebugSubjectPlayer() {
-        const selectedPlayerId = Number(frameElements.debugPlayerSelect.value);
-        return frameState.players.find((player) => player.id === selectedPlayerId) || getActivePlayer();
-      }
-
-      function getDebugLandTile() {
-        const tileId = getClampedNumber(frameElements.debugLandTileInput.value, 2, boardSize, 2);
-        return getTile(tileId) || getTile(2);
+        return getActivePlayer();
       }
 
       function handleDebugScenario(scenario) {
@@ -2190,68 +2049,16 @@
       }
 
       function handleDebugAction(action) {
-        if (action === "sync-panel") {
-          renderDebugPanel();
-          return;
-        }
-
-        if (action === "apply-scenario") {
-          closeModal("debug-modal");
-          applySelectedDebugScenario();
-          return;
-        }
-
         if (action === "auto-play") {
-          startAutoPlay();
+          applySelectedDebugScenario();
+          if (!isGameOver()) {
+            startAutoPlay();
+          }
           return;
         }
 
         if (action === "auto-pause") {
           pauseAutoPlay();
-          return;
-        }
-
-        if (action === "auto-step") {
-          runAutoPlayStep(true);
-          return;
-        }
-
-        if (action === "view-follow-turn") {
-          autoPlayViewMode = "follow-turn";
-          syncAutoPlayViewToActivePlayer();
-          return;
-        }
-
-        if (action.startsWith("view-player-")) {
-          autoPlayViewMode = "fixed";
-          setDebugViewPlayerId(Number(action.replace("view-player-", "")));
-          return;
-        }
-
-        if (action === "set-coin") {
-          const player = getDebugSubjectPlayer();
-          player.coin = getClampedNumber(frameElements.debugCoinInput.value, 0, 9999, player.coin);
-          applyDebugState("debug-set-coin");
-          return;
-        }
-
-        if (action === "move-player") {
-          const player = getDebugSubjectPlayer();
-          player.tile = getClampedNumber(frameElements.debugPlayerTileInput.value, 1, boardSize, player.tile);
-          applyDebugState("debug-move-player");
-          return;
-        }
-
-        if (action === "set-turn") {
-          setActivePlayerById(Number(frameElements.debugTurnPlayerSelect.value));
-          frameState.phase = "rolling";
-          frameState.pendingTileId = null;
-          applyDebugState("debug-set-turn");
-          return;
-        }
-
-        if (action === "apply-land") {
-          applyDebugLandEdit();
           return;
         }
 
@@ -2302,19 +2109,13 @@
         openModal("land-purchase-modal");
       }
 
-      function applyDebugLandEdit() {
-        const tile = getDebugLandTile();
-        const ownerValue = frameElements.debugLandOwnerSelect.value;
-        const ownerId = ownerValue === "" ? null : Number(ownerValue);
-        const landLevel = getClampedNumber(frameElements.debugLandLevelSelect.value, 0, maxKingLevel, 0);
-
-        tile.ownerId = ownerId;
-        tile.landLevel = ownerId === null ? 0 : Math.max(1, landLevel);
-        applyDebugState("debug-apply-land");
-      }
-
-      function applyDebugState(reason) {
-        pauseAutoPlay();
+      function applyDebugState(reason, options = {}) {
+        const shouldPauseAutoPlay = options.pauseAutoPlay !== false;
+        if (shouldPauseAutoPlay) {
+          pauseAutoPlay();
+        } else {
+          clearAutoPlayTimer();
+        }
         closeGameplayModals();
         frameState.isRolling = false;
         frameState.movingPlayerId = null;
@@ -2326,7 +2127,10 @@
         publishFrameState(reason);
       }
 
-      function resetDebugRoom() {
+      function resetDebugRoom(options = {}) {
+        const shouldResumeAutoPlay = options.resumeAutoPlay === true;
+        const shouldShowDebugModal = options.showDebugModal !== false;
+        pauseAutoPlay();
         frameState.tiles = createInitialTiles();
         frameState.players = createInitialPlayers();
         frameState.activePlayerIndex = 0;
@@ -2342,7 +2146,12 @@
         frameState.currentFace = 5;
         hideSpeechResult();
         closeModal("game-over-modal");
-        applyDebugState("debug-reset-room");
+        applyDebugState("debug-reset-room", { pauseAutoPlay: false });
+        if (shouldResumeAutoPlay) {
+          startAutoPlay();
+        } else if (shouldShowDebugModal) {
+          openDebugModal();
+        }
       }
 
       function startAutoPlay() {
@@ -2357,7 +2166,6 @@
         autoPlayPaused = false;
         autoPlayHostId = tabInstanceId;
         autoPlayViewMode = "follow-turn";
-        autoPlaySpeed = frameElements.autoPlaySpeedSelect.value;
         syncAutoPlayViewToActivePlayer();
         closeModal("debug-modal");
         closeGameplayModals();
@@ -2390,7 +2198,6 @@
         if (isAutoPlayStepRunning || isGameOver()) return;
 
         autoPlayHostId = tabInstanceId;
-        autoPlaySpeed = frameElements.autoPlaySpeedSelect.value;
         if (runOnce) {
           autoPlayEnabled = false;
           autoPlayPaused = true;
@@ -2517,7 +2324,7 @@
       }
 
       function renderAutoPlayControls() {
-        if (!frameElements.autoPlayStatus || !frameElements.autoPlaySpeedSelect) return;
+        if (!frameElements.autoPlayStatus) return;
 
         const status = isAutoPlayStepRunning
           ? "Running"
@@ -2527,15 +2334,6 @@
               ? "Paused"
               : "Stopped";
         frameElements.autoPlayStatus.textContent = status;
-        frameElements.autoPlaySpeedSelect.value = autoPlaySpeed;
-        frameElements.autoPlayViewButtons.forEach((button) => {
-          const action = button.dataset.debugAction;
-          const isSelected = action === "view-follow-turn"
-            ? autoPlayViewMode === "follow-turn"
-            : autoPlayViewMode === "fixed" && Number(action.replace("view-player-", "")) === localPlayerId;
-          button.classList.toggle("is-selected", isSelected);
-          button.setAttribute("aria-pressed", String(isSelected));
-        });
       }
 
       function syncAutoPlayViewToActivePlayer() {
