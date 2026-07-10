@@ -16,12 +16,12 @@
     Main buttons:
       - Map, Tap to Scroll, Back, Crown/Land.
       - Debug scenario buttons: Rival Land, Cannot Buy, Empty Land, Broke Player.
-      - Debug auto buttons: Play, Pause, Reset.
+      - Debug auto buttons: Players 2/3/4, Play, Pause, Reset.
 
   Interactive features:
     - The frame starts paused with the debug modal open so reviewers can choose a scenario first.
     - Tap to Scroll remains as a manual prototype fallback when autoplay is paused.
-    - Two local prototype players alternate turns after each completed roll.
+    - Debug Auto Play can reset the prototype with 2, 3, or 4 local players.
     - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
     - Debug opens a side control panel on wide screens, or a centered popup on narrow screens.
     - Scenario buttons only select the scenario; Play applies it, closes the debug modal, and starts autoplay.
@@ -43,6 +43,7 @@
     Scenario button -> select scenario and keep the debug modal open.
     Play -> apply selected scenario -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
     Pause -> stop autoplay after the current step.
+    Players 2/3/4 -> reset the prototype with the selected number of active players.
     Reset -> reset the room, stay paused, and keep the debug modal open.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
@@ -58,7 +59,7 @@
     - Bot/autoplay decisions that exercise the full board loop quickly.
 
   Prototype tooling:
-    - Debug scenarios, Play/Pause autoplay, Reset, and scenario speed/view helpers.
+    - Debug scenarios, 2-4 player selection, Play/Pause autoplay, Reset, and scenario speed/view helpers.
     - Tooling is for review coverage and is not automatically part of the player-facing production scope.
 
   Production mapping:
@@ -71,6 +72,7 @@
 
   Acceptance checklist:
     - Manual and autoplay paths demonstrate roll, movement, land outcome, HUD update, and turn advancement.
+    - Debug player-count controls reset the board with exactly 2, 3, or 4 active player tokens.
     - Scenario controls can expose rival land, cannot buy, empty land, broke player, reset, and game-over states.
     - The screen remains fixed while intended inner controls and modals remain usable on mobile.
 -->
@@ -1629,6 +1631,12 @@
 
           <section class="debug-block" aria-label="Auto play controls">
             <span class="debug-block-title">Auto</span>
+            <span class="debug-status">Players <span data-bind="auto-play-player-count">2</span></span>
+            <div class="debug-actions is-auto" aria-label="Auto play player count">
+              <button type="button" data-debug-player-count="2">2</button>
+              <button type="button" data-debug-player-count="3">3</button>
+              <button type="button" data-debug-player-count="4">4</button>
+            </div>
             <span class="debug-status">Status <span data-bind="auto-play-status">Running</span></span>
             <div class="debug-actions is-auto">
               <button type="button" class="is-primary" data-debug-action="auto-play">Play</button>
@@ -1649,9 +1657,12 @@
       const boardSize = 40;
       const startBonus = 50;
       const maxKingLevel = 3;
+      const minPlayerCount = 2;
+      const maxPlayerCount = 4;
+      const playerStartTiles = [4, 22, 12, 32];
       const multiplayerRoomId = "moronarchy-03-main-board-design";
       const sharedStateStorageKey = `${multiplayerRoomId}:state`;
-      const initialOwnedTileStorageKey = `${multiplayerRoomId}:initial-owned-tiles`;
+      const initialOwnedTileStorageKeyPrefix = `${multiplayerRoomId}:initial-owned-tiles`;
       const localPlayerStorageKey = `${multiplayerRoomId}:local-player-id`;
       const tabInstanceId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const landEconomyBySegment = [
@@ -1660,8 +1671,8 @@
         { price: 90, rents: [18, 36, 63], upgradeCosts: [72, 108] },
         { price: 110, rents: [22, 44, 77], upgradeCosts: [88, 132] }
       ];
-      const initialOwnedPlotsPerPlayer = 10;
-      const initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer();
+      let selectedPlayerCount = minPlayerCount;
+      let initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(selectedPlayerCount);
       let localPlayerId = getInitialLocalPlayerId();
       let stateRevision = 0;
       let multiplayerChannel = null;
@@ -1706,7 +1717,9 @@
         turnLabel: document.querySelector("[data-bind='turn-label']"),
         debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
         debugActionButtons: document.querySelectorAll("[data-debug-action]"),
+        debugPlayerCountButtons: document.querySelectorAll("[data-debug-player-count]"),
         autoPlayStatus: document.querySelector("[data-bind='auto-play-status']"),
+        autoPlayPlayerCount: document.querySelector("[data-bind='auto-play-player-count']"),
         playerName: document.querySelector("[data-bind='player-name']"),
         playerHealth: document.querySelector("[data-bind='player-health']"),
         playerCoin: document.querySelector("[data-bind='player-coin']"),
@@ -1783,6 +1796,9 @@
         frameElements.debugActionButtons.forEach((button) => {
           button.addEventListener("click", () => handleDebugAction(button.dataset.debugAction));
         });
+        frameElements.debugPlayerCountButtons.forEach((button) => {
+          button.addEventListener("click", () => setDebugPlayerCount(Number(button.dataset.debugPlayerCount)));
+        });
         frameElements.backButton.addEventListener("click", () => navigateToFrame("02-room-lobby.html"));
         frameElements.openStatusButton.addEventListener("click", () => {
           renderLandLedger();
@@ -1851,7 +1867,7 @@
       }
 
       function isValidPlayerId(playerId) {
-        return playerId === 1 || playerId === 2;
+        return Number.isInteger(playerId) && playerId >= 1 && playerId <= maxPlayerCount;
       }
 
       function handleMultiplayerMessage(message) {
@@ -1865,6 +1881,16 @@
         if (!snapshot) return;
 
         stateRevision = message.revision;
+        selectedPlayerCount = getClampedNumber(
+          snapshot.playerCount,
+          minPlayerCount,
+          maxPlayerCount,
+          snapshot.players.length
+        );
+        if (localPlayerId > selectedPlayerCount) {
+          localPlayerId = 1;
+          writeStorage("session", localPlayerStorageKey, String(localPlayerId));
+        }
         frameState.tiles = snapshot.tiles.map((tile) => ({ ...tile }));
         frameState.players = snapshot.players.map((player) => ({ ...player }));
         frameState.activePlayerIndex = snapshot.activePlayerIndex;
@@ -1933,7 +1959,8 @@
           winnerId: frameState.winnerId,
           defeatedPlayerId: frameState.defeatedPlayerId,
           gameOverReason: frameState.gameOverReason,
-          currentFace: frameState.currentFace
+          currentFace: frameState.currentFace,
+          playerCount: selectedPlayerCount
         };
       }
 
@@ -2050,6 +2077,12 @@
           button.classList.toggle("is-selected", button.dataset.debugScenario === selectedDebugScenario);
           button.setAttribute("aria-pressed", String(button.dataset.debugScenario === selectedDebugScenario));
         });
+        frameElements.debugPlayerCountButtons.forEach((button) => {
+          const playerCount = Number(button.dataset.debugPlayerCount);
+          button.classList.toggle("is-selected", playerCount === selectedPlayerCount);
+          button.setAttribute("aria-pressed", String(playerCount === selectedPlayerCount));
+        });
+        frameElements.autoPlayPlayerCount.textContent = String(selectedPlayerCount);
         renderAutoPlayControls();
       }
 
@@ -2060,6 +2093,18 @@
       function handleDebugScenario(scenario) {
         selectedDebugScenario = scenario;
         renderDebugPanel();
+      }
+
+      function setDebugPlayerCount(playerCount) {
+        if (playerCount < minPlayerCount || playerCount > maxPlayerCount || playerCount === selectedPlayerCount) return;
+
+        selectedPlayerCount = playerCount;
+        initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(selectedPlayerCount);
+        if (localPlayerId > selectedPlayerCount) {
+          localPlayerId = 1;
+          writeStorage("session", localPlayerStorageKey, String(localPlayerId));
+        }
+        resetDebugRoom();
       }
 
       function applySelectedDebugScenario() {
@@ -2536,10 +2581,14 @@
          Factories/economy helpers support visible scenarios only.
          ====================================================================== */
       function createInitialPlayers() {
-        return [
-          { id: 1, name: "Player 1", health: 100, coin: 200, level: 1, tile: 4 },
-          { id: 2, name: "Player 2", health: 100, coin: 200, level: 1, tile: 22 }
-        ];
+        return Array.from({ length: selectedPlayerCount }, (_, index) => ({
+          id: index + 1,
+          name: `Player ${index + 1}`,
+          health: 100,
+          coin: 200,
+          level: 1,
+          tile: playerStartTiles[index]
+        }));
       }
 
       function createInitialTiles() {
@@ -2558,42 +2607,36 @@
         });
       }
 
-      function createInitialOwnedTileIdsByPlayer() {
-        const savedTileIds = readJson(readStorage("local", initialOwnedTileStorageKey));
-        if (savedTileIds?.[1]?.length === initialOwnedPlotsPerPlayer && savedTileIds?.[2]?.length === initialOwnedPlotsPerPlayer) {
-          return savedTileIds;
-        }
+      function createInitialOwnedTileIdsByPlayer(playerCount) {
+        const initialOwnedPlotsPerPlayer = Math.min(10, Math.floor((boardSize - 1) / playerCount));
+        const storageKey = `${initialOwnedTileStorageKeyPrefix}:${playerCount}`;
+        const savedTileIds = readJson(readStorage("local", storageKey));
+        const playerIds = Array.from({ length: playerCount }, (_, index) => index + 1);
+        const hasValidSavedTiles = playerIds.every((playerId) =>
+          Array.isArray(savedTileIds?.[playerId]) && savedTileIds[playerId].length === initialOwnedPlotsPerPlayer
+        );
 
-        const reservedTileIdsByPlayer = {
-          1: [4],
-          2: [22]
-        };
-        const ownedTileIdsByPlayer = {
-          1: [...reservedTileIdsByPlayer[1]],
-          2: [...reservedTileIdsByPlayer[2]]
-        };
-        const excludedTileIds = new Set([
-          ...reservedTileIdsByPlayer[1],
-          ...reservedTileIdsByPlayer[2]
-        ]);
+        if (hasValidSavedTiles) return savedTileIds;
+
+        const ownedTileIdsByPlayer = Object.fromEntries(
+          playerIds.map((playerId) => [playerId, [playerStartTiles[playerId - 1]]])
+        );
+        const reservedTileIds = new Set(playerStartTiles.slice(0, playerCount));
         const candidateTileIds = Array.from({ length: boardSize - 1 }, (_, index) => index + 2)
-          .filter((tileId) => !excludedTileIds.has(tileId));
-        const spreadSteps = [2, 5, 7, 9, 11, 13, 15];
-        const spreadStep = spreadSteps[Math.floor(Math.random() * spreadSteps.length)];
-        const startIndex = Math.floor(Math.random() * candidateTileIds.length);
-        const direction = Math.random() < 0.5 ? 1 : -1;
-        const totalAdditionalTiles = (initialOwnedPlotsPerPlayer - 1) * 2;
+          .filter((tileId) => !reservedTileIds.has(tileId));
 
-        for (let index = 0; index < totalAdditionalTiles; index += 1) {
-          const candidateIndex =
-            (startIndex + direction * index * spreadStep + candidateTileIds.length * 20) % candidateTileIds.length;
-          const tileId = candidateTileIds[candidateIndex];
-          const playerId = index % 2 === 0 ? 1 : 2;
-          ownedTileIdsByPlayer[playerId].push(tileId);
+        for (let index = candidateTileIds.length - 1; index > 0; index -= 1) {
+          const swapIndex = Math.floor(Math.random() * (index + 1));
+          [candidateTileIds[index], candidateTileIds[swapIndex]] = [candidateTileIds[swapIndex], candidateTileIds[index]];
         }
+
+        candidateTileIds.slice(0, (initialOwnedPlotsPerPlayer - 1) * playerCount).forEach((tileId, index) => {
+          const playerId = playerIds[index % playerCount];
+          ownedTileIdsByPlayer[playerId].push(tileId);
+        });
 
         Object.values(ownedTileIdsByPlayer).forEach((tileIds) => tileIds.sort((left, right) => left - right));
-        writeStorage("local", initialOwnedTileStorageKey, JSON.stringify(ownedTileIdsByPlayer));
+        writeStorage("local", storageKey, JSON.stringify(ownedTileIdsByPlayer));
         return ownedTileIdsByPlayer;
       }
 
@@ -2675,18 +2718,29 @@
         tileElement.appendChild(level);
       }
 
+      function getTokenOffset(playerCountOnTile, playerIndex) {
+        const offsetsByCount = {
+          1: [{ x: 0, y: 0 }],
+          2: [{ x: -11, y: 0 }, { x: 11, y: 0 }],
+          3: [{ x: -11, y: -8 }, { x: 11, y: -8 }, { x: 0, y: 10 }],
+          4: [{ x: -11, y: -9 }, { x: 11, y: -9 }, { x: -11, y: 9 }, { x: 11, y: 9 }]
+        };
+        const offsets = offsetsByCount[Math.min(playerCountOnTile, maxPlayerCount)] || offsetsByCount[maxPlayerCount];
+        return offsets[playerIndex] || { x: 0, y: 0 };
+      }
+
       function createKingToken(player, playerCountOnTile, playerIndex) {
         const token = document.createElement("span");
         const isActive = player.id === getActivePlayer().id;
-        const offset = playerCountOnTile < 2 ? 0 : playerIndex === 0 ? -11 : 11;
+        const offset = getTokenOffset(playerCountOnTile, playerIndex);
         token.className = [
           "king-token",
           frameState.movingPlayerId === player.id ? "is-moving-target" : "",
           frameState.landingPlayerId === player.id ? "is-landing" : ""
         ].filter(Boolean).join(" ");
         token.title = player.name;
-        token.style.setProperty("--token-x", `calc(50% + ${offset}px)`);
-        token.style.setProperty("--token-y", "50%");
+        token.style.setProperty("--token-x", `calc(50% + ${offset.x}px)`);
+        token.style.setProperty("--token-y", `calc(50% + ${offset.y}px)`);
 
         if (isActive) {
           const callout = document.createElement("span");

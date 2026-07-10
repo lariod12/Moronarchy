@@ -182,6 +182,7 @@ Use these expectations when validating the main-board cheat/debug mode.
 | `Set Turn` | Active player changes to selected turn player. | Correct tab can act; other tab waits. |
 | `Apply Land` | Selected tile owner/level updates. | Tile background changes according to each tab's local player perspective. |
 | `Reset Room` | Round, players, phase, dice face, and initial ownership reset. | Both tabs show the reset board and turn state. |
+| `Player Count` | Selecting 2, 3, or 4 rebuilds the prototype with that many active players and valid starting ownership. | The selected count is highlighted and the board renders exactly that many player tokens before autoplay starts. |
 | `Auto Play` | Host tab advances bot turns, resolves buy/skip/rent, publishes synced state, and ends the game if forced rent reduces a player to `0` coin. | Both tabs show bot movement; pause stops after the current step; play resumes from current state; bankruptcy opens Game Over with the correct winner and stops autoplay. |
 | `Auto Play View` | Auto Play defaults to following the active turn view, while `?player=1` and `?player=2` perspectives remain local-only. | Owned/rival tile backgrounds change when the active bot changes, and local perspective does not change room state, active turn, or bot host. |
 

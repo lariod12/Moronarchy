@@ -101,6 +101,33 @@ test.describe("main-board interaction contract", () => {
     expectNoBrowserErrors(errors);
   });
 
+  test("player-count controls reset autoplay with the selected 2–4 player roster", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await openMainBoard(page);
+
+    for (const playerCount of [2, 3, 4]) {
+      const playerCountButton = page.locator(`[data-debug-player-count="${playerCount}"]`);
+      await playerCountButton.click();
+      await expect(playerCountButton).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator('[data-bind="auto-play-player-count"]')).toHaveText(String(playerCount));
+      await expect(page.locator(".king-token")).toHaveCount(playerCount);
+      await expect.poll(() => page.evaluate("frameState.players.length")).toBe(playerCount);
+      await expect.poll(() => page.evaluate(
+        "frameState.tiles.every((tile) => tile.ownerId === null || tile.ownerId <= frameState.players.length)"
+      )).toBe(true);
+    }
+
+    const initialTurn = await page.locator('[data-bind="turn-label"]').textContent();
+    await page.locator('[data-debug-action="auto-play"]').click();
+    await expect(page.locator('[data-bind="auto-play-status"]')).toHaveText("Running");
+    await expect.poll(() => page.locator('[data-bind="turn-label"]').textContent(), { timeout: 10_000 }).not.toBe(initialTurn);
+
+    await page.evaluate("openDebugModal()");
+    await page.locator('[data-debug-action="auto-pause"]').click();
+    await expect(page.locator('[data-bind="auto-play-status"]')).toHaveText("Paused");
+    expectNoBrowserErrors(errors);
+  });
+
   test("rival-land scenario keeps the turn caret black", async ({ page }) => {
     const errors = captureBrowserErrors(page);
     await openMainBoard(page);
