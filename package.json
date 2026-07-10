@@ -9,11 +9,15 @@
     "dev:web": "pnpm --filter @moronarchy/web dev",
     "dev:server": "pnpm --filter @moronarchy/server dev",
     "design:mobile": "cmd /c start-design-mobile.bat",
+    "design:check": "playwright test --config playwright.design.config.ts",
+    "design:check:headed": "playwright test --config playwright.design.config.ts --headed",
     "build": "pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/server build && pnpm --filter @moronarchy/web build",
     "test": "pnpm --filter @moronarchy/core build && pnpm --recursive test",
     "e2e": "playwright test",
-    "typecheck": "pnpm --filter @moronarchy/core build && pnpm --recursive typecheck",
-    "lint": "pnpm --recursive lint"
+    "typecheck": "pnpm --filter @moronarchy/core build && pnpm --recursive typecheck && pnpm typecheck:design",
+    "typecheck:design": "tsc -p tsconfig.design.json",
+    "lint": "pnpm --recursive lint && pnpm lint:design",
+    "lint:design": "eslint playwright.design.config.ts tests/design"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

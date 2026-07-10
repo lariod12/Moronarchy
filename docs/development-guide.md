@@ -47,7 +47,7 @@ Rules:
 - Do not import production React code from `apps/web`.
 - Do not treat prototype calculations, multiplayer mocks, or server-like behavior as authoritative production logic.
 - Functional local state is allowed when it demonstrates the complete intended experience quickly.
-- Label review helpers such as scenarios, P1/P2 view switching, autoplay, reset, and cheats as prototype tooling; do not port them automatically.
+- Label review helpers such as scenarios, autoplay, reset, and cheats as prototype tooling; do not port them automatically.
 - Label fake dice, economy, turn, winner, bot, and mock synchronization behavior as prototype simulation; replace it with core/server state during production implementation.
 - After a design is approved, implement it in `apps/web` using the existing React components.
 - Update this guide or `docs/system-architecture.md` only when the design workflow or production UI ownership changes.
@@ -64,8 +64,10 @@ Recommended flow:
 8. Read the frame regions and production mapping to map behavior into production.
 9. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
 10. Replace local simulation with real core/server state; do not copy mock networking or prototype tooling by default.
-11. Add or update tests at the production boundary, then compare the result with the approved contract.
-12. Set the frame status to `Ported` and keep it as a reference snapshot until a redesign reopens it.
+11. Add or update `tests/design/` assertions for every changed interaction or visible state, then run `pnpm design:check`.
+12. Report Expected vs Actual evidence and request human review for subjective visual, animation, touch, or UX decisions.
+13. Add or update tests at the production boundary, then compare the result with the approved contract.
+14. Set the frame status to `Ported` and keep it as a reference snapshot until a redesign reopens it.
 
 Mobile design server:
 

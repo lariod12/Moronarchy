@@ -14,7 +14,7 @@
   Visible controls:
     Inputs: 0
     Main buttons:
-      - Map, Tap to Scroll, Back, Crown/Land, P1 Device, P2 Device.
+      - Map, Tap to Scroll, Back, Crown/Land.
       - Debug scenario buttons: Rival Land, Cannot Buy, Empty Land, Broke Player.
       - Debug auto buttons: Play, Pause, Reset.
 
@@ -40,7 +40,6 @@
     Start Turn -> manual fallback only; close turn notice.
     End Turn -> manual fallback only; switch active player -> show next player's turn notice.
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
-    P1/P2 Device -> switch the player view without opening a turn notice.
     Scenario button -> select scenario and keep the debug modal open.
     Play -> apply selected scenario -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
     Pause -> stop autoplay after the current step.
@@ -59,7 +58,7 @@
     - Bot/autoplay decisions that exercise the full board loop quickly.
 
   Prototype tooling:
-    - P1/P2 Device view controls, Debug scenarios, Play/Pause autoplay, Reset, and scenario speed/view helpers.
+    - Debug scenarios, Play/Pause autoplay, Reset, and scenario speed/view helpers.
     - Tooling is for review coverage and is not automatically part of the player-facing production scope.
 
   Production mapping:
@@ -77,8 +76,9 @@
 -->
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link rel="icon" href="data:," />
       <title>03 In Game Main Board</title>
     <style>
       /* ======================================================================
@@ -210,33 +210,6 @@
       .map-button:active,
       .tap-scroll:active {
         transform: translateY(1px);
-      }
-
-      .connection-strip {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        align-items: center;
-        gap: 6px;
-        min-height: 28px;
-      }
-
-      .seat-button {
-        min-height: 26px;
-        padding: 4px 7px;
-        border: 2px solid var(--ink);
-        background: var(--paper);
-        font-size: 11px;
-        font-weight: 900;
-        line-height: 1;
-        text-align: center;
-      }
-
-        cursor: pointer;
-      }
-
-      .seat-button.is-active {
-        color: var(--paper);
-        background: var(--ink);
       }
 
       /* ======================================================================
@@ -1497,12 +1470,6 @@
         <button class="map-button" type="button" data-action="open-map" aria-label="Open map overview">Map</button>
       </header>
 
-      <section class="connection-strip" aria-label="Mock multiplayer connection">
-        <!-- PROTOTYPE TOOLING: local device perspective only; do not port as player UI. -->
-        <button class="seat-button" type="button" data-player-seat="1">P1 Device</button>
-        <button class="seat-button" type="button" data-player-seat="2">P2 Device</button>
-      </section>
-
       <!-- ===================================================================
            2. PRIMARY BOARD SCENE
            Production contract: board, movement feedback, dice, and main action.
@@ -1737,7 +1704,6 @@
         speechText: document.querySelector("[data-bind='roll-result']"),
         roundLabel: document.querySelector("[data-bind='round-label']"),
         turnLabel: document.querySelector("[data-bind='turn-label']"),
-        playerSeatButtons: document.querySelectorAll("[data-player-seat]"),
         debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
         debugActionButtons: document.querySelectorAll("[data-debug-action]"),
         autoPlayStatus: document.querySelector("[data-bind='auto-play-status']"),
@@ -1811,9 +1777,6 @@
         frameElements.startTurnButton.addEventListener("click", handleStartActiveTurn);
         frameElements.confirmEndTurnButton.addEventListener("click", handleConfirmEndTurn);
         frameElements.resetGameOverRoomButton.addEventListener("click", () => resetDebugRoom());
-        frameElements.playerSeatButtons.forEach((button) => {
-          button.addEventListener("click", () => setLocalPlayerId(Number(button.dataset.playerSeat)));
-        });
         frameElements.debugScenarioButtons.forEach((button) => {
           button.addEventListener("click", () => handleDebugScenario(button.dataset.debugScenario));
         });
@@ -1874,7 +1837,6 @@
           publishFrameState("room-created");
         }
 
-        renderConnectionStatus();
       }
 
       function getInitialLocalPlayerId() {
@@ -1886,17 +1848,6 @@
 
         const savedPlayerId = Number(readStorage("session", localPlayerStorageKey));
         return isValidPlayerId(savedPlayerId) ? savedPlayerId : 1;
-      }
-
-      function setLocalPlayerId(playerId) {
-        if (!isValidPlayerId(playerId)) return;
-        localPlayerId = playerId;
-        writeStorage("session", localPlayerStorageKey, String(playerId));
-        closeModal("turn-notice-modal");
-        closeModal("end-turn-modal");
-        renderConnectionStatus();
-        renderBoard();
-        renderHud();
       }
 
       function isValidPlayerId(playerId) {
@@ -1964,7 +1915,6 @@
         if (multiplayerChannel) {
           multiplayerChannel.postMessage(message);
         }
-        renderConnectionStatus();
       }
 
       function serializeFrameState() {
@@ -1985,14 +1935,6 @@
           gameOverReason: frameState.gameOverReason,
           currentFace: frameState.currentFace
         };
-      }
-
-      function renderConnectionStatus() {
-        frameElements.playerSeatButtons.forEach((button) => {
-          const playerId = Number(button.dataset.playerSeat);
-          button.classList.toggle("is-active", playerId === localPlayerId);
-          button.setAttribute("aria-pressed", String(playerId === localPlayerId));
-        });
       }
 
       function canLocalPlayerAct() {
@@ -2029,8 +1971,6 @@
       }
 
       function syncLocalTurnPrompt(reason) {
-        renderConnectionStatus();
-
         if (isGameOver()) {
           closeGameplayModals();
           renderGameOverModal();
@@ -2089,7 +2029,7 @@
 
       /* ======================================================================
          5. PROTOTYPE SCENARIOS AND TOOLING
-         Debug scenarios, autoplay, reset, and view controls are review helpers.
+         Debug scenarios, autoplay, reset, and view helpers are for review only.
          ====================================================================== */
       function openDebugModal() {
         renderDebugPanel();
@@ -2447,7 +2387,6 @@
         writeStorage("session", localPlayerStorageKey, String(playerId));
         closeModal("turn-notice-modal");
         closeModal("end-turn-modal");
-        renderConnectionStatus();
         renderBoard();
         renderHud();
         renderAutoPlayControls();
@@ -2794,7 +2733,6 @@
         frameElements.turnNoticePlayer.textContent = activePlayer.name;
         frameElements.endTurnRound.textContent = `Round ${frameState.round}`;
         frameElements.endTurnPlayer.textContent = activePlayer.name;
-        renderConnectionStatus();
         applyTurnAccess();
       }
 

@@ -25,6 +25,25 @@ Use the normal Codex workflow for this repository. The main assistant should rea
 - Run the narrowest useful test, lint, typecheck, or build command for the touched area.
 - Do not commit secrets, environment files, tokens, private keys, credentials, or personal data.
 
+## Interactive Design Completion Gate
+
+These rules are mandatory for tasks that change interaction, visible state, DOM structure, responsive behavior, animation, or browser workflow in `design/`.
+
+Before implementation:
+
+- Write a task contract with Goal, Change Classification, Expected Results, Interaction Steps, and Test Workflow.
+- Every Expected Result must be observable and mapped to logic/state, UI/DOM, browser interaction, visual review, or an explicit human decision.
+
+Before claiming completion:
+
+- Add or update assertions in `tests/design/` when the task introduces or changes an interaction or visible state.
+- Run `cmd /c pnpm design:check` and require a zero exit code.
+- Report Expected vs Actual for every Expected Result, the exact checks run, console/page error count, and anything not verified.
+- A skipped or unavailable browser check means the interactive task is not verified; report the blocker instead of claiming completion.
+- AI may report `Automated Verified` after executable checks pass. Only the user may approve subjective visual quality, UX feel, touch behavior on a real device, or move a frame to `Approved`.
+
+`design:check` is the minimum automated gate. Use `cmd /c pnpm design:check:headed` or `cmd /c pnpm design:mobile` for visible/manual review when layout, animation, touch, scroll, or viewport behavior changes.
+
 ## Reporting
 
 Final responses should briefly include:

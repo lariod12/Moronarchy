@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "playwright.design.config.ts",
+    "tests/design/**/*.ts"
+  ]
+}

@@ -49,7 +49,6 @@ Simulation should produce the intended visible result. It does not need to match
 Review and debugging controls that are not player-facing production requirements:
 
 - scenario selectors
-- P1/P2 device view switches
 - autoplay Play/Pause
 - reset and cheat actions
 
@@ -252,6 +251,22 @@ UI work is not complete until the changed frame is visually checked. Interactive
 1. Logic/state checks for the prototype scenario.
 2. UI/DOM checks for the visible contract.
 3. Browser/manual checks for layout, interaction, and motion.
+
+Run the mandatory automated interaction gate:
+
+```bash
+pnpm design:check
+```
+
+When a task adds or changes interaction or visible state, update `../tests/design/` so at least one assertion directly proves each machine-verifiable Expected Result. The command uses the project custom Chrome and stores trace, screenshot, and video evidence when a test fails.
+
+Use a visible browser when debugging or reviewing interaction:
+
+```bash
+pnpm design:check:headed
+```
+
+Passing automated checks allows the task to be reported as `Automated Verified`. Only the user may approve subjective visual quality, UX feel, animation, touch, or real-device behavior.
 
 For phone testing, start the LAN design server from the project root:
 

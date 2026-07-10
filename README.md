@@ -44,7 +44,13 @@ Use `design/index.html` and `design/*.html` for quick interactive UI exploration
 
 The design folder is intentionally simple: `index.html` is the click-through prototype hub, and each standalone HTML file is one screen/frame with layout, CSS, local demo state, function names, and interaction notes. Approved designs can later be implemented in `apps/web`.
 
-Before changing an interactive design frame, define the goal, expected results, and test workflow first. After the task, compare the actual result against that contract using the three-layer validation workflow in [docs/design-task-validation-workflow.md](docs/design-task-validation-workflow.md).
+Before changing an interactive design frame, define the goal, expected results, interaction steps, and test workflow first. Add or update `tests/design/` assertions for changed behavior, then compare the actual result against that contract using the three-layer validation workflow in [docs/design-task-validation-workflow.md](docs/design-task-validation-workflow.md).
+
+Run the mandatory automated design interaction gate:
+
+```bash
+pnpm design:check
+```
 
 For real mobile-device UI testing, run:
 
@@ -102,6 +108,7 @@ pnpm dev          # Build core, then run web + server together
 pnpm dev:web      # Run only the web app
 pnpm dev:server   # Run only the multiplayer server
 pnpm design:mobile # Serve design/*.html on LAN for real phone testing
+pnpm design:check # Run automated design DOM/browser interaction checks
 pnpm build        # Build core, server, and web
 pnpm test         # Run all tests
 pnpm typecheck    # Typecheck all packages
