@@ -15,13 +15,13 @@
     Inputs: 0
     Main buttons:
       - Map, Tap to Scroll, Back, Crown/Land.
-      - Debug scenario buttons: Rival Land, Cannot Buy, Empty Land, Broke Player.
-      - Debug auto buttons: Players 2/3/4, Play, Pause, Reset.
+      - Debug scenario buttons: Rival Land, Cannot Buy, Empty Land, Broke Player, Random Positions.
+      - Debug scenarios: Starting Plots expands its plots/player picker; Debug auto buttons: Players 2/3/4, Play, Pause, Reset.
 
   Interactive features:
     - The frame starts paused with the debug modal open so reviewers can choose a scenario first.
     - Tap to Scroll remains as a manual prototype fallback when autoplay is paused.
-    - Debug Auto Play can reset the prototype with 2, 3, or 4 local players.
+    - Debug Auto Play can reset the prototype with 2, 3, or 4 local players and a chosen starting plot count per player.
     - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
     - Debug opens a side control panel on wide screens, or a centered popup on narrow screens.
     - Scenario buttons only select the scenario; Play applies it, closes the debug modal, and starts autoplay.
@@ -41,10 +41,13 @@
     End Turn -> manual fallback only; switch active player -> show next player's turn notice.
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
     Scenario button -> select scenario and keep the debug modal open.
+    Random Positions -> place every active player on a different random land tile.
     Play -> apply selected scenario -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
     Pause -> stop autoplay after the current step.
     Players 2/3/4 -> reset the prototype with the selected number of active players.
+    Starting Plots -> expand the picker; Apply plots -> reset the prototype with the chosen starting plots per player.
     Reset -> reset the room, stay paused, and keep the debug modal open.
+    Reload/F5 -> start a new debug game with no owned land, every player on Start, and 100 coin per player.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
@@ -59,7 +62,7 @@
     - Bot/autoplay decisions that exercise the full board loop quickly.
 
   Prototype tooling:
-    - Debug scenarios, 2-4 player selection, Play/Pause autoplay, Reset, and scenario speed/view helpers.
+    - Debug scenarios, random player positions, 2-4 player selection, starting plots per player, Play/Pause autoplay, Reset, and scenario speed/view helpers.
     - Tooling is for review coverage and is not automatically part of the player-facing production scope.
 
   Production mapping:
@@ -73,7 +76,8 @@
   Acceptance checklist:
     - Manual and autoplay paths demonstrate roll, movement, land outcome, HUD update, and turn advancement.
     - Debug player-count controls reset the board with exactly 2, 3, or 4 active player tokens.
-    - Scenario controls can expose rival land, cannot buy, empty land, broke player, reset, and game-over states.
+    - Starting Plots is collapsed until selected and resets the board with the chosen owned-land count for every active player.
+    - Scenario controls can expose random player positions, rival land, cannot buy, empty land, broke player, reset, and game-over states.
     - The screen remains fixed while intended inner controls and modals remain usable on mobile.
 -->
 <html lang="en">
@@ -1095,6 +1099,15 @@
         grid-template-columns: repeat(3, 1fr);
       }
 
+      .debug-scenario-options {
+        display: grid;
+        gap: 8px;
+      }
+
+      .debug-scenario-options[hidden] {
+        display: none;
+      }
+
       .debug-status {
         display: grid;
         grid-template-columns: auto 1fr;
@@ -1106,6 +1119,18 @@
         background: var(--paper);
         font-size: 12px;
         font-weight: 950;
+      }
+
+      .debug-status input {
+        width: 100%;
+        min-width: 0;
+        min-height: 28px;
+        padding: 3px 6px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        text-align: center;
       }
 
       .debug-actions button,
@@ -1626,6 +1651,26 @@
               <button type="button" data-debug-scenario="cannot-buy">Cannot Buy</button>
               <button type="button" data-debug-scenario="empty-land">Empty Land</button>
               <button type="button" data-debug-scenario="broke-player">Broke Player</button>
+              <button type="button" data-debug-scenario="random-positions">Random Positions</button>
+              <button type="button" data-debug-scenario="starting-plots" aria-expanded="false">Starting Plots</button>
+            </div>
+            <div class="debug-scenario-options" data-debug-scenario-options="starting-plots" hidden>
+              <label class="debug-status" for="auto-play-starting-plots">
+                Plots/player
+                <input
+                  id="auto-play-starting-plots"
+                  type="number"
+                  min="0"
+                  max="19"
+                  step="1"
+                  inputmode="numeric"
+                  data-bind="auto-play-starting-plots"
+                  aria-label="Starting plots per player"
+                />
+              </label>
+              <div class="debug-actions">
+                <button type="button" data-debug-action="apply-starting-plots">Apply plots</button>
+              </div>
             </div>
           </section>
 
@@ -1659,8 +1704,9 @@
       const maxKingLevel = 3;
       const minPlayerCount = 2;
       const maxPlayerCount = 4;
-      const playerStartTiles = [4, 22, 12, 32];
-      const multiplayerRoomId = "moronarchy-03-main-board-design";
+      const startTileId = 1;
+      const playerInitialOwnedTileSeeds = [4, 22, 12, 32];
+      const multiplayerRoomId = "moronarchy-03-main-board-design-v2";
       const sharedStateStorageKey = `${multiplayerRoomId}:state`;
       const initialOwnedTileStorageKeyPrefix = `${multiplayerRoomId}:initial-owned-tiles`;
       const localPlayerStorageKey = `${multiplayerRoomId}:local-player-id`;
@@ -1672,11 +1718,15 @@
         { price: 110, rents: [22, 44, 77], upgradeCosts: [88, 132] }
       ];
       let selectedPlayerCount = minPlayerCount;
-      let initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(selectedPlayerCount);
+      let selectedInitialOwnedPlotsPerPlayer = getDefaultInitialOwnedPlotsPerPlayer(selectedPlayerCount);
+      let initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(
+        selectedPlayerCount,
+        selectedInitialOwnedPlotsPerPlayer
+      );
       let localPlayerId = getInitialLocalPlayerId();
       let stateRevision = 0;
       let multiplayerChannel = null;
-      let selectedDebugScenario = "rival-land";
+      let selectedDebugScenario = "";
       let autoPlayEnabled = false;
       let autoPlayPaused = false;
       let autoPlayTimer = null;
@@ -1716,10 +1766,12 @@
         roundLabel: document.querySelector("[data-bind='round-label']"),
         turnLabel: document.querySelector("[data-bind='turn-label']"),
         debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
+        debugScenarioOptions: document.querySelector("[data-debug-scenario-options='starting-plots']"),
         debugActionButtons: document.querySelectorAll("[data-debug-action]"),
         debugPlayerCountButtons: document.querySelectorAll("[data-debug-player-count]"),
         autoPlayStatus: document.querySelector("[data-bind='auto-play-status']"),
         autoPlayPlayerCount: document.querySelector("[data-bind='auto-play-player-count']"),
+        autoPlayStartingPlots: document.querySelector("[data-bind='auto-play-starting-plots']"),
         playerName: document.querySelector("[data-bind='player-name']"),
         playerHealth: document.querySelector("[data-bind='player-health']"),
         playerCoin: document.querySelector("[data-bind='player-coin']"),
@@ -1846,12 +1898,7 @@
           handleMultiplayerMessage(readJson(event.newValue));
         });
 
-        const sharedState = readJson(readStorage("local", sharedStateStorageKey));
-        if (sharedState?.type === "state") {
-          applySharedFrameState(sharedState);
-        } else {
-          publishFrameState("room-created");
-        }
+        publishFrameState("room-reset-on-load");
 
       }
 
@@ -1886,6 +1933,10 @@
           minPlayerCount,
           maxPlayerCount,
           snapshot.players.length
+        );
+        selectedInitialOwnedPlotsPerPlayer = clampInitialOwnedPlotsPerPlayer(
+          snapshot.initialOwnedPlotsPerPlayer,
+          selectedPlayerCount
         );
         if (localPlayerId > selectedPlayerCount) {
           localPlayerId = 1;
@@ -1960,7 +2011,8 @@
           defeatedPlayerId: frameState.defeatedPlayerId,
           gameOverReason: frameState.gameOverReason,
           currentFace: frameState.currentFace,
-          playerCount: selectedPlayerCount
+          playerCount: selectedPlayerCount,
+          initialOwnedPlotsPerPlayer: selectedInitialOwnedPlotsPerPlayer
         };
       }
 
@@ -2074,15 +2126,23 @@
 
       function renderDebugPanel() {
         frameElements.debugScenarioButtons.forEach((button) => {
-          button.classList.toggle("is-selected", button.dataset.debugScenario === selectedDebugScenario);
-          button.setAttribute("aria-pressed", String(button.dataset.debugScenario === selectedDebugScenario));
+          const isSelected = button.dataset.debugScenario === selectedDebugScenario;
+          button.classList.toggle("is-selected", isSelected);
+          button.setAttribute("aria-pressed", String(isSelected));
+          if (button.dataset.debugScenario === "starting-plots") {
+            button.setAttribute("aria-expanded", String(isSelected));
+          }
         });
+        frameElements.debugScenarioOptions.hidden = selectedDebugScenario !== "starting-plots";
         frameElements.debugPlayerCountButtons.forEach((button) => {
           const playerCount = Number(button.dataset.debugPlayerCount);
           button.classList.toggle("is-selected", playerCount === selectedPlayerCount);
           button.setAttribute("aria-pressed", String(playerCount === selectedPlayerCount));
         });
         frameElements.autoPlayPlayerCount.textContent = String(selectedPlayerCount);
+        frameElements.autoPlayStartingPlots.min = "0";
+        frameElements.autoPlayStartingPlots.max = String(getMaximumInitialOwnedPlotsPerPlayer(selectedPlayerCount));
+        frameElements.autoPlayStartingPlots.value = String(selectedInitialOwnedPlotsPerPlayer);
         renderAutoPlayControls();
       }
 
@@ -2099,12 +2159,50 @@
         if (playerCount < minPlayerCount || playerCount > maxPlayerCount || playerCount === selectedPlayerCount) return;
 
         selectedPlayerCount = playerCount;
-        initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(selectedPlayerCount);
+        selectedInitialOwnedPlotsPerPlayer = clampInitialOwnedPlotsPerPlayer(
+          selectedInitialOwnedPlotsPerPlayer,
+          selectedPlayerCount
+        );
+        initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(
+          selectedPlayerCount,
+          selectedInitialOwnedPlotsPerPlayer
+        );
         if (localPlayerId > selectedPlayerCount) {
           localPlayerId = 1;
           writeStorage("session", localPlayerStorageKey, String(localPlayerId));
         }
         resetDebugRoom();
+      }
+
+      function applyDebugStartingPlots() {
+        const requestedPlots = Number(frameElements.autoPlayStartingPlots.value);
+        const nextPlots = clampInitialOwnedPlotsPerPlayer(requestedPlots, selectedPlayerCount);
+
+        if (nextPlots === selectedInitialOwnedPlotsPerPlayer) {
+          renderDebugPanel();
+          return;
+        }
+
+        selectedInitialOwnedPlotsPerPlayer = nextPlots;
+        initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(
+          selectedPlayerCount,
+          selectedInitialOwnedPlotsPerPlayer
+        );
+        resetDebugRoom();
+      }
+
+      function applyDebugRandomPositions() {
+        const availableTileIds = Array.from({ length: boardSize - 1 }, (_, index) => index + 2);
+
+        for (let index = availableTileIds.length - 1; index > 0; index -= 1) {
+          const swapIndex = Math.floor(Math.random() * (index + 1));
+          [availableTileIds[index], availableTileIds[swapIndex]] = [availableTileIds[swapIndex], availableTileIds[index]];
+        }
+
+        frameState.players.forEach((player, index) => {
+          player.tile = availableTileIds[index];
+        });
+        applyDebugState("debug-random-positions");
       }
 
       function applySelectedDebugScenario() {
@@ -2128,6 +2226,16 @@
         if (selectedDebugScenario === "broke-player") {
           player.coin = 0;
           applyDebugState("debug-broke-player");
+          return;
+        }
+
+        if (selectedDebugScenario === "random-positions") {
+          applyDebugRandomPositions();
+          return;
+        }
+
+        if (selectedDebugScenario === "starting-plots") {
+          applyDebugStartingPlots();
         }
       }
 
@@ -2147,6 +2255,11 @@
 
         if (action === "reset-room") {
           resetDebugRoom();
+          return;
+        }
+
+        if (action === "apply-starting-plots") {
+          applyDebugStartingPlots();
         }
       }
 
@@ -2585,9 +2698,9 @@
           id: index + 1,
           name: `Player ${index + 1}`,
           health: 100,
-          coin: 200,
+          coin: 100,
           level: 1,
-          tile: playerStartTiles[index]
+          tile: startTileId
         }));
       }
 
@@ -2607,9 +2720,29 @@
         });
       }
 
-      function createInitialOwnedTileIdsByPlayer(playerCount) {
-        const initialOwnedPlotsPerPlayer = Math.min(10, Math.floor((boardSize - 1) / playerCount));
-        const storageKey = `${initialOwnedTileStorageKeyPrefix}:${playerCount}`;
+      function getMaximumInitialOwnedPlotsPerPlayer(playerCount) {
+        return Math.floor((boardSize - 1) / playerCount);
+      }
+
+      function getDefaultInitialOwnedPlotsPerPlayer(playerCount) {
+        return 0;
+      }
+
+      function clampInitialOwnedPlotsPerPlayer(value, playerCount) {
+        return getClampedNumber(
+          value,
+          0,
+          getMaximumInitialOwnedPlotsPerPlayer(playerCount),
+          getDefaultInitialOwnedPlotsPerPlayer(playerCount)
+        );
+      }
+
+      function createInitialOwnedTileIdsByPlayer(playerCount, requestedInitialOwnedPlotsPerPlayer) {
+        const initialOwnedPlotsPerPlayer = clampInitialOwnedPlotsPerPlayer(
+          requestedInitialOwnedPlotsPerPlayer,
+          playerCount
+        );
+        const storageKey = `${initialOwnedTileStorageKeyPrefix}:${playerCount}:${initialOwnedPlotsPerPlayer}`;
         const savedTileIds = readJson(readStorage("local", storageKey));
         const playerIds = Array.from({ length: playerCount }, (_, index) => index + 1);
         const hasValidSavedTiles = playerIds.every((playerId) =>
@@ -2619,9 +2752,9 @@
         if (hasValidSavedTiles) return savedTileIds;
 
         const ownedTileIdsByPlayer = Object.fromEntries(
-          playerIds.map((playerId) => [playerId, [playerStartTiles[playerId - 1]]])
+          playerIds.map((playerId) => [playerId, initialOwnedPlotsPerPlayer > 0 ? [playerInitialOwnedTileSeeds[playerId - 1]] : []])
         );
-        const reservedTileIds = new Set(playerStartTiles.slice(0, playerCount));
+        const reservedTileIds = new Set(initialOwnedPlotsPerPlayer > 0 ? playerInitialOwnedTileSeeds.slice(0, playerCount) : []);
         const candidateTileIds = Array.from({ length: boardSize - 1 }, (_, index) => index + 2)
           .filter((tileId) => !reservedTileIds.has(tileId));
 
@@ -2630,7 +2763,7 @@
           [candidateTileIds[index], candidateTileIds[swapIndex]] = [candidateTileIds[swapIndex], candidateTileIds[index]];
         }
 
-        candidateTileIds.slice(0, (initialOwnedPlotsPerPlayer - 1) * playerCount).forEach((tileId, index) => {
+        candidateTileIds.slice(0, Math.max(0, (initialOwnedPlotsPerPlayer - 1) * playerCount)).forEach((tileId, index) => {
           const playerId = playerIds[index % playerCount];
           ownedTileIdsByPlayer[playerId].push(tileId);
         });

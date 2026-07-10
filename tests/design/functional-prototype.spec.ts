@@ -87,6 +87,95 @@ test.describe("main-board interaction contract", () => {
     expectNoBrowserErrors(errors);
   });
 
+  test("starts without owned land even when a legacy debug state exists", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("moronarchy-03-main-board-design:state", JSON.stringify({
+        type: "state",
+        sourceId: "legacy-debug-room",
+        revision: 1,
+        state: {
+          tiles: Array.from({ length: 40 }, (_, index) => ({
+            id: index + 1,
+            type: index === 0 ? "start" : "land",
+            ownerId: index === 0 ? null : 1,
+            landLevel: index === 0 ? 0 : 1
+          })),
+          players: [
+            { id: 1, name: "P1", health: 100, coin: 200, level: 1, tile: 4 },
+            { id: 2, name: "P2", health: 100, coin: 200, level: 1, tile: 22 }
+          ],
+          activePlayerIndex: 0,
+          round: 1,
+          phase: "awaiting-roll",
+          pendingTileId: null,
+          winnerId: null,
+          defeatedPlayerId: null,
+          gameOverReason: "",
+          currentFace: 1,
+          playerCount: 2,
+          initialOwnedPlotsPerPlayer: 10
+        }
+      }));
+    });
+    await openMainBoard(page);
+
+    await expect.poll(() => page.evaluate(
+      "frameState.tiles.filter((tile) => tile.ownerId !== null).length"
+    )).toBe(0);
+    await expect.poll(() => page.evaluate(
+      "frameState.players.every((player) => player.tile === 1)"
+    )).toBe(true);
+    expectNoBrowserErrors(errors);
+  });
+
+  test("reload resets owned land, player position, and coin to a new game", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await openMainBoard(page);
+
+    await page.evaluate(
+      "frameState.tiles[5].ownerId = 1; frameState.tiles[5].landLevel = 1; frameState.players[0].tile = 12; frameState.players[0].coin = 5; applyDebugState('test-reload-reset');"
+    );
+    await page.reload();
+    await expect(page.locator(".tile")).toHaveCount(40);
+
+    await expect.poll(() => page.evaluate(
+      "frameState.tiles.every((tile) => tile.ownerId === null && tile.landLevel === 0)"
+    )).toBe(true);
+    await expect.poll(() => page.evaluate(
+      "frameState.players.every((player) => player.tile === 1 && player.coin === 100)"
+    )).toBe(true);
+    expectNoBrowserErrors(errors);
+  });
+
+  test("random-positions scenario gives every player a distinct land tile", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await openMainBoard(page);
+
+    const randomPositions = page.locator('[data-debug-scenario="random-positions"]');
+    await randomPositions.click();
+    await expect(randomPositions).toHaveAttribute("aria-pressed", "true");
+    await page.evaluate("applySelectedDebugScenario()");
+
+    await expect.poll(() => page.evaluate(
+      "(() => { const tileIds = frameState.players.map((player) => player.tile); return tileIds.every((tileId) => tileId >= 2 && tileId <= 40) && new Set(tileIds).size === tileIds.length; })()"
+    )).toBe(true);
+    expectNoBrowserErrors(errors);
+  });
+
+  test("play starts a normal game without pre-owned land when no scenario is selected", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await openMainBoard(page);
+
+    await expect(page.locator('[data-debug-scenario="rival-land"]')).toHaveAttribute("aria-pressed", "false");
+    await page.locator('[data-debug-action="auto-play"]').click();
+    await expect.poll(() => page.evaluate(
+      "frameState.tiles.every((tile) => tile.ownerId === null)"
+    )).toBe(true);
+    await page.evaluate("pauseAutoPlay()");
+    expectNoBrowserErrors(errors);
+  });
+
   test("cannot-buy scenario opens a disabled purchase decision", async ({ page }) => {
     const errors = captureBrowserErrors(page);
     await openMainBoard(page);
@@ -105,17 +194,57 @@ test.describe("main-board interaction contract", () => {
     const errors = captureBrowserErrors(page);
     await openMainBoard(page);
 
+    await expect(page.locator('[data-bind="auto-play-starting-plots"]')).toBeHidden();
+
     for (const playerCount of [2, 3, 4]) {
       const playerCountButton = page.locator(`[data-debug-player-count="${playerCount}"]`);
       await playerCountButton.click();
       await expect(playerCountButton).toHaveAttribute("aria-pressed", "true");
       await expect(page.locator('[data-bind="auto-play-player-count"]')).toHaveText(String(playerCount));
+      await expect(page.locator('[data-bind="auto-play-starting-plots"]')).toHaveAttribute(
+        "max",
+        String(Math.floor(39 / playerCount))
+      );
       await expect(page.locator(".king-token")).toHaveCount(playerCount);
       await expect.poll(() => page.evaluate("frameState.players.length")).toBe(playerCount);
       await expect.poll(() => page.evaluate(
         "frameState.tiles.every((tile) => tile.ownerId === null || tile.ownerId <= frameState.players.length)"
       )).toBe(true);
     }
+
+    await page.locator('[data-debug-player-count="3"]').click();
+    const startingPlotsInput = page.locator('[data-bind="auto-play-starting-plots"]');
+    const startingPlotsScenario = page.locator('[data-debug-scenario="starting-plots"]');
+    await startingPlotsScenario.click();
+    await expect(startingPlotsScenario).toHaveAttribute("aria-expanded", "true");
+    await expect(startingPlotsInput).toBeVisible();
+    await expect(startingPlotsInput).toHaveValue("0");
+    await startingPlotsInput.fill("0");
+    await page.locator('[data-debug-action="apply-starting-plots"]').click();
+    await expect(startingPlotsInput).toHaveValue("0");
+    await expect.poll(() => page.evaluate(
+      "frameState.players.map((player) => frameState.tiles.filter((tile) => tile.ownerId === player.id).length)"
+    )).toEqual([0, 0, 0]);
+
+    await startingPlotsInput.fill("2");
+    await page.locator('[data-debug-action="apply-starting-plots"]').click();
+    await expect(startingPlotsInput).toHaveValue("2");
+    await expect(page.locator(".king-token")).toHaveCount(3);
+    await expect.poll(() => page.evaluate(
+      "frameState.players.map((player) => frameState.tiles.filter((tile) => tile.ownerId === player.id).length)"
+    )).toEqual([2, 2, 2]);
+
+    await startingPlotsInput.fill("999");
+    await page.locator('[data-debug-action="apply-starting-plots"]').click();
+    await expect(startingPlotsInput).toHaveValue("13");
+    await expect.poll(() => page.evaluate(
+      "frameState.players.map((player) => frameState.tiles.filter((tile) => tile.ownerId === player.id).length)"
+    )).toEqual([13, 13, 13]);
+
+    const fourPlayers = page.locator('[data-debug-player-count="4"]');
+    await fourPlayers.click();
+    await expect(fourPlayers).toHaveAttribute("aria-pressed", "true");
+    await expect(startingPlotsInput).toHaveValue("9");
 
     const initialTurn = await page.locator('[data-bind="turn-label"]').textContent();
     await page.locator('[data-debug-action="auto-play"]').click();

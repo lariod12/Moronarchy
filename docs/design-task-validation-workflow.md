@@ -173,16 +173,20 @@ If any expected result fails, fix it before marking the task done, or clearly re
 
 Use these expectations when validating the main-board cheat/debug mode.
 
+No debug scenario is selected by default. `Play` starts a normal game; a scenario changes state only after the reviewer explicitly selects it.
+
 | Scenario | Expected state | Expected UI |
 | --- | --- | --- |
 | `Rival Land` | Selected player moves to rival-owned land; rent is transferred from visitor to owner. | Board shows player on rival tile; HUD coin changes. |
 | `Cannot Buy` | Selected player moves to empty land with coin lower than price. | Buy modal opens; `Buy` is disabled. |
 | `Empty Land` | Selected player moves to empty land with enough coin. | Buy modal opens; `Buy` is enabled. |
 | `Broke Player` | Selected player's coin becomes `0`. | HUD/debug panel show coin `0`. |
+| `Random Positions` | Places every active player on a distinct random land tile. | No player remains on the Start tile; all positions are valid and unique. |
 | `Set Turn` | Active player changes to selected turn player. | Correct tab can act; other tab waits. |
 | `Apply Land` | Selected tile owner/level updates. | Tile background changes according to each tab's local player perspective. |
-| `Reset Room` | Round, players, phase, dice face, and initial ownership reset. | Both tabs show the reset board and turn state. |
+| `Reset Room` / Reload | Round, players, phase, dice face, and initial ownership reset. | Both tabs show a clean board with no owned land, all players on Start, and `100` coin per player. |
 | `Player Count` | Selecting 2, 3, or 4 rebuilds the prototype with that many active players and valid starting ownership. | The selected count is highlighted and the board renders exactly that many player tokens before autoplay starts. |
+| `Starting Plots` | The picker is collapsed by default and opens only after selecting `Starting Plots`; entering and applying a value from `0` through the displayed maximum rebuilds the prototype with that many owned land tiles per active player. | A new prototype starts at `0` owned plots per player; input min/max reflect player count; every active player owns exactly the applied count and no inactive player owns land. |
 | `Auto Play` | Host tab advances bot turns, resolves buy/skip/rent, publishes synced state, and ends the game if forced rent reduces a player to `0` coin. | Both tabs show bot movement; pause stops after the current step; play resumes from current state; bankruptcy opens Game Over with the correct winner and stops autoplay. |
 | `Auto Play View` | Auto Play defaults to following the active turn view, while `?player=1` and `?player=2` perspectives remain local-only. | Owned/rival tile backgrounds change when the active bot changes, and local perspective does not change room state, active turn, or bot host. |
 
