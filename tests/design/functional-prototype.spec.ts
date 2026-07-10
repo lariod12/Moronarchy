@@ -176,6 +176,53 @@ test.describe("main-board interaction contract", () => {
     expectNoBrowserErrors(errors);
   });
 
+  test("reset clears game state and debug selections, then waits for play", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await openMainBoard(page);
+
+    await page.locator('[data-debug-player-count="4"]').click();
+    await page.locator('[data-debug-scenario="starting-plots"]').click();
+    const startingPlotsInput = page.locator('[data-bind="auto-play-starting-plots"]');
+    await startingPlotsInput.fill("2");
+    await page.locator('[data-debug-action="apply-starting-plots"]').click();
+    await page.locator('[data-debug-action="auto-play"]').click();
+    await page.evaluate("openDebugModal()");
+    await page.locator('[data-debug-action="reset-room"]').click();
+
+    await expect(page.locator('[data-bind="auto-play-status"]')).toHaveText("Paused");
+    await expect(page.locator('[data-debug-player-count="2"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator('[data-debug-scenario="starting-plots"]')).toHaveAttribute("aria-pressed", "false");
+    await expect.poll(() => page.evaluate(
+      "frameState.players.length === 2 && frameState.players.every((player) => player.tile === 1 && player.coin === 100)"
+    )).toBe(true);
+    await expect.poll(() => page.evaluate(
+      "frameState.tiles.every((tile) => tile.ownerId === null && tile.landLevel === 0)"
+    )).toBe(true);
+    expectNoBrowserErrors(errors);
+  });
+
+  test("reset cancels an in-flight autoplay turn before it can restore stale state", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await openMainBoard(page);
+
+    await page.evaluate("autoPlaySpeed = 'fast'");
+    await page.locator('[data-debug-action="auto-play"]').click();
+    await expect.poll(() => page.evaluate("frameState.isRolling")).toBe(true);
+    await page.evaluate("openDebugModal()");
+    await page.locator('[data-debug-action="reset-room"]').click();
+    await page.waitForTimeout(3_500);
+
+    await expect(page.locator('[data-bind="auto-play-status"]')).toHaveText("Paused");
+    await expect(page.locator(".speech-bubble")).toBeHidden();
+    await expect.poll(() => page.evaluate(
+      "frameState.round === 1 && frameState.activePlayerIndex === 0 && frameState.players.every((player) => player.tile === 1 && player.coin === 100)"
+    )).toBe(true);
+    await expect.poll(() => page.evaluate(
+      "frameState.tiles.every((tile) => tile.ownerId === null && tile.landLevel === 0)"
+    )).toBe(true);
+    expectNoBrowserErrors(errors);
+  });
+
   test("cannot-buy scenario opens a disabled purchase decision", async ({ page }) => {
     const errors = captureBrowserErrors(page);
     await openMainBoard(page);

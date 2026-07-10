@@ -46,7 +46,7 @@
     Pause -> stop autoplay after the current step.
     Players 2/3/4 -> reset the prototype with the selected number of active players.
     Starting Plots -> expand the picker; Apply plots -> reset the prototype with the chosen starting plots per player.
-    Reset -> reset the room, stay paused, and keep the debug modal open.
+    Reset -> clear board and debug selections, stay paused, and keep the debug modal open until Play.
     Reload/F5 -> start a new debug game with no owned land, every player on Start, and 100 coin per player.
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
@@ -1734,6 +1734,7 @@
       let autoPlaySpeed = "normal";
       let autoPlayViewMode = "follow-turn";
       let isAutoPlayStepRunning = false;
+      let simulationRevision = 0;
 
       /* ======================================================================
          2. FRAME STATE AND DOM REFERENCES
@@ -2171,7 +2172,7 @@
           localPlayerId = 1;
           writeStorage("session", localPlayerStorageKey, String(localPlayerId));
         }
-        resetDebugRoom();
+        resetDebugRoom({ preserveSetup: true });
       }
 
       function applyDebugStartingPlots() {
@@ -2188,7 +2189,7 @@
           selectedPlayerCount,
           selectedInitialOwnedPlotsPerPlayer
         );
-        resetDebugRoom();
+        resetDebugRoom({ preserveSetup: true });
       }
 
       function applyDebugRandomPositions() {
@@ -2308,6 +2309,7 @@
       function applyDebugState(reason, options = {}) {
         const shouldPauseAutoPlay = options.pauseAutoPlay !== false;
         if (shouldPauseAutoPlay) {
+          simulationRevision += 1;
           pauseAutoPlay();
         } else {
           clearAutoPlayTimer();
@@ -2326,7 +2328,22 @@
       function resetDebugRoom(options = {}) {
         const shouldResumeAutoPlay = options.resumeAutoPlay === true;
         const shouldShowDebugModal = options.showDebugModal !== false;
+        const shouldPreserveSetup = options.preserveSetup === true;
+        simulationRevision += 1;
         pauseAutoPlay();
+        clearMotionLayer();
+        frameElements.dice.classList.remove("is-shaking");
+        if (!shouldPreserveSetup) {
+          selectedPlayerCount = minPlayerCount;
+          selectedInitialOwnedPlotsPerPlayer = getDefaultInitialOwnedPlotsPerPlayer(selectedPlayerCount);
+          initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(
+            selectedPlayerCount,
+            selectedInitialOwnedPlotsPerPlayer
+          );
+          selectedDebugScenario = "";
+          localPlayerId = 1;
+          writeStorage("session", localPlayerStorageKey, String(localPlayerId));
+        }
         frameState.tiles = createInitialTiles();
         frameState.players = createInitialPlayers();
         frameState.activePlayerIndex = 0;
@@ -2384,15 +2401,18 @@
           return;
         }
         if (!autoPlayEnabled || autoPlayPaused || autoPlayHostId !== tabInstanceId || isAutoPlayStepRunning) return;
+        const scheduledRevision = simulationRevision;
 
         autoPlayTimer = window.setTimeout(() => {
           autoPlayTimer = null;
-          runAutoPlayStep(false);
+          if (!isCurrentSimulation(scheduledRevision) || !autoPlayEnabled || autoPlayPaused) return;
+          runAutoPlayStep(false, scheduledRevision);
         }, getAutoPlayDelay());
       }
 
-      async function runAutoPlayStep(runOnce = false) {
-        if (isAutoPlayStepRunning || isGameOver()) return;
+      async function runAutoPlayStep(runOnce = false, runRevision = simulationRevision) {
+        if (!isCurrentSimulation(runRevision) || isAutoPlayStepRunning || isGameOver()) return;
+        if (!runOnce && (!autoPlayEnabled || autoPlayPaused)) return;
 
         autoPlayHostId = tabInstanceId;
         if (runOnce) {
@@ -2403,9 +2423,8 @@
         clearAutoPlayTimer();
         isAutoPlayStepRunning = true;
         renderAutoPlayControls();
-
         try {
-          await runAutoPlayTurn();
+          await runAutoPlayTurn(runRevision);
         } finally {
           isAutoPlayStepRunning = false;
           if (runOnce) {
@@ -2419,13 +2438,17 @@
         }
       }
 
-      async function runAutoPlayTurn() {
-        if (isGameOver()) return;
+      function isCurrentSimulation(runRevision) {
+        return runRevision === simulationRevision;
+      }
+
+      async function runAutoPlayTurn(runRevision) {
+        if (!isCurrentSimulation(runRevision) || isGameOver()) return;
         closeGameplayModals();
 
         if (frameState.phase === "tile-action" && frameState.pendingTileId !== null) {
-          await resolveAutoPlayTileAction(getActivePlayer());
-          if (isGameOver()) return;
+          await resolveAutoPlayTileAction(getActivePlayer(), runRevision);
+          if (!isCurrentSimulation(runRevision) || isGameOver()) return;
           confirmAutoPlayEndTurn("auto-play-pending-action");
           return;
         }
@@ -2446,6 +2469,7 @@
 
         const finalFace = getRandomDiceFace();
         await wait(getAutoPlayRollDuration());
+        if (!isCurrentSimulation(runRevision)) return;
         frameState.currentFace = finalFace;
         const movement = movePlayer(rollingPlayer, finalFace);
         renderDiceFace(finalFace);
@@ -2453,17 +2477,21 @@
         frameElements.dice.classList.remove("is-shaking");
 
         await wait(getAutoPlayReadDuration());
+        if (!isCurrentSimulation(runRevision)) return;
         await playTokenMove(rollingPlayer, fromTileId, movement.to, movement.steps);
+        if (!isCurrentSimulation(runRevision)) return;
         await playLandingCadence(rollingPlayer, movement);
+        if (!isCurrentSimulation(runRevision)) return;
         publishFrameState("auto-play-player-moved");
 
         frameState.isRolling = false;
-        await resolveAutoPlayTileAction(rollingPlayer);
-        if (isGameOver()) return;
+        await resolveAutoPlayTileAction(rollingPlayer, runRevision);
+        if (!isCurrentSimulation(runRevision) || isGameOver()) return;
         confirmAutoPlayEndTurn("auto-play-turn-complete");
       }
 
-      async function resolveAutoPlayTileAction(player) {
+      async function resolveAutoPlayTileAction(player, runRevision) {
+        if (!isCurrentSimulation(runRevision)) return;
         const tile = getTile(player.tile);
         if (!tile || tile.type !== "land") {
           await wait(getAutoPlaySettleDuration());
@@ -2500,6 +2528,7 @@
             owner: rentResult.owner,
             paid: rentResult.paid
           });
+          if (!isCurrentSimulation(runRevision)) return;
           checkRentDefeat(player, rentResult, "auto-play-rent-defeat");
           return;
         }
