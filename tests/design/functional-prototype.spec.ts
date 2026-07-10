@@ -176,6 +176,27 @@ test.describe("main-board interaction contract", () => {
     expectNoBrowserErrors(errors);
   });
 
+  test("scenario buttons toggle off when selected a second time", async ({ page }) => {
+    const errors = captureBrowserErrors(page);
+    await openMainBoard(page);
+
+    const rivalLand = page.locator('[data-debug-scenario="rival-land"]');
+    const scenarioDescription = page.locator('[data-bind="scenario-description"]');
+    await expect(scenarioDescription).toBeHidden();
+    await rivalLand.click();
+    await expect(rivalLand).toHaveAttribute("aria-pressed", "true");
+    await expect(scenarioDescription).toHaveText("Đặt người chơi hiện tại vào đất của đối thủ để kiểm tra tiền thuê và số coin bị trừ.");
+    await rivalLand.click();
+    await expect(rivalLand).toHaveAttribute("aria-pressed", "false");
+    await expect(scenarioDescription).toBeHidden();
+    await expect(page.locator('[data-debug-scenario="empty-land"]')).toHaveCount(0);
+    await page.evaluate("applySelectedDebugScenario()");
+    await expect.poll(() => page.evaluate(
+      "frameState.tiles.every((tile) => tile.ownerId === null)"
+    )).toBe(true);
+    expectNoBrowserErrors(errors);
+  });
+
   test("reset clears game state and debug selections, then waits for play", async ({ page }) => {
     const errors = captureBrowserErrors(page);
     await openMainBoard(page);

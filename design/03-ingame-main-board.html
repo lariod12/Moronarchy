@@ -15,7 +15,7 @@
     Inputs: 0
     Main buttons:
       - Map, Tap to Scroll, Back, Crown/Land.
-      - Debug scenario buttons: Rival Land, Cannot Buy, Empty Land, Broke Player, Random Positions.
+      - Debug scenario buttons: Rival Land, Cannot Buy, Broke Player, Random Positions.
       - Debug scenarios: Starting Plots expands its plots/player picker; Debug auto buttons: Players 2/3/4, Play, Pause, Reset.
 
   Interactive features:
@@ -24,7 +24,7 @@
     - Debug Auto Play can reset the prototype with 2, 3, or 4 local players and a chosen starting plot count per player.
     - BroadcastChannel/localStorage mock multiplayer syncs state between same-browser tabs.
     - Debug opens a side control panel on wide screens, or a centered popup on narrow screens.
-    - Scenario buttons only select the scenario; Play applies it, closes the debug modal, and starts autoplay.
+    - Scenario buttons toggle the scenario; Play applies a selected scenario, closes the debug modal, and starts autoplay.
     - Auto Play lets one tab host bot-vs-bot turns while other tabs watch synced state.
     - Empty land opens the buy/skip modal in this same frame instead of navigating to a separate design.
     - Rival land resolves a fee locally and returns to the next active turn in this same frame.
@@ -40,7 +40,7 @@
     Start Turn -> manual fallback only; close turn notice.
     End Turn -> manual fallback only; switch active player -> show next player's turn notice.
     Tap to Scroll -> dice shake -> random pip changes -> active player moves -> optional land action -> show end turn notice.
-    Scenario button -> select scenario and keep the debug modal open.
+    Scenario button -> select/deselect scenario and keep the debug modal open.
     Random Positions -> place every active player on a different random land tile.
     Play -> apply selected scenario -> close debug modal -> bot players roll, buy/skip, pay rent, and advance turns until paused.
     Pause -> stop autoplay after the current step.
@@ -1108,6 +1108,16 @@
         display: none;
       }
 
+      .debug-scenario-description {
+        margin: 0;
+        padding: 8px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
       .debug-status {
         display: grid;
         grid-template-columns: auto 1fr;
@@ -1649,11 +1659,11 @@
             <div class="debug-actions">
               <button type="button" data-debug-scenario="rival-land">Rival Land</button>
               <button type="button" data-debug-scenario="cannot-buy">Cannot Buy</button>
-              <button type="button" data-debug-scenario="empty-land">Empty Land</button>
               <button type="button" data-debug-scenario="broke-player">Broke Player</button>
               <button type="button" data-debug-scenario="random-positions">Random Positions</button>
               <button type="button" data-debug-scenario="starting-plots" aria-expanded="false">Starting Plots</button>
             </div>
+            <p class="debug-scenario-description" data-bind="scenario-description" role="status" hidden></p>
             <div class="debug-scenario-options" data-debug-scenario-options="starting-plots" hidden>
               <label class="debug-status" for="auto-play-starting-plots">
                 Plots/player
@@ -1717,6 +1727,13 @@
         { price: 90, rents: [18, 36, 63], upgradeCosts: [72, 108] },
         { price: 110, rents: [22, 44, 77], upgradeCosts: [88, 132] }
       ];
+      const debugScenarioDescriptions = {
+        "rival-land": "Đặt người chơi hiện tại vào đất của đối thủ để kiểm tra tiền thuê và số coin bị trừ.",
+        "cannot-buy": "Đưa người chơi đến đất trống nhưng thiếu coin, vì vậy nút Mua sẽ bị khóa.",
+        "broke-player": "Đặt coin của người chơi hiện tại về 0 để kiểm tra trạng thái cạn tiền.",
+        "random-positions": "Đặt tất cả người chơi vào các ô đất ngẫu nhiên, không trùng nhau.",
+        "starting-plots": "Mở lựa chọn số ô đất sở hữu ban đầu cho mỗi người chơi trước khi bắt đầu."
+      };
       let selectedPlayerCount = minPlayerCount;
       let selectedInitialOwnedPlotsPerPlayer = getDefaultInitialOwnedPlotsPerPlayer(selectedPlayerCount);
       let initialOwnedTileIdsByPlayer = createInitialOwnedTileIdsByPlayer(
@@ -1767,6 +1784,7 @@
         roundLabel: document.querySelector("[data-bind='round-label']"),
         turnLabel: document.querySelector("[data-bind='turn-label']"),
         debugScenarioButtons: document.querySelectorAll("[data-debug-scenario]"),
+        scenarioDescription: document.querySelector("[data-bind='scenario-description']"),
         debugScenarioOptions: document.querySelector("[data-debug-scenario-options='starting-plots']"),
         debugActionButtons: document.querySelectorAll("[data-debug-action]"),
         debugPlayerCountButtons: document.querySelectorAll("[data-debug-player-count]"),
@@ -2135,6 +2153,9 @@
           }
         });
         frameElements.debugScenarioOptions.hidden = selectedDebugScenario !== "starting-plots";
+        const scenarioDescription = debugScenarioDescriptions[selectedDebugScenario] || "";
+        frameElements.scenarioDescription.hidden = scenarioDescription === "";
+        frameElements.scenarioDescription.textContent = scenarioDescription;
         frameElements.debugPlayerCountButtons.forEach((button) => {
           const playerCount = Number(button.dataset.debugPlayerCount);
           button.classList.toggle("is-selected", playerCount === selectedPlayerCount);
@@ -2152,7 +2173,7 @@
       }
 
       function handleDebugScenario(scenario) {
-        selectedDebugScenario = scenario;
+        selectedDebugScenario = selectedDebugScenario === scenario ? "" : scenario;
         renderDebugPanel();
       }
 
@@ -2215,12 +2236,7 @@
         }
 
         if (selectedDebugScenario === "cannot-buy") {
-          applyDebugPurchaseScenario(player, false);
-          return;
-        }
-
-        if (selectedDebugScenario === "empty-land") {
-          applyDebugPurchaseScenario(player, true);
+          applyDebugCannotBuyScenario(player);
           return;
         }
 
@@ -2282,15 +2298,14 @@
         applyDebugState("debug-rival-land");
       }
 
-      function applyDebugPurchaseScenario(player, canBuy) {
+      function applyDebugCannotBuyScenario(player) {
         pauseAutoPlay();
         const tile = findEmptyLandTile() || makeDebugEmptyLand();
         const economy = getLandEconomy(tile.id);
-        const targetCoin = canBuy ? Math.max(player.coin, economy.price + 20) : Math.max(0, economy.price - 1);
 
         setActivePlayerById(player.id);
         player.tile = tile.id;
-        player.coin = targetCoin;
+        player.coin = Math.max(0, economy.price - 1);
         tile.ownerId = null;
         tile.landLevel = 0;
         frameState.phase = "tile-action";
@@ -2302,7 +2317,7 @@
         renderHud();
         renderDiceFace(frameState.currentFace);
         renderDebugPanel();
-        publishFrameState(canBuy ? "debug-empty-land" : "debug-cannot-buy");
+        publishFrameState("debug-cannot-buy");
         openModal("land-purchase-modal");
       }
 

@@ -173,13 +173,12 @@ If any expected result fails, fix it before marking the task done, or clearly re
 
 Use these expectations when validating the main-board cheat/debug mode.
 
-No debug scenario is selected by default. `Play` starts a normal game; a scenario changes state only after the reviewer explicitly selects it.
+No debug scenario is selected by default. A scenario button toggles on/off; `Play` starts a normal game unless the reviewer explicitly leaves a scenario selected. When selected, the debug panel shows a Vietnamese explanation below the Scenario buttons; it hides again when the scenario is deselected.
 
 | Scenario | Expected state | Expected UI |
 | --- | --- | --- |
 | `Rival Land` | Selected player moves to rival-owned land; rent is transferred from visitor to owner. | Board shows player on rival tile; HUD coin changes. |
 | `Cannot Buy` | Selected player moves to empty land with coin lower than price. | Buy modal opens; `Buy` is disabled. |
-| `Empty Land` | Selected player moves to empty land with enough coin. | Buy modal opens; `Buy` is enabled. |
 | `Broke Player` | Selected player's coin becomes `0`. | HUD/debug panel show coin `0`. |
 | `Random Positions` | Places every active player on a distinct random land tile. | No player remains on the Start tile; all positions are valid and unique. |
 | `Set Turn` | Active player changes to selected turn player. | Correct tab can act; other tab waits. |
