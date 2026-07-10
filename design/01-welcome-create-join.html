@@ -2,6 +2,8 @@
 <!--
   DESIGN FRAME SPEC
   Frame: 01-welcome-create-join
+  Status: Review
+
   Screen purpose:
     First multiplayer entry screen. Player chooses a king name, optionally enters a room code,
     then uses one primary button to create or join a room.
@@ -41,11 +43,31 @@
     Name filled + empty Room: button enabled, label Create, click -> 02-room-lobby.html.
     Name filled + Room filled: button enabled, label Join, click -> 02-room-lobby.html.
 
+  Production contract:
+    - Preserve the preview-first mobile layout, live player-name preview, and single Create/Join action.
+    - Empty trimmed Name keeps the action disabled; Room text switches the action from Create to Join.
+    - Submitting a valid action enters the matching room lobby or displays a clear request error.
+
+  Prototype simulations:
+    - Frame navigation stands in for the real lobby create/join request and response.
+    - Preview and form state are local to this HTML file.
+
+  Prototype tooling:
+    - None. All visible controls represent player-facing production behavior.
+
   Production mapping:
     Page/component target: apps/web HomePage create/join area.
     Create action: call lobby create API, then navigate to /room/:roomId.
     Join action: call lobby join API with room code, then navigate to /room/:roomId.
     Local demo state in this file must be replaced by real React state and server responses.
+
+  Out of scope:
+    - Lobby membership, chat, readiness, and game start behavior.
+
+  Acceptance checklist:
+    - Create and Join modes are visually distinguishable through the shared primary action.
+    - Name preview and disabled state update immediately.
+    - The frame remains usable at the intended mobile viewport.
 -->
 <html lang="en">
   <head>

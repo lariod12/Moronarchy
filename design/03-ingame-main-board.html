@@ -2,6 +2,8 @@
 <!--
   DESIGN FRAME SPEC
   Frame: 03-ingame-main-board
+  Status: Review
+
   Screen purpose:
     In-game main board while the local prototype simulates two kings taking turns.
 
@@ -46,10 +48,32 @@
     Back -> 02-room-lobby.html.
     Crown -> open status popup; Close -> hide popup.
 
+  Production contract:
+    - Preserve the 40-tile board, top turn status, central dice action, bottom HUD, and player-facing modal states.
+    - Dice feedback, token movement, land outcomes, HUD updates, and turn feedback should read as one continuous loop.
+    - Buttons, prompts, ownership styling, and status views must reflect the current synchronized player perspective.
+
+  Prototype simulations:
+    - Local frameState, economy fixtures, dice randomness, movement, land purchase, rent, defeat, and turn progression.
+    - BroadcastChannel/localStorage synchronization that demonstrates multiple same-browser player views.
+    - Bot/autoplay decisions that exercise the full board loop quickly.
+
+  Prototype tooling:
+    - P1/P2 Device view controls, Debug scenarios, Play/Pause autoplay, Reset, and scenario speed/view helpers.
+    - Tooling is for review coverage and is not automatically part of the player-facing production scope.
+
   Production mapping:
-    Page/component target: GamePage, BoardFrame, PlayerHud, and StatusMenu.
+    Page/component target: GamePage, GameTable, GameBoard, PlayerHud, and focused modal/action components.
     Waiting/turn state should come from boardgame.io currentPlayer, not local JS.
     Mock multiplayer adapter should map to Socket.IO room events or boardgame.io multiplayer sync.
+
+  Out of scope:
+    - Production rule authority, anti-cheat validation, persistence, reconnect handling, and network failure policy.
+
+  Acceptance checklist:
+    - Manual and autoplay paths demonstrate roll, movement, land outcome, HUD update, and turn advancement.
+    - Scenario controls can expose rival land, cannot buy, empty land, broke player, reset, and game-over states.
+    - The screen remains fixed while intended inner controls and modals remain usable on mobile.
 -->
 <html lang="en">
   <head>
@@ -57,6 +81,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>03 In Game Main Board</title>
     <style>
+      /* ======================================================================
+         1. FOUNDATIONS AND DESIGN TOKENS
+         Shared visual primitives for this frame only. No production imports.
+         ====================================================================== */
       :root {
         --ink: #050505;
         --paper: #ffffff;
@@ -99,7 +127,10 @@
         -webkit-touch-callout: none;
       }
 
-      /* Root mobile frame. Production equivalent: GamePage shell. */
+      /* ======================================================================
+         2. SCREEN SHELL AND TOP-LEVEL CONTROLS
+         Production contract: GamePage shell, turn status, and map entry point.
+         ====================================================================== */
       .phone {
         position: relative;
         display: grid;
@@ -208,7 +239,10 @@
         background: var(--ink);
       }
 
-      /* Board perimeter: 40 Monopoly-style tiles wrapped around an empty play field. */
+      /* ======================================================================
+         3. BOARD, TILES, AND PLAYER MARKERS
+         Production contract: data-driven 40-tile perimeter and player perspective.
+         ====================================================================== */
       .board {
         position: relative;
         display: grid;
@@ -691,7 +725,10 @@
         transform: rotate(-1.5deg);
       }
 
-      /* Bottom HUD: player identity, stats, back, and king menu. */
+      /* ======================================================================
+         4. PLAYER HUD AND PRIMARY CONTROLS
+         Production contract: identity, stats, navigation, and land status entry.
+         ====================================================================== */
       .hud {
         display: grid;
         grid-template-columns: 1.45fr 0.8fr 1fr 1fr;
@@ -880,6 +917,10 @@
         display: none;
       }
 
+      /* ======================================================================
+         5. PLAYER-FACING MODALS AND OUTCOME STATES
+         Production contract: turn, land decision, ledger, and game-over feedback.
+         ====================================================================== */
       .modal {
         position: fixed;
         inset: 0;
@@ -1028,6 +1069,10 @@
         color: var(--paper);
       }
 
+      /* ======================================================================
+         6. PROTOTYPE TOOLING
+         Scenario, device-view, reset, and autoplay controls are not production UI.
+         ====================================================================== */
       .debug-modal {
         z-index: 38;
       }
@@ -1112,6 +1157,7 @@
         background: var(--ink);
       }
 
+      /* Wide review mode keeps prototype tooling visible beside the phone frame. */
       @media (min-width: 1120px) {
         .debug-modal {
           inset: 14px auto auto calc(50% + 235px);
@@ -1330,6 +1376,10 @@
         transform: rotate(1deg);
       }
 
+      /* ======================================================================
+         7. RESPONSIVE AND ACCESSIBILITY BEHAVIOR
+         Production contract: mobile fit, readable controls, and reduced motion.
+         ====================================================================== */
       @media (max-width: 430px) {
         body {
           padding: 0;
@@ -1440,6 +1490,10 @@
     </style>
   </head>
   <body>
+    <!-- =====================================================================
+         1. SCREEN SHELL AND STATUS
+         Production contract: current round, turn, map entry, and player perspective.
+         ====================================================================== -->
     <main class="phone screen-ingame-main-board" aria-label="In-game main board frame">
       <header class="frame-top">
         <span class="tag" data-bind="round-label">Round 1</span>
@@ -1448,10 +1502,15 @@
       </header>
 
       <section class="connection-strip" aria-label="Mock multiplayer connection">
+        <!-- PROTOTYPE TOOLING: local device perspective only; do not port as player UI. -->
         <button class="seat-button" type="button" data-player-seat="1">P1 Device</button>
         <button class="seat-button" type="button" data-player-seat="2">P2 Device</button>
       </section>
 
+      <!-- ===================================================================
+           2. PRIMARY BOARD SCENE
+           Production contract: board, movement feedback, dice, and main action.
+           ==================================================================== -->
       <section class="board" data-board aria-label="40 tile game board">
         <div class="motion-layer" data-motion-layer aria-hidden="true"></div>
         <div class="board-center">
@@ -1471,6 +1530,10 @@
         </div>
       </section>
 
+      <!-- ===================================================================
+           3. PLAYER HUD
+           Production contract: local player identity, stats, and status access.
+           ==================================================================== -->
       <footer class="hud" aria-label="Player heads up display">
         <section class="panel player-card" aria-label="Current player">
           <div class="player-name" data-bind="player-name">Player 1</div>
@@ -1497,6 +1560,10 @@
         </button>
       </footer>
 
+      <!-- ===================================================================
+           4. PLAYER-FACING MODAL STATES
+           Production contract: turn, outcome, purchase, ledger, and status views.
+           ==================================================================== -->
       <section class="modal turn-notice-modal" data-modal="turn-notice-modal" hidden>
         <div class="modal-card turn-notice-card" role="dialog" aria-modal="true" aria-labelledby="turn-notice-title">
           <span class="turn-notice-kicker" data-bind="turn-notice-round">Round 1</span>
@@ -1576,6 +1643,10 @@
         </div>
       </section>
 
+      <!-- ===================================================================
+           5. PROTOTYPE TOOLING
+           Scenario and autoplay controls exist for review coverage only.
+           ==================================================================== -->
       <section class="modal debug-modal" data-modal="debug-modal" hidden>
         <div class="modal-card debug-card" role="dialog" aria-modal="true" aria-labelledby="debug-title">
           <header class="debug-header">
@@ -1607,6 +1678,11 @@
     </main>
 
     <script>
+      /* ======================================================================
+         1. PROTOTYPE CONFIGURATION AND FIXTURES
+         These values make the prototype executable. packages/core remains the
+         production source of truth for rules and economy.
+         ====================================================================== */
       const boardSize = 40;
       const startBonus = 50;
       const maxKingLevel = 3;
@@ -1635,6 +1711,10 @@
       let autoPlayViewMode = "follow-turn";
       let isAutoPlayStepRunning = false;
 
+      /* ======================================================================
+         2. FRAME STATE AND DOM REFERENCES
+         Local state is a simulation of visible outcomes, not authoritative state.
+         ====================================================================== */
       const frameState = {
         tiles: createInitialTiles(),
         players: createInitialPlayers(),
@@ -1712,6 +1792,9 @@
       const outcomeEffectMs = 760;
       const kingMoveAnimationMs = 280;
 
+      /* ======================================================================
+         3. INITIALIZATION AND EVENT BINDING
+         ====================================================================== */
       function initializeFrame() {
         /*
           Production:
@@ -1772,6 +1855,11 @@
         button.addEventListener("blur", release);
       }
 
+      /* ======================================================================
+         4. MOCK MULTIPLAYER ADAPTER
+         BroadcastChannel/localStorage demonstrate same-browser synchronization.
+         Production replaces this entire region with boardgame.io/server state.
+         ====================================================================== */
       function initializeMultiplayer() {
         if ("BroadcastChannel" in window) {
           multiplayerChannel = new BroadcastChannel(multiplayerRoomId);
@@ -2003,6 +2091,10 @@
         }
       }
 
+      /* ======================================================================
+         5. PROTOTYPE SCENARIOS AND TOOLING
+         Debug scenarios, autoplay, reset, and view controls are review helpers.
+         ====================================================================== */
       function openDebugModal() {
         renderDebugPanel();
         openModal("debug-modal");
@@ -2164,6 +2256,7 @@
         }
       }
 
+      /* ----- 5A. Autoplay scenario runner ---------------------------------- */
       function startAutoPlay() {
         if (isGameOver()) {
           closeDebugModalIfFloating();
@@ -2397,6 +2490,7 @@
         return 180;
       }
 
+      /* ----- 5B. Scenario setup and shared prototype helpers --------------- */
       function setActivePlayerById(playerId) {
         const playerIndex = frameState.players.findIndex((player) => player.id === playerId);
         if (playerIndex >= 0) {
@@ -2435,6 +2529,7 @@
         closeModal("turn-notice-modal");
       }
 
+      /* ----- 5C. Simulated game-over outcomes ------------------------------ */
       function isGameOver() {
         return frameState.phase === "game-over" || frameState.winnerId !== null;
       }
@@ -2501,6 +2596,10 @@
         return Math.max(min, Math.min(max, Math.round(parsed)));
       }
 
+      /* ======================================================================
+         6. SIMULATION DATA, SELECTORS, AND RENDERING
+         Factories/economy helpers support visible scenarios only.
+         ====================================================================== */
       function createInitialPlayers() {
         return [
           { id: 1, name: "Player 1", health: 100, coin: 200, level: 1, tile: 4 },
@@ -2585,6 +2684,7 @@
         return economy.rents[tile.landLevel - 1] ?? 0;
       }
 
+      /* ----- 6A. Board, ownership, HUD, and ledger rendering --------------- */
       function renderBoard() {
         frameElements.board.querySelectorAll(".tile").forEach((tile) => tile.remove());
         const activePlayer = getActivePlayer();
@@ -2750,6 +2850,11 @@
         return { column: id - 30, row: 1 };
       }
 
+      /* ======================================================================
+         7. PLAYER-FACING INTERACTION SIMULATION
+         This region expresses the approved experience sequence. Production
+         maps actions to core moves and renders synchronized results.
+         ====================================================================== */
       function handleOpenMap() {
         /*
           Production action:
@@ -2848,6 +2953,10 @@
         renderHud();
       }
 
+      /* ======================================================================
+         8. MOTION AND VISUAL EFFECTS
+         Dice, token movement, coin effects, and timing are experience contracts.
+         ====================================================================== */
       function playDiceRoll() {
         return new Promise((resolve) => {
           const rollTimer = window.setInterval(() => {
@@ -3163,6 +3272,10 @@
         return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       }
 
+      /* ======================================================================
+         9. SIMULATED LANDING, LAND ACTION, AND TURN OUTCOMES
+         Production replaces calculations/transitions with packages/core state.
+         ====================================================================== */
       function movePlayer(player, steps) {
         const nextTile = ((player.tile - 1 + steps) % 40) + 1;
         const passedStart = nextTile < player.tile;
@@ -3343,6 +3456,9 @@
         frameElements.speechBubble.setAttribute("aria-hidden", "false");
       }
 
+      /* ======================================================================
+         10. GENERIC NAVIGATION AND MODAL UTILITIES
+         ====================================================================== */
       function navigateToFrame(fileName) {
         window.location.href = fileName;
       }

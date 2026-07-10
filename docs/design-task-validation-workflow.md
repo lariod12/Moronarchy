@@ -16,6 +16,9 @@ Required contract:
 Goal:
 - What the task should accomplish.
 
+Change Classification:
+- Production Contract | Prototype Simulation | Prototype Tooling.
+
 Expected Results:
 - What the user should see.
 - What state should change.
@@ -29,6 +32,14 @@ Test Workflow:
 ```
 
 Do not start implementation until the expected results are clear enough to test. If the task is tiny, the contract can be short, but it still needs a visible expected result.
+
+Classification meaning:
+
+- `Production Contract`: approved player-facing behavior that production should reproduce.
+- `Prototype Simulation`: local behavior that makes the idea testable and must be replaced by core/server state in production.
+- `Prototype Tooling`: scenario, view, reset, cheat, or autoplay behavior used for review and not automatically ported.
+
+A task may contain more than one classification, but each expected result should make its ownership clear.
 
 ## Three-Layer Test Workflow
 
@@ -94,6 +105,9 @@ Completion report should include:
 Goal:
 - Restate the approved goal.
 
+Change Classification:
+- List the contract, simulation, or tooling areas changed.
+
 Expected vs Actual:
 - Expected result 1 -> pass/fail.
 - Expected result 2 -> pass/fail.
@@ -129,3 +143,5 @@ Use these expectations when validating the main-board cheat/debug mode.
 ## Design Frame Rule
 
 Any design task that changes interaction, modal behavior, board state, multiplayer sync, or debug tooling should update the relevant frame comments or docs when the workflow changes.
+
+Prototype logic may be functionally complete enough to demonstrate the intended experience. It remains non-authoritative: production game rules belong to `packages/core`, multiplayer authority belongs to the server/boardgame.io runtime, and production rendering belongs to `apps/web`.

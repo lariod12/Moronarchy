@@ -2,6 +2,8 @@
 <!--
   DESIGN FRAME SPEC
   Frame: 02-room-lobby
+  Status: Review
+
   Screen purpose:
     Room lobby after Create or Join. Players wait together, see quick chat bubbles
     for active players, chat in the lobby log, and mark themselves ready before the match starts.
@@ -44,11 +46,31 @@
     Cancel -> returns to not-ready state, writes cancel status to chat log, Cancel becomes Chat, Start/Waiting becomes Ready.
     Start -> open Game Starting countdown popup -> auto-count 3, 2, 1 -> 03-ingame-main-board.html.
 
+  Production contract:
+    - Preserve the room-code header, active-player cards, chat log, readiness controls, and in-place countdown.
+    - Host, ready, waiting, cancel, and start states must be clear to each connected player.
+    - Chat and readiness changes must update without navigating away from the lobby.
+
+  Prototype simulations:
+    - Local player slots, readiness, chat messages, and countdown stand in for synchronized room state.
+    - Direct frame navigation stands in for the server-confirmed match start.
+
+  Prototype tooling:
+    - Fixed sample players and the default Player 1 host assignment exist for review convenience.
+
   Production mapping:
     Page/component target: apps/web RoomPage.
     Chat maps to lobby chat state or future websocket room messages.
     Ready maps to room readiness state; Start maps to host/server match start after server confirms every player is ready.
     The MVP rules still support 2-4 players; slots 5-6 are visual placeholders for future expansion.
+
+  Out of scope:
+    - Authoritative lobby persistence, reconnect policy, and the in-game board loop.
+
+  Acceptance checklist:
+    - Chat, Ready/Cancel, host Start, and countdown can be reviewed in one frame.
+    - Non-host and not-ready states remain visually understandable.
+    - The lobby stays fixed while only named inner regions scroll or accept input.
 -->
 <html lang="en">
   <head>

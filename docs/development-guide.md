@@ -14,14 +14,23 @@ Read order for new contributors:
 
 ## Design Preview Workflow
 
-Use `design/index.html` and `design/*.html` as interactive visual frames before changing production UI.
+Use `design/index.html` and `design/*.html` as functional prototypes before changing production UI. The frames should be complete enough to review an idea immediately, but their local rule and multiplayer simulations are not production authority.
+
+Ownership boundary:
+
+| Concern | Authority |
+| --- | --- |
+| Approved player experience, visible states, and interaction flow | `design/*.html` production contract |
+| Game rules, economy, validation, victory, and defeat | `packages/core` |
+| Multiplayer authority and synchronization | `apps/server` plus boardgame.io |
+| Production rendering and accessibility | `apps/web` |
 
 Rules:
 
 - Each `.html` file in `design/` represents one screen or game phase.
 - `design/index.html` is the review hub and should link to every frame.
-- Put layout, CSS, local demo state, and quick UI ideas directly in the frame file.
-- Put a `DESIGN FRAME SPEC` comment at the top of every design HTML file. It must describe the screen purpose, visible controls, feature list, button workflow, and production mapping.
+- Put layout, CSS, functional local simulation, and quick UI ideas directly in the frame file.
+- Put a `DESIGN FRAME SPEC` comment at the top of every design HTML file. It must include lifecycle status, production contract, prototype simulations, prototype tooling, production mapping, scope, and acceptance criteria.
 - Treat each design HTML file as the design memory for that screen. Any approved idea, user feedback, visual exception, or interaction workflow must be recorded in the relevant HTML comments/spec before or while the frame is changed.
 - Make the frame interactive enough to test that screen's main action.
 - Use descriptive classes, `data-*` attributes, function names, and comments so implementers can understand the intended production behavior from the HTML file.
@@ -29,15 +38,17 @@ Rules:
 - Use `data-action` for local prototype actions or fake versions of future game/server moves.
 - Use `data-modal-open`, `data-modal-close`, and `data-modal` for popup behavior inside the same frame.
 - Use `data-bind` for sample state that frame JavaScript renders.
-- Add comments around major CSS class groups, HTML feature blocks, and JS handler functions.
+- Add named region comments around major CSS, HTML, and JavaScript responsibilities. Large frames should keep configuration/state, mock multiplayer, tooling, rendering, interaction simulation, motion, and generic utilities visibly separate.
 - Use cross-platform typography in design frames. Prefer `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif`; avoid Windows-only decorative fonts such as `"Comic Sans MS"` for UI controls because Safari/iOS may not render them.
 - Reset button appearance in design frames: set `color: var(--ink)`, `appearance: none`, and `-webkit-appearance: none` so iOS Safari does not tint button text blue. This was verified on real phone Safari after `Chat` and `Ready` initially rendered blue.
 - Do not let a scene container be draggable. The main scene shell, such as `.phone.screen-room-lobby` or the game board scene container, should not move/drag/scroll as a whole. Only explicit inner regions like chat logs, modals, buttons, inputs, or board actions should handle interaction.
 - If a scene needs scroll behavior, put it in a named inner region and document that region in the HTML comments. Do not fix scene dragging by collapsing or distorting the whole layout.
 - For any UI/layout change, verify the rendered frame visually in a browser or screenshot before marking the work done. DOM checks and computed-style assertions are useful, but they do not replace looking at the actual UI.
 - Do not import production React code from `apps/web`.
-- Do not put real game rules, multiplayer behavior, or server logic in design files.
-- Fake local state is allowed only when it demonstrates UI behavior.
+- Do not treat prototype calculations, multiplayer mocks, or server-like behavior as authoritative production logic.
+- Functional local state is allowed when it demonstrates the complete intended experience quickly.
+- Label review helpers such as scenarios, P1/P2 view switching, autoplay, reset, and cheats as prototype tooling; do not port them automatically.
+- Label fake dice, economy, turn, winner, bot, and mock synchronization behavior as prototype simulation; replace it with core/server state during production implementation.
 - After a design is approved, implement it in `apps/web` using the existing React components.
 - Update this guide or `docs/system-architecture.md` only when the design workflow or production UI ownership changes.
 
@@ -45,14 +56,16 @@ Recommended flow:
 
 1. Open `design/index.html` to see the full prototype map.
 2. Pick the relevant frame from `design/README.md`.
-3. Edit that `.html` frame until the screen direction and interaction feel right.
+3. Mark the frame `Draft` or `Review` and edit it until the screen direction and interaction feel right.
 4. Review it in a browser as an interactive demo.
 5. Click through linked frames to confirm the flow feels consistent.
 6. For touch, drag, scroll, or viewport-sensitive changes, run `pnpm design:mobile` and test the frame on a real phone using the printed LAN URL.
-7. Read the frame comments/function names to map behavior into production.
-8. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
-9. Replace local demo state with real core/server state.
-10. Add or update tests only for production behavior, not for the sandbox file.
+7. Record approved decisions in the frame's production contract and set its status to `Approved`.
+8. Read the frame regions and production mapping to map behavior into production.
+9. Move approved structure/styles into `apps/web/src/components` and `apps/web/src/styles/index.css`.
+10. Replace local simulation with real core/server state; do not copy mock networking or prototype tooling by default.
+11. Add or update tests at the production boundary, then compare the result with the approved contract.
+12. Set the frame status to `Ported` and keep it as a reference snapshot until a redesign reopens it.
 
 Mobile design server:
 
