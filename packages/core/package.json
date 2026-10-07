@@ -9,15 +9,25 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./engine": {
+      "types": "./dist/engine.d.ts",
+      "import": "./dist/engine.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src test"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
+    "lint": "eslint src test scripts",
+    "sim": "tsx scripts/simulate.ts"
   },
   "devDependencies": {
+    "tsx": "^4.21.0",
     "vitest": "^4.0.15"
   }
 }

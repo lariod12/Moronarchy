@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInitialState, createMoronarchyGameConfig, getNextAlivePlayerId } from "../src";
+import { createInitialState, createMoronarchyGameConfig, getNextAlivePlayerId } from "../../src";
 
 describe("boardgame.io adapter", () => {
   it("selects the next alive player and skips defeated players", () => {

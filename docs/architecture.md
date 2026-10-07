@@ -133,7 +133,7 @@ phase "finished" → ranking; Play Again quay về "lobby" với cùng seats
 
 Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 
-1. **Core model + content + flow** (chưa có Fight): types, content config, board/economy/plots/residents/cards/items/events/elimination, flow lượt, PendingDecision, factory test state.
+1. ✅ **Core engine** (đã xong): model, content, rules (gồm Fight), flow lượt, PendingDecision, selectors, factory test state, bot + mô phỏng (`pnpm --filter @moronarchy/core sim`). Export tại `@moronarchy/core/engine` và `@moronarchy/core/testing`. API cũ tạm nằm ở `packages/core/src/legacy/` (vẫn export ở `@moronarchy/core`) cho đến khi server/web chuyển xong ở bước 2–5, sau đó xóa.
 2. **Server + lobby phase**: game config mới, chat/ready/start trong boardgame.io, bỏ server chat riêng.
 3. **Web nền**: router, GameShell, UI kit, tokens, gallery.
 4. **Màn Welcome + Lobby** theo screen spec.

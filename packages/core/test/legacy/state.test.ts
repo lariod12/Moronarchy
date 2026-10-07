@@ -11,7 +11,7 @@ import {
   getTile,
   rollDiceAndMove,
   upgradeLand
-} from "../src";
+} from "../../src";
 
 describe("Moronarchy core rules", () => {
   it("wraps movement from tile 40 to tile 01", () => {
