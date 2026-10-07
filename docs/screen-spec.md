@@ -103,6 +103,8 @@ Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrad
   - B vắng mặt khi đất bị tấn công: thông báo "Player A is attacking your plot", có nút xem trận.
   - [64](ui/64-map-attack-prompt.png) "You get in other players plot. Do you want to attack on it?" Yes / No: hiện cho A khi B không ở đó.
   - Mua đất trống: popup "Buy this plot? Price X" Buy / Skip. Thiết kế chưa vẽ, Đề xuất theo style popup chung.
+  - Dừng trên đất của mình: popup "Your plot" với các lối tắt Upgrade plot / Heal / Recruit / Upgrade residents (mở màn Plot detail ở chế độ quản lý), hoặc Done. Thiết kế chưa vẽ.
+  - Nhặt được item / gặp event cá nhân khi dừng trên đất: popup thông báo, nút Done.
   - Trả phí: TBD (đề xuất popup thông báo "You paid X coin to Player B", nút Done).
 - **Câu hỏi mở:** Home hub mới không có ô Map, vậy vào Map bằng cách nào? Đề xuất: ô **Dice Status** mở Map (nơi đổ xúc xắc), còn Steps là một tab trong Map.
 

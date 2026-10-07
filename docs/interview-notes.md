@@ -108,3 +108,12 @@ Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là inpu
 - Được dùng item trước mỗi hiệp.
 - Hồi máu: vua hồi đầy miễn phí ở Start. Resident và đất: ở Start, trong vòng nâng cấp, trả coin để hồi; chi phí tăng theo level.
 - Duyệt đề xuất: công thức số resident còn sống, cách đất thắng hiệp, thắng đất mà chưa phá được thì miễn phí, vua về 0 máu thì hồi 50%. Resident chết trước: level thấp nhất, cùng level thì chỉ số yếu nhất.
+
+## 13. Câu hỏi thiết kế còn lại
+
+- Không có ô sự kiện riêng: mọi ô trừ Start đều là đất. Item/event cá nhân rơi ngẫu nhiên khi dừng trên đất; event toàn bàn do hệ thống kích hoạt.
+- Dừng trên đất của mình: quản lý tại chỗ cho mảnh đất đó (nâng cấp, hồi máu, tuyển, nâng cấp resident).
+- Level tối đa: vua 5, đất 5.
+- Lucky (ngoài Fight): tăng tỉ lệ rơi item, chất lượng Upgrade Card, độ may của event cá nhân.
+- Nâng cấp resident: ở Start và khi dừng trên đất của mình; trả coin; level resident không vượt level đất.
+- Chi tiêu tự do: chỉ kiểm tra đủ coin, được tiêu về 0; ít coin thì dễ phá sản là rủi ro của người chơi.

@@ -39,7 +39,7 @@ Moronarchy là board game multiplayer online cho điện thoại. 2–6 vị vua
 | Health / Max Health | 100 / 100 | Đề xuất |
 | Attack | 5 | Đề xuất (theo màn Players Info) |
 | Defense | 3 | Đề xuất (theo màn Players Info) |
-| Lucky | 0 | Tác dụng TBD |
+| Lucky | 0 | Tăng tỉ lệ rơi item, chất lượng Upgrade Card, độ may của event cá nhân |
 
 ## 4. Cấu trúc một lượt
 
@@ -64,8 +64,8 @@ Chờ lượt ──► Crown rung (tới lượt mình)
 - 40 ô xếp thành vòng vuông, đi theo chiều tăng dần 01 → 40 → 01.
 - Các loại ô:
   - **Start (01):** trạm nâng cấp (mục 6).
-  - **Plot:** đất mua được.
-  - **Ô sự kiện / thẻ:** nhận Event, Item hoặc thẻ. Ô nào là ô sự kiện: **TBD**.
+  - **Plot (02–40):** mọi ô còn lại đều là đất mua được. **Không có ô sự kiện riêng.**
+- Khi dừng trên một Plot có thể ngẫu nhiên rơi Item hoặc kích hoạt event cá nhân (tỉ lệ phụ thuộc Lucky). Event toàn bàn do hệ thống kích hoạt (mục 13).
 - Hiển thị trên Map: ô xám là đất của mình, icon người là vị trí vua của mình. Cách hiển thị đất và vị trí của người khác: **TBD** (xem screen spec).
 - Màn Steps / Dice Status: vị trí hiện tại của mọi vua.
 
@@ -74,7 +74,7 @@ Chờ lượt ──► Crown rung (tới lượt mình)
 Khi vua đi qua hoặc dừng tại ô 01, vua tạm dừng ở Start và lần lượt thực hiện:
 
 1. Nhận **Start bonus coin** (Đề xuất: +50).
-2. **King Level +1** (giới hạn level tối đa: TBD).
+2. **King Level +1**, tối đa level 5.
 3. **Vua hồi đầy máu**, miễn phí.
 4. Nhận **Income** của tất cả Plot đang sở hữu, tính theo level từng Plot, cộng thêm phần Farmer (mục 8).
 5. Chọn **1 trong 3 Upgrade Card** random (mục 11).
@@ -89,7 +89,8 @@ Bước 1–5 là bắt buộc hoặc tự động. Bước 6–9 tùy chọn, c
 
 ## 7. Plots
 
-- Mua: dừng trên Plot trống thì được mua nếu đủ coin. Plot mới mua ở **level 0**.
+- Mua: dừng trên Plot trống thì được mua nếu đủ coin (coin ≥ giá). Plot mới mua ở **level 0**. Level tối đa của Plot là **5** và không vượt quá level vua.
+- **Chi tiêu tự do:** mọi giao dịch chủ động (mua đất, nâng cấp, hồi máu, tuyển, mua item) chỉ kiểm tra đủ coin, được tiêu về 0. Còn ít coin thì rủi ro phá sản khi trả phí là do người chơi tự chịu.
 - Chỉ số của Plot: Level, Price, Income, Fee (phí người khác trả), Health, Max Health, Defense, Max Resident. Tất cả phụ thuộc level (và có thể cả vùng của bản đồ).
 - **Fee:** vua khác dừng trên Plot phải trả phí theo level của Plot, trừ khi chọn hoặc bị tấn công (mục 9).
 - **Income:** chủ Plot nhận khi vua của mình hoàn thành vòng (Start Station bước 3).
@@ -97,7 +98,7 @@ Bước 1–5 là bắt buộc hoặc tự động. Bước 6–9 tùy chọn, c
   - Health về 0 → Plot tụt 1 level và hồi đầy máu theo Max Health của level mới.
   - Đang level 0 mà Health về 0 → mất đất, Plot trở lại trống. Người vừa phá được **mua ngay trong lượt đó**; nếu không mua thì người dừng lên sau được mua.
 - Máu Plot không tự hồi. Chủ trả coin để hồi ở Start Station.
-- Dừng trên đất của chính mình: **TBD** (vd không có gì, hoặc được tuyển/di chuyển resident).
+- **Dừng trên đất của chính mình:** được quản lý tại chỗ cho riêng mảnh đất đó: nâng cấp Plot, hồi máu Plot/resident, tuyển resident, nâng cấp resident. Chi phí giống ở Start.
 
 ## 8. Residents
 
@@ -112,7 +113,7 @@ Bước 1–5 là bắt buộc hoặc tự động. Bước 6–9 tùy chọn, c
 
 - Residents trên cùng một Plot phòng thủ chung thành **một đội** (mục 10.4). Plot chỉ bị đánh trực tiếp khi không còn resident nào.
 - Máu resident không tự hồi. Chủ trả coin để hồi ở Start Station.
-- Nâng cấp resident (màn Resident detail có nút Upgrade): thời điểm và chi phí **TBD** (đề xuất: chỉ ở Start Station, giống Plot).
+- **Nâng cấp resident** (màn Resident detail có nút Upgrade): ở Start Station (mọi resident) hoặc khi dừng trên đất của mình (resident của đất đó). Trả coin; level resident không vượt quá level của Plot nó đóng.
 
 ## 9. Dừng trên đất của đối thủ
 
@@ -147,7 +148,7 @@ Vua B có đang đứng trên Plot đó không?
 - Máu về 0 giữa trận thì bên đó thua trận ngay.
 - **Item:** mỗi bên được dùng item trước mỗi hiệp.
 - **Rút lui:** người tấn công được rút lui giữa các hiệp. Rút lui tính như thua: dừng và trả Fee, giữ nguyên máu còn lại.
-- Lucky không dùng trong Fight (tác dụng ngoài Fight: TBD).
+- Lucky không dùng trong Fight (xem mục 3).
 
 Ví dụ (You: Attack 5, Defense 3, máu 50; Player 2: Attack 6, Defense 2, máu 80):
 
@@ -200,11 +201,12 @@ Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ.
 - Ở Start Station, hệ thống random 3 thẻ từ pool, mỗi thẻ có giá trị random. Người chơi chọn 1 → popup xác nhận "You have picked <Max Health +10>. Are you sure?" → "Congratulation! You got …".
 - Pool: Max Health, Attack, Defense, Lucky, Coin.
 - Hiệu lực: cộng **vĩnh viễn** vào vua. Thẻ Coin cộng coin ngay.
+- Lucky càng cao thì giá trị random của thẻ càng tốt.
 - Khoảng giá trị random của từng loại: **TBD** (thiết kế ví dụ: Max Health +10, Attack +5, Defense +3, Lucky +1, Coin +5).
 
 ## 12. Items
 
-- Nguồn: mua ở Start Station, rơi từ ô đất/ô sự kiện, phần thưởng Event.
+- Nguồn: mua ở Start Station, rơi ngẫu nhiên khi dừng trên Plot (tỉ lệ tăng theo Lucky), phần thưởng Event.
 - 2 loại:
   - **Tiêu hao:** dùng một lần, số lượng xN giảm.
   - **Trang bị:** giữ vĩnh viễn, tác dụng liên tục.
@@ -215,7 +217,7 @@ Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ.
 
 - 2 phạm vi: **toàn bàn** (ảnh hưởng mọi người) và **cá nhân**.
 - Có thời hạn tính theo lượt (vd "1 Turn").
-- Nguồn kích hoạt: ô sự kiện, hoặc do hệ thống theo điều kiện (vd sau 3 vòng thì vòng 4 random kích hoạt một sự kiện). Điều kiện cụ thể: **TBD**. Engine cần cho phép thêm trigger mới mà không sửa luật lõi.
+- Nguồn kích hoạt: ngẫu nhiên khi dừng trên Plot (event cá nhân, Lucky cao thì dễ gặp event có lợi), hoặc do hệ thống theo điều kiện (vd sau 3 vòng thì vòng 4 random kích hoạt một sự kiện). Điều kiện cụ thể: **TBD**. Engine cần cho phép thêm trigger mới mà không sửa luật lõi.
 - Ví dụ: Harvest Festival, "You will get 50 coin immediately", 1 Turn.
 - Màn Events: lịch sử sự kiện và thời hạn còn lại.
 
@@ -247,8 +249,5 @@ Mọi con số sẽ nằm trong file config của `packages/core`, không hardco
 ## 16. Câu hỏi còn mở
 
 1. Các con số cân bằng (mục 15).
-2. Ô nào là ô sự kiện; dừng trên đất của mình thì sao.
-3. Level tối đa của vua và của Plot.
-4. Tác dụng của Lucky (ngoài Fight).
-5. Nâng cấp resident: thời điểm và chi phí.
-6. Mua Plot trống: có cần giữ lại ít nhất 1 coin sau khi mua không (code cũ có quy tắc này).
+2. Lucky: công thức cụ thể ảnh hưởng tỉ lệ rơi item, giá trị thẻ, event cá nhân.
+3. Danh sách item, danh sách event và điều kiện kích hoạt event toàn bàn.
