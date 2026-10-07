@@ -65,6 +65,15 @@ pnpm dev
 
 Rooms live in server memory, so restarting the server closes them.
 
+**Phones on the LAN need both ports open.** The web app (5173) and the game server (8000) are separate. If a phone loads the page but hangs or shows "Cannot reach the server" on Create/Join, Windows Firewall is blocking port 8000 for your network profile (check it with `Get-NetConnectionProfile`). Allow it from an Administrator PowerShell, and remove the rule when you are done:
+
+```powershell
+New-NetFirewallRule -DisplayName "Moronarchy-Dev-TCP-8000" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private
+Remove-NetFirewallRule -DisplayName "Moronarchy-Dev-TCP-8000"
+```
+
+Do the same for 5173 if the page itself does not load.
+
 ## Environment
 
 ```text
