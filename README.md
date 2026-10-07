@@ -75,6 +75,8 @@ VITE_GAME_SERVER_URL=http://localhost:8000
 
 `pnpm e2e` also reads `E2E_WEB_PORT` (default 5173) and `E2E_SERVER_PORT` (default 8000), for when another dev server already uses those ports.
 
+Playwright starts the e2e game server with `MORONARCHY_ENABLE_TEST_SCENARIOS=1` automatically (see `playwright.config.ts`). That switch lets a test create a rigged room (`setupData: { scenario: "finale" }`) so the end-of-game e2e takes a couple of moves. Never set it yourself and never in production: without it the server refuses every room that asks for a scenario.
+
 For public deployment, put the server behind a real reverse proxy or platform rate limit. The in-memory lobby guard is not a substitute for edge protection.
 
 ## Scripts

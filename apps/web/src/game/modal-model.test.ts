@@ -186,4 +186,34 @@ describe("selectModal during and after fights", () => {
     expect(watcher).toMatchObject({ kind: "fightResult", model: { role: "spectator", title: "Fight over" } });
     expect(select(game, "2", { seenSeq: 0 })).toBeNull();
   });
+
+  describe("being knocked out", () => {
+    it("shows the Lose face to the king who went bankrupt, not to the others", () => {
+      const { game, viewerId } = scenarios.justEliminated();
+      expect(select(game, viewerId, { seenSeq: 0 })).toMatchObject({ kind: "lose", round: 3 });
+      expect(select(game, "0", { seenSeq: 0 })?.kind).not.toBe("lose");
+      expect(select(game, "2", { seenSeq: 0 })?.kind).not.toBe("lose");
+    });
+
+    it("waits for the walk, comes before any other popup, and is shown once", () => {
+      const { game, viewerId } = scenarios.justEliminated();
+      expect(select(game, viewerId, { seenSeq: 0, isAnimating: true })).toBeNull();
+      const lose = select(game, viewerId, { seenSeq: 0, endTurnOpen: true });
+      expect(lose?.kind).toBe("lose");
+      if (lose?.kind !== "lose") {
+        throw new Error("expected the lose face");
+      }
+      expect(select(game, viewerId, { seenSeq: 0, dismissed: new Set([lose.key]) })?.kind).not.toBe("lose");
+      // A tab that joined after it happened is already caught up.
+      expect(select(game, viewerId)?.kind).not.toBe("lose");
+    });
+
+    it("beats a decision that is open in the same state", () => {
+      const { game, viewerId } = scenarios.aboutToGoBankrupt();
+      expect(select(game, viewerId, { seenSeq: 0 })?.kind).toBe("visitorChoice");
+      const lost = scenarios.justEliminated().game;
+      lost.pending = { kind: "buyPlot", playerId: viewerId, plotId: 7, price: 60, reason: "empty" };
+      expect(select(lost, viewerId, { seenSeq: 0 })?.kind).toBe("lose");
+    });
+  });
 });

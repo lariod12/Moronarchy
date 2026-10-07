@@ -182,10 +182,6 @@ export const getNotification = (entry: LogEntry, game: GameState, viewerId: Play
       return text(entry, "ownerId") === viewerId
         ? { title: "Plot lost", text: `${who(game, viewerId, entry.playerId)} destroyed your ${plotName(entry)}.` }
         : null;
-    case "kingEliminated":
-      return entry.playerId === viewerId
-        ? { title: "Eliminated", text: "You ran out of coin and are out of the game. You can keep watching." }
-        : null;
     default:
       return null;
   }

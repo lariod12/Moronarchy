@@ -24,6 +24,24 @@ export const getCrownState = (state: GameState, viewerId: PlayerId): CrownState 
   return "active";
 };
 
+export interface EliminationInfo {
+  eliminated: boolean;
+  // The round the king went bankrupt in (null while alive).
+  round: number | null;
+  // Final place, 1 = winner. Only known once the game is finished (null while it still runs).
+  rank: number | null;
+}
+
+export const getEliminationInfo = (state: GameState, playerId: PlayerId): EliminationInfo => {
+  const king = state.kings[playerId];
+  const place = getFinalRanking(state).indexOf(playerId);
+  return {
+    eliminated: king?.eliminated ?? false,
+    round: king?.eliminatedRound ?? null,
+    rank: state.phase === "finished" && place >= 0 ? place + 1 : null
+  };
+};
+
 export const getAliveKings = (state: GameState): PlayerId[] => getAliveKingIds(state);
 
 export const getPlotById = (state: GameState, tileId: TileId): Plot | undefined => getPlot(state, tileId);

@@ -3,3 +3,4 @@ export * from "./match/sanitize";
 export * from "./match/lobby";
 export * from "./match/commands";
 export * from "./match/boardgame";
+export * from "./match/scenarios";

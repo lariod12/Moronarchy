@@ -23,7 +23,7 @@ const nameKings = (game: GameState, names: string[]): void => {
   });
 };
 
-const NAMES = ["Alice", "Bob", "Cara", "Dan"];
+const NAMES = ["Alice", "Bob", "Cara", "Dan", "Eve", "Finn"];
 
 const named = (playerCount: number): GameState => {
   const game = createTestGame(playerCount);
@@ -193,6 +193,46 @@ export const finished = (): GameScenario => {
     payFee(game, loserId, rng);
   }
   return { game, viewerId: "0" };
+};
+
+// Alice owns a level 3 plot; `loserId` has an empty purse and lands on it in `round`: the pay-or-attack decision is open.
+const landOnAlicesPlot = (game: GameState, loserId: PlayerId, round: number) => {
+  const loser = game.kings[loserId];
+  if (loser) {
+    loser.coin = 0;
+  }
+  game.round = round;
+  setTurnStep(game, "preRoll", loserId);
+  placeKing(game, loserId, 1);
+  const rng = rngFor([4]);
+  rollDice(game, loserId, rng);
+  return rng;
+};
+
+// Bob (the viewer) stands on Alice's plot with no coin: whatever he does next, paying bankrupts him.
+export const aboutToGoBankrupt = (): GameScenario => {
+  const game = named(3);
+  givePlot(game, "0", 5, 3);
+  landOnAlicesPlot(game, "1", 3);
+  return { game, viewerId: "1" };
+};
+
+// Bob (the viewer) just went bankrupt on Alice's plot in a running 3-player match: his Lose face is due, the game goes on.
+export const justEliminated = (): GameScenario => {
+  const scenario = aboutToGoBankrupt();
+  payFee(scenario.game, "1", rngFor([]));
+  return scenario;
+};
+
+// A 6-player match that ended with Alice winning; Finn went out first, then Eve, Dan, Cara and Bob (rounds 3 to 7).
+export const finishedBig = (viewerId: PlayerId = "2"): GameScenario => {
+  const game = named(6);
+  givePlot(game, "0", 5, 3);
+  ["5", "4", "3", "2", "1"].forEach((loserId, index) => {
+    const rng = landOnAlicesPlot(game, loserId, 3 + index);
+    payFee(game, loserId, rng);
+  });
+  return { game, viewerId };
 };
 
 // Bob has been knocked out of a running 3-player match; the viewer watches as a spectator.

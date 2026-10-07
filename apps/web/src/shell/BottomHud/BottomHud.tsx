@@ -51,7 +51,9 @@ export const BottomHud = ({
       ]}
     />
     {eliminated ? (
-      <p className="shell-hud__game-over">Game Over</p>
+      <button type="button" className="shell-hud__game-over" aria-label="Game Over, open Home" onClick={onCrownPress}>
+        Game Over
+      </button>
     ) : (
       <>
         <IconButton aria-label="Back" className="shell-hud__back" onClick={onBack} disabled={backDisabled}>

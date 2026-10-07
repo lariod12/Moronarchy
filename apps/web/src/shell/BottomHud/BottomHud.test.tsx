@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { BottomHud } from "./BottomHud";
 import type { BottomHudProps } from "./BottomHud";
 
@@ -29,5 +29,12 @@ describe("BottomHud", () => {
     expect(screen.getByText("Game Over")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Crown/ })).not.toBeInTheDocument();
+  });
+
+  it("lets an eliminated spectator tap Game Over to go Home, like the Crown", () => {
+    const onCrownPress = vi.fn();
+    render(<BottomHud {...baseProps} eliminated crownState="eliminated" onCrownPress={onCrownPress} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Game Over/ }));
+    expect(onCrownPress).toHaveBeenCalledTimes(1);
   });
 });

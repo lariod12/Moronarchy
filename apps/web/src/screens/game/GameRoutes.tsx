@@ -2,7 +2,9 @@ import { Navigate, Route, Routes, useNavigate } from "react-router";
 import { GameLayout } from "../../game/GameLayout";
 import { GameSessionProvider, useGameSession } from "../../game/GameSession";
 import { roomPath } from "../../game/labels";
+import { toGameId } from "../../game/seen-store";
 import { useMatch } from "../../match/MatchProvider";
+import { useLeaveRoom } from "../../match/useLeaveRoom";
 import { SketchBox } from "../../ui/SketchBox/SketchBox";
 import { CardPickScreen } from "../cards/CardPickScreen";
 import { FightScreen } from "../fight/FightScreen";
@@ -55,6 +57,7 @@ export const GameRouteTree = () => (
 export const GameRoutes = () => {
   const { state, playerID, roomCode, send } = useMatch();
   const game = state?.game;
+  const leaveRoom = useLeaveRoom();
 
   if (!state || !game || !game.kings[playerID]) {
     return (
@@ -67,7 +70,7 @@ export const GameRoutes = () => {
   }
 
   return (
-    <GameSessionProvider game={game} viewerId={playerID} roomCode={roomCode} gameId={`${roomCode}-${state.gamesPlayed}`} send={send}>
+    <GameSessionProvider game={game} viewerId={playerID} roomCode={roomCode} gameId={toGameId(roomCode, state.gamesPlayed)} send={send} onLeave={leaveRoom}>
       <GameRouteTree />
     </GameSessionProvider>
   );

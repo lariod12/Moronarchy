@@ -28,7 +28,7 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
   - **Back:** về trang trước trong ván.
   - **Crown:** điều khiển lượt (mục 2).
 - **Activity line (bước 5A):** một dòng chữ ngay dưới TopBar, hiện sự kiện mới nhất trong log bằng tiếng Anh, nhìn từ phía người xem ("You rolled 4 → Plot 15", "Bob bought Plot 7", "Cara paid 40 coin to Bob", "Bob completed a lap"). Có ở mọi trang trong ván.
-- **Modal:** phủ nền xám lên toàn màn (cả TopBar/BottomHud), hộp thoại bo góc ở giữa, nút Yes/No hoặc Done/Close. Chỉ hiện một modal một lúc, ở bất kỳ trang nào người chơi đang xem (`ModalHost`): quyết định dành cho mình → chọn Lucky Die → "waiting for decision" → End of turn → thông báo (item, event cá nhân, nhận phí, bị hạ gục, mất đất, bị loại) → lối tắt "Your plot". Mọi modal chờ đến khi vua đi xong.
+- **Modal:** phủ nền xám lên toàn màn (cả TopBar/BottomHud), hộp thoại bo góc ở giữa, nút Yes/No hoặc Done/Close. Chỉ hiện một modal một lúc, ở bất kỳ trang nào người chơi đang xem (`ModalHost`): màn mặt buồn toàn khung khi bị loại (mục 15) → quyết định dành cho mình → chọn Lucky Die → "waiting for decision" → End of turn → thông báo (item, event cá nhân, nhận phí, bị hạ gục, mất đất) → lối tắt "Your plot". Mọi modal chờ đến khi vua đi xong.
 - **Tooltip / bong bóng:** bong bóng nói nhỏ trỏ vào phần tử (vd "your turn!", "end turn!", số xúc xắc).
 
 ## 2. Nút Crown (theo Tutorial button.png)
@@ -39,7 +39,7 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 | Tới lượt, chưa nhận | Crown **rung** | Nhấn giữ: nhận lượt |
 | Đang trong lượt | Crown **đổi màu** (nền tối, crown trắng) + bong bóng "your turn!" | Chạm: về Home. Nhấn giữ: mở popup End of turn |
 | Đã đổ xúc xắc, có thể kết thúc | Bong bóng "end turn!" | Nhấn giữ → popup "End of turn" → Yes |
-| Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Không có |
+| Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": về Home (không bao giờ rung) |
 
 - Nhấn giữ (long-press) cần có phản hồi tiến trình (vòng nạp hoặc rung) để người chơi biết đang giữ. Thời gian giữ: Đề xuất 600 ms.
 - Popup End of turn: "This action will be end turn and you cannot interactive some action. Are you sure?" với Yes / No.
@@ -207,10 +207,20 @@ Luật: [game-design.md mục 10](game-design.md#10-fight). Đã làm ở bướ
 
 ## 15. Kết thúc — [95](ui/95-map-before-game-over.png), [96](ui/96-game-over-spectator.png), [97](ui/97-result-win.png), [98](ui/98-result-lose.png), [99](ui/99-result-ranking.png)
 
-- Bị loại: màn mặt buồn (98) → về Game Shell ở chế độ khán giả (96). BottomHud: avatar gạch chéo đỏ, các chỉ số xám, chữ "Game Over" thay Back/Crown.
-- Người thắng: màn mặt cười (97).
-- Ranking (99): danh sách "Player 1…N" theo thứ hạng, nút **Play Again** và **Quit**.
-- **Tạm thời (đến bước 7):** khi ván kết thúc mọi máy thấy màn placeholder "Game over" + "Winner: <tên>" + danh sách xếp hạng (người thắng, rồi những người bị loại theo thứ tự ngược). Chủ phòng có **Back to lobby** (`returnToLobby`), ai cũng có **Quit** (xóa session, về Welcome). Người bị loại khi ván còn tiếp tục thấy HUD "Game Over" và xem Map như khán giả, không có thao tác nào.
+Mọi chữ và luật lấy từ core (`getEliminationInfo`, `getFinalRanking`, log `kingEliminated` / `gameFinished`); web chỉ chọn màn nào cần hiện (`game/end-model.ts`).
+
+- **Bị loại khi ván còn tiếp tục:** ngay khi vua đi xong ô, người bị loại thấy màn mặt buồn **toàn khung** (98): `You are out!`, dòng phụ `Bankrupt in round N`, nút `Keep watching` và link nhỏ `Leave room`. Màn này ưu tiên hơn mọi popup khác, chỉ hiện **một lần** (key `lose:<seq>` trong seen-store). `Keep watching` về Map ở chế độ khán giả (96): HUD avatar gạch chéo đỏ, chỉ số xám, chữ "Game Over" thay Back/Crown (chạm "Game Over" về Home, giống Crown), xem được mọi trang thông tin, không có thao tác nào. Không bao giờ thấy Crown rung.
+- **Ván kết thúc (`stage = finished`):**
+  - Người thắng thấy mặt cười (97): `You win!`, `Last king standing`, nút `See ranking`.
+  - Người bị loại đúng nước cuối thấy màn mặt buồn trước (nút `See ranking`, vẫn có `Leave room`).
+  - Mọi người khác (kể cả người đã bị loại và đã bấm `Keep watching` trước đó) vào thẳng Ranking.
+  - Mặt chỉ hiện một lần cho mỗi người mỗi ván (key `win:<seq>` / `lose:<seq>`, seen-store theo `roomCode-gamesPlayed`); tải lại trang khi đã bấm nút thì vào thẳng Ranking, tab chưa từng thấy ván này cũng vậy. Tải lại khi mặt đang hiện mà chưa bấm thì mặt hiện lại.
+- **Ranking (99):** danh sách theo thứ hạng `getFinalRanking`: số thứ hạng, icon người, tên (`(you)` cho mình), `Winner` hoặc `Out in round N`. Hai nút **Play Again** và **Quit** nằm cạnh nhau dưới danh sách.
+  - **Play Again chỉ chủ phòng bấm được** (`returnToLobby`). Người khác thấy nút bị khóa kèm dòng `Waiting for the host to start again`.
+  - Play Again đưa mọi máy đang kết nối về **Lobby cùng phòng**: giữ nguyên seat và lịch sử chat, mọi người về trạng thái chưa Ready; chủ phòng bấm Start thì đếm ngược 3 → 2 → 1 và vào ván mới (Round 1). Ván mới có `gamesPlayed` mới nên popup / mặt của ván trước không hiện lại.
+  - **Quit** (và `Leave room` ở màn mặt buồn): gửi `leaveSeat` (match cho nhả seat khi ở Lobby hoặc sau khi ván kết thúc), xóa session, về Welcome, không chờ server. Những người còn lại thấy seat biến mất ở Lobby sau Play Again. Nếu chủ phòng Quit, người ngồi seat thấp nhất thành chủ phòng mới và Play Again được. `Leave room` bấm giữa ván (ván chưa kết thúc) chỉ xóa session và về Welcome, vì seat bị khóa suốt ván.
+  - Ranking và Lobby không có thanh Game Shell.
+- Kiểm thử nhanh: server chạy với `MORONARCHY_ENABLE_TEST_SCENARIOS=1` cho phép tạo phòng với `setupData: { scenario: "finale" }` (chủ phòng sở hữu mọi Plot, vua khác chỉ có 5 coin), nên e2e `tests/e2e/endgame.spec.ts` kết thúc ván trong vài nước. Xem `docs/architecture.md` mục 4.
 
 ## 16. Phong cách hình ảnh
 

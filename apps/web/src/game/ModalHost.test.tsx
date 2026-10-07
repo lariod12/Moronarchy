@@ -286,4 +286,53 @@ describe("ModalHost", () => {
       expect(dialog("Fight over")).toHaveTextContent("Winner: Alice");
     });
   });
+
+  describe("being knocked out", () => {
+    const wentBankrupt = (page = "map") => {
+      const before = scenarios.aboutToGoBankrupt().game;
+      const { game } = scenarios.justEliminated();
+      const view = renderGame(before, "1", { page });
+      view.update(game);
+      return view;
+    };
+
+    it("covers the game with the Lose face, and Keep watching returns to the Map as a spectator", () => {
+      const view = wentBankrupt("home");
+      expect(screen.getByTestId("lose-face")).toBeInTheDocument();
+      expect(screen.getByText("You are out!")).toBeInTheDocument();
+      expect(screen.getByText("Bankrupt in round 3")).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Keep watching" }));
+      expect(screen.queryByTestId("lose-face")).not.toBeInTheDocument();
+      expect(view.path()).toBe("/room/R001/map");
+      expect(screen.getByText("Game Over")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Crown/ })).not.toBeInTheDocument();
+    });
+
+    it("shows the face once, even after a reload of the tab", () => {
+      wentBankrupt();
+      fireEvent.click(screen.getByRole("button", { name: "Keep watching" }));
+      cleanup();
+      renderGame(scenarios.justEliminated().game, "1", { page: "map" });
+      expect(screen.queryByTestId("lose-face")).not.toBeInTheDocument();
+      expect(screen.getByText("Game Over")).toBeInTheDocument();
+    });
+
+    it("keeps the spectator readable: the Game Over tap goes Home and the pages open", () => {
+      const view = wentBankrupt();
+      fireEvent.click(screen.getByRole("button", { name: "Keep watching" }));
+      fireEvent.click(screen.getByRole("button", { name: /^Game Over/ }));
+      expect(view.path()).toBe("/room/R001/home");
+      fireEvent.click(screen.getByRole("button", { name: "Stats" }));
+      expect(view.path()).toBe("/room/R001/stats/1");
+    });
+
+    it("does not show Bob's Lose face to the other kings", () => {
+      const before = scenarios.aboutToGoBankrupt().game;
+      const { game } = scenarios.justEliminated();
+      const view = renderGame(before, "0", { page: "map" });
+      view.update(game);
+      expect(screen.queryByTestId("lose-face")).not.toBeInTheDocument();
+    });
+  });
 });

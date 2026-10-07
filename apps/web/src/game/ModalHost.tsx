@@ -21,6 +21,7 @@ import { getPageName } from "./forced-route";
 import { roomPath } from "./labels";
 import { selectModal } from "./modal-model";
 import { useSeenState } from "./useSeenState";
+import { LoseView } from "../screens/result/LoseView";
 
 export interface ModalHostProps {
   endTurnOpen: boolean;
@@ -36,7 +37,7 @@ const feeOf = (game: GameState, plotId: TileId): number => {
 
 // Shows at most one popup, whatever page the viewer is on. What to show is decided by `selectModal`.
 export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
-  const { game, viewerId, roomCode, gameId, actions, canRun } = useGameSession();
+  const { game, viewerId, roomCode, gameId, actions, canRun, leaveRoom } = useGameSession();
   const { isAnimating } = useMovement();
   const navigate = useNavigate();
   const onFightPage = getPageName(useLocation().pathname) === "fight";
@@ -58,6 +59,21 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
   }
 
   switch (modal.kind) {
+    case "lose":
+      return (
+        <div className="result-overlay">
+          <LoseView
+            key={modal.key}
+            round={modal.round}
+            continueLabel="Keep watching"
+            onContinue={() => {
+              seen.dismiss(modal.key);
+              navigate(roomPath(roomCode, "map"), { replace: true });
+            }}
+            onLeave={leaveRoom}
+          />
+        </div>
+      );
     case "buyPlot":
       return (
         <BuyPlotDialog

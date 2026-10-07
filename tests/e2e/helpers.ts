@@ -4,6 +4,8 @@ import type { Browser, BrowserContext, Page } from "@playwright/test";
 // Same ports and env switches as lobby.spec.ts: e2e can run next to another project that owns 5173 / 8000.
 export const webPort = process.env.E2E_WEB_PORT ?? "5173";
 export const baseURL = `http://127.0.0.1:${webPort}`;
+export const serverPort = process.env.E2E_SERVER_PORT ?? "8000";
+export const serverURL = `http://127.0.0.1:${serverPort}`;
 
 export const ROOM_CODE_PATTERN = /^R[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/;
 
@@ -184,7 +186,7 @@ export const answerPage = async (page: Page): Promise<boolean> => {
   return false;
 };
 
-const isSettled = async (active: Page): Promise<boolean> =>
+export const isSettled = async (active: Page): Promise<boolean> =>
   (await active.getByText("end turn!").isVisible()) &&
   new URL(active.url()).pathname.endsWith("/map") &&
   (await active.locator('.map[data-animating="false"]').count()) === 1 &&
@@ -195,8 +197,10 @@ export const resolveUntilSettled = async (active: Page, other: Page): Promise<vo
   const deadline = Date.now() + 60_000;
   let calmSince = 0;
   while (Date.now() < deadline) {
-    if ((await active.getByRole("heading", { name: "Game over" }).count()) > 0) {
-      throw new Error("The match ended early (a king went bankrupt), so the turn loop cannot continue");
+    for (const page of [active, other]) {
+      if ((await page.getByTestId("lose-face").count()) + (await page.getByTestId("win-face").count()) + (await page.getByTestId("ranking").count()) > 0) {
+        throw new Error("The match ended early (a king went bankrupt), so the turn loop cannot continue");
+      }
     }
     if (await isSettled(active)) {
       calmSince = calmSince || Date.now();

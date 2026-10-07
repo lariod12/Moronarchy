@@ -1,4 +1,5 @@
 import type { CommandError, GameState, PlayerId } from "../model/types";
+import type { MatchScenario } from "./scenarios";
 
 export const MATCH_SEATS = 6;
 export const MAX_CHAT_MESSAGES = 50;
@@ -26,6 +27,8 @@ export interface MatchState {
   chatSeq: number;
   game: GameState | null;
   gamesPlayed: number;
+  // Test-only: rigs every game of this room (see match/scenarios.ts). Null in real rooms.
+  scenario: MatchScenario | null;
 }
 
 export type MatchError =

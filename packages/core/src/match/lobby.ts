@@ -2,6 +2,8 @@ import { createGame } from "../flow/setup";
 import type { PlayerId } from "../model/types";
 import type { Rng } from "../rules/rng";
 import { sanitizeChatText, sanitizePlayerName } from "./sanitize";
+import { applyScenario } from "./scenarios";
+import type { MatchScenario } from "./scenarios";
 import { MAX_CHAT_MESSAGES } from "./types";
 import type { LobbySeat, LobbyView, MatchError, MatchResult, MatchState, StartBlockedReason } from "./types";
 
@@ -22,14 +24,15 @@ const removeSeat = (state: MatchState, playerId: PlayerId): void => {
   }
 };
 
-export const createMatchState = (): MatchState => ({
+export const createMatchState = (scenario: MatchScenario | null = null): MatchState => ({
   stage: "lobby",
   hostId: null,
   seats: [],
   chat: [],
   chatSeq: 0,
   game: null,
-  gamesPlayed: 0
+  gamesPlayed: 0,
+  scenario
 });
 
 export const sit = (state: MatchState, actorId: PlayerId, name: unknown): MatchResult => {
@@ -51,8 +54,9 @@ export const sit = (state: MatchState, actorId: PlayerId, name: unknown): MatchR
   return OK;
 };
 
+// Allowed in the lobby and after the game (Quit on the Ranking page); never while a game is running.
 export const leaveSeat = (state: MatchState, actorId: PlayerId): MatchResult => {
-  if (state.stage !== "lobby") {
+  if (state.stage === "playing") {
     return fail("WRONG_STAGE");
   }
   if (!findSeat(state, actorId)) {
@@ -149,6 +153,9 @@ export const startGame = (state: MatchState, actorId: PlayerId, rng: Rng): Match
     state.seats.map(({ playerId, name }) => ({ id: playerId, name })),
     rng
   );
+  if (state.scenario) {
+    applyScenario(state.game, state.scenario, actorId);
+  }
   state.stage = "playing";
   return OK;
 };

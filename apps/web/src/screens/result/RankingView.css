@@ -1,0 +1,82 @@
+/* Final ranking (wireframe 99): the list in the middle, Play Again and Quit side by side under it. */
+.result-ranking {
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: 28px var(--gap) 40px;
+}
+
+.result-ranking__list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.result-ranking__row {
+  display: grid;
+  grid-template-columns: 28px 28px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  font-size: var(--text-lg);
+}
+
+.result-ranking__rank {
+  text-align: right;
+}
+
+.result-ranking__icon {
+  width: 28px;
+  height: 28px;
+  color: var(--ink);
+}
+
+.result-ranking__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.result-ranking__status {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.result-ranking__row--winner .result-ranking__status {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.result-ranking__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.result-ranking__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.result-ranking__actions .ui-button {
+  flex: 1;
+}
+
+.result-ranking__hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  text-align: center;
+}

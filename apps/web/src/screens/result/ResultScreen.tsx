@@ -1,34 +1,56 @@
-import { useNavigate } from "react-router";
-import { getFinalRanking } from "@moronarchy/core/engine";
 import { getLobbyView } from "@moronarchy/core/match";
-import { clearPlayerSession } from "../../api/lobby";
+import type { GameState } from "@moronarchy/core/engine";
+import { getEndFace, toRankingRows } from "../../game/end-model";
 import { createGameActions } from "../../game/game-actions";
+import { toGameId } from "../../game/seen-store";
+import { useSeenState } from "../../game/useSeenState";
 import { useMatch } from "../../match/MatchProvider";
-import { ResultPlaceholderView } from "./ResultPlaceholderView";
+import { useLeaveRoom } from "../../match/useLeaveRoom";
+import { LoseView } from "./LoseView";
+import { RankingView } from "./RankingView";
+import { WinView } from "./WinView";
 
-// Shown to everyone when the match is finished. The host can reopen the lobby; anyone can quit.
+interface EndSequenceProps {
+  game: GameState;
+  viewerId: string;
+  gameId: string;
+  isHost: boolean;
+  onPlayAgain: () => void;
+  onQuit: () => void;
+}
+
+// The end of a finished match for one viewer: the winner sees the Win face, a king knocked out by the finishing move
+// the Lose face, then everyone gets the Ranking. A face is shown until its button is pressed, and never again.
+const EndSequence = ({ game, viewerId, gameId, isHost, onPlayAgain, onQuit }: EndSequenceProps) => {
+  const seen = useSeenState(gameId, viewerId, game);
+  const face = getEndFace(game, viewerId, seen.seq, seen.dismissed);
+
+  if (face?.kind === "win") {
+    return <WinView onContinue={() => seen.dismiss(face.key)} />;
+  }
+  if (face?.kind === "lose") {
+    return <LoseView round={face.round} continueLabel="See ranking" onContinue={() => seen.dismiss(face.key)} onLeave={onQuit} />;
+  }
+  return <RankingView rows={toRankingRows(game, viewerId)} isHost={isHost} onPlayAgain={onPlayAgain} onQuit={onQuit} />;
+};
+
+// Shown to everyone when the match is finished. Only the host can reopen the lobby (Play Again); anyone can Quit.
 export const ResultScreen = () => {
-  const { state, playerID, matchID, send } = useMatch();
-  const navigate = useNavigate();
+  const { state, playerID, roomCode, send } = useMatch();
+  const leaveRoom = useLeaveRoom();
   const game = state?.game;
   if (!state || !game) {
     return null;
   }
 
-  const nameOf = (playerId: string): string => game.kings[playerId]?.name ?? "Someone";
-  const winnerName = game.winnerId ? nameOf(game.winnerId) : null;
-  const ranking = getFinalRanking(game).map((playerId) => ({ playerId, name: nameOf(playerId) }));
-
   return (
-    <ResultPlaceholderView
-      winnerName={winnerName}
-      ranking={ranking}
+    <EndSequence
+      game={game}
+      viewerId={playerID}
+      gameId={toGameId(roomCode, state.gamesPlayed)}
       isHost={getLobbyView(state, playerID).isHost}
-      onBackToLobby={createGameActions(send).returnToLobby}
-      onQuit={() => {
-        clearPlayerSession(matchID);
-        navigate("/", { replace: true });
-      }}
+      onPlayAgain={createGameActions(send).returnToLobby}
+      onQuit={leaveRoom}
     />
   );
 };

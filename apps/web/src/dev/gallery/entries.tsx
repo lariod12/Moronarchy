@@ -23,6 +23,7 @@ import { GameHomeView } from "../../screens/game/GameHomeView";
 import { LobbyView } from "../../screens/lobby/LobbyView";
 import { WelcomeView } from "../../screens/welcome/WelcomeView";
 import { END_TURN_TEXT } from "../../game/dialogs/dialogs";
+import { END_ENTRIES } from "./end-entries";
 import { GAME_ENTRIES } from "./game-entries";
 import { INFO_ENTRIES } from "./info-entries";
 import { HomeHub, renderShell, ROOM_CODE } from "./fixtures";
@@ -460,5 +461,6 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
     )
   },
   ...GAME_ENTRIES,
-  ...INFO_ENTRIES
+  ...INFO_ENTRIES,
+  ...END_ENTRIES
 ];

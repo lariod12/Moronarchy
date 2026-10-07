@@ -25,7 +25,8 @@ export default defineConfig({
       url: `http://127.0.0.1:${serverPort}/games`,
       reuseExistingServer: true,
       timeout: 120_000,
-      env: { PORT: serverPort, WEB_PORT: webPort }
+      // MORONARCHY_ENABLE_TEST_SCENARIOS lets endgame.spec.ts create a rigged "finale" room. Set it nowhere else, never in production.
+      env: { PORT: serverPort, WEB_PORT: webPort, MORONARCHY_ENABLE_TEST_SCENARIOS: "1" }
     },
     {
       command: `cmd /c pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,

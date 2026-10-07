@@ -102,6 +102,8 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 - Engine giữ thứ tự lượt (`G.game.turnOrder`), không dùng `turn.order` của boardgame.io.
 - Mã phòng = `matchID` do server cấp qua tùy chọn `uuid` (`R` + 4 ký tự dễ đọc, xem `apps/server/src/room-code.ts`). `generateCredentials` được đặt riêng (`randomUUID`) vì boardgame.io mặc định dùng lại `uuid` cho credentials.
 - Lỗi do `applyLobbySecurity` ném ra (409/413/429) chạy trước middleware CORS của boardgame.io nên được gắn sẵn header `Access-Control-Allow-Origin` cho origin hợp lệ; nếu không trình duyệt chỉ thấy lỗi mạng chứ không đọc được 409 "Match already started".
+- `leaveSeat` được phép ở stage `lobby` và `finished` (Quit ở Ranking), không được phép khi đang `playing`. Seat nhả đi không đụng tới `game`; nếu chủ phòng rời thì `hostId` chuyển cho seat thấp nhất còn lại và người đó mới có thể `returnToLobby`.
+- **Test scenarios (chỉ cho e2e):** `setupData: { scenario: "finale" }` khi tạo phòng làm mọi ván của phòng đó bắt đầu từ thế cờ dựng sẵn (`packages/core/src/match/scenarios.ts`: chủ phòng sở hữu mọi Plot ở level 0, vua khác có 5 coin). `validateSetupData` **từ chối mọi `scenario`** (`Test scenarios are disabled.`) trừ khi game được tạo với `allowScenarios: true`; server chỉ bật khi `MORONARCHY_ENABLE_TEST_SCENARIOS=1` (`apps/server/src/game.ts`), biến này chỉ được đặt trong `playwright.config.ts` (webServer của server) và **không bao giờ** được đặt khi chạy thật. `setup` cũng bỏ qua scenario khi chưa bật. Server in cảnh báo khi biến đang bật.
 - Phòng vẫn lưu trong RAM ở giai đoạn này.
 
 ## 5. Web
@@ -125,7 +127,7 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 | server | Vitest | Game config qua boardgame.io test client: move hợp lệ/không hợp lệ, ngoài lượt |
 | web | Vitest + Testing Library | Component UI kit, selectors |
 | gallery | Playwright (`pnpm ui:check`) | Mỗi entry render không lỗi console, không tràn ngang, long-press và dialog hoạt động |
-| e2e | Playwright (`pnpm e2e`) | `lobby.spec.ts`: 3–4 trình duyệt tạo phòng → join bằng mã → chat → ready → start → Home hub. `game.spec.ts`: 2 người chơi nhận lượt, đổ, đi từng ô, quyết định, qua Start (thẻ + Start Station), kết thúc lượt nhiều vòng |
+| e2e | Playwright (`pnpm e2e`) | `endgame.spec.ts`: phòng scenario `finale`, Bob phá sản → Lose / Win → Ranking → Play Again về Lobby → ván mới; Quit nhả seat. `lobby.spec.ts`: 3–4 trình duyệt tạo phòng → join bằng mã → chat → ready → start → Home hub. `game.spec.ts`: 2 người chơi nhận lượt, đổ, đi từng ô, quyết định, qua Start (thẻ + Start Station), kết thúc lượt nhiều vòng |
 
 ## 7. Giữ / bỏ / làm lại
 
@@ -151,10 +153,10 @@ Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 4. ✅ **Màn Welcome + Lobby** (đã xong): Welcome/Lobby/Home hub (placeholder) nối server thật, mã phòng ngắn, kick, chat bong bóng, đếm ngược, e2e nhiều trình duyệt (`pnpm e2e`).
 5. **Home hub + Map + đổ xúc xắc + di chuyển + Start Station + mua/phí**: vòng chơi tối thiểu chạy được. ✅ **5A** (đã xong): Crown nhận lượt / kết thúc lượt, Map + đổ xúc xắc + animation di chuyển, mọi popup quyết định, Upgrade Card + Start Station + quản lý đất của mình, activity line, thông báo, màn kết quả tạm; e2e `tests/e2e/game.spec.ts`. **5B** (đã xong): nút Attack bật, màn Fight (`/room/:code/fight`, `getFightView` trong core), popup thông báo/kết quả trận, e2e `tests/e2e/fight.spec.ts`.
 6. ✅ **Plots, Residents, Items, Events, Stats, Steps** (đã xong): mọi ô ở Home mở được. Core thêm `getKingInfo`, `getPlotInfo`, `getResidentInfo`, `getResidentsByKind`, `getEventHistoryView`, `getPositionsView` (`flow/info-view.ts`) và mô tả item / event nằm cạnh số liệu trong `content/` (`ITEMS[id].summary|description|use`, `GLOBAL_EVENTS`, `PERSONAL_EVENTS`). Web thêm `screens/{stats,plots,residents,items,events}` và tab Board / Positions ở Map; nút Upgrade/Heal/Use khóa theo `previewCommand` kèm lý do (`createRunCheck`), hộp xác nhận dùng chung với Start Station. Gallery nhóm `Info`; e2e `tests/e2e/info.spec.ts`.
-7. **Kết thúc ván**: khán giả, Win/Lose, Ranking, Play Again.
+7. ✅ **Kết thúc ván** (đã xong): màn mặt buồn khi bị loại giữa ván → khán giả (HUD "Game Over"), mặt cười / mặt buồn + Ranking khi ván kết thúc (`screens/result/`, `game/end-model.ts`, core `getEliminationInfo`), Play Again chỉ cho chủ phòng về cùng Lobby, Quit nhả seat (`leaveSeat` mở cho stage `finished`), scenario test `finale` (mục 4) cho e2e `tests/e2e/endgame.spec.ts`. Gallery nhóm `End`.
 8. ✅ **Màn Fight** (đã xong cùng bước 5B).
 9. ✅ Dọn `design/`, cập nhật `AGENTS.md`, README (làm cùng bước 3).
-10. **Độ bền multiplayer:** xử lý người chơi mất kết nối giữa ván (lượt bị kẹt); giải phóng slot boardgame.io khi chủ phòng kick (hiện slot vẫn bị giữ, kick rồi vào lại nhiều lần có thể làm đầy phòng); bàn phím ảo che ô chat trên điện thoại. (E2E lobby đã có ở bước 4.)
+10. **Độ bền multiplayer:** xử lý người chơi mất kết nối giữa ván (lượt bị kẹt); giải phóng slot boardgame.io khi chủ phòng kick hoặc người chơi Quit (hiện slot vẫn bị giữ dù seat trong match đã nhả, kick/Quit rồi vào lại nhiều lần có thể làm đầy phòng); bàn phím ảo che ô chat trên điện thoại. (E2E lobby đã có ở bước 4.)
 
 ## 9. Lệnh
 

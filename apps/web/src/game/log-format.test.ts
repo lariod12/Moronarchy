@@ -148,7 +148,7 @@ describe("getNotification", () => {
     expect(isNotificationFor(fee, state, "2")).toBe(false);
   });
 
-  it("notifies knocked out, plot lost, plot damaged and eliminated kings", () => {
+  it("notifies knocked out, plot lost and plot damaged", () => {
     const state = game();
     expect(isNotificationFor(entry("knockedOut", "0", { health: 50 }), state, "0")).toBe(true);
     expect(isNotificationFor(entry("knockedOut", "0", { health: 50 }), state, "1")).toBe(false);
@@ -158,7 +158,8 @@ describe("getNotification", () => {
     });
     expect(isNotificationFor(entry("plotDestroyed", "1", { plotId: 7, ownerId: "0" }), state, "1")).toBe(false);
     expect(isNotificationFor(entry("plotLevelDown", "0", { plotId: 7, level: 1 }), state, "0")).toBe(true);
-    expect(isNotificationFor(entry("kingEliminated", "2", { round: 2 }), state, "2")).toBe(true);
+    // Going bankrupt is announced by the full-frame Lose face (end-model.ts), not by a popup.
+    expect(isNotificationFor(entry("kingEliminated", "2", { round: 2 }), state, "2")).toBe(false);
     expect(isNotificationFor(entry("kingEliminated", "2", { round: 2 }), state, "0")).toBe(false);
   });
 

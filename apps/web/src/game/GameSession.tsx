@@ -15,6 +15,8 @@ export interface GameSessionValue {
   canRun: CanRun;
   // Like canRun, but says why the engine would refuse (for hints on disabled buttons).
   check: RunCheck;
+  // Gives the seat back and goes to Welcome (the Lose face offers it). Absent where there is no room to leave.
+  leaveRoom?: () => void;
 }
 
 const GameSessionContext = createContext<GameSessionValue | null>(null);
@@ -25,17 +27,18 @@ export interface GameSessionProviderProps {
   roomCode: string;
   gameId?: string;
   send: SendMove;
+  onLeave?: () => void;
   moveStepMs?: number;
   children: ReactNode;
 }
 
-export const GameSessionProvider = ({ game, viewerId, roomCode, gameId, send, moveStepMs, children }: GameSessionProviderProps) => {
+export const GameSessionProvider = ({ game, viewerId, roomCode, gameId, send, onLeave, moveStepMs, children }: GameSessionProviderProps) => {
   const actions = useMemo(() => createGameActions(send), [send]);
   const canRun = useMemo(() => createCanRun(game, viewerId), [game, viewerId]);
   const check = useMemo(() => createRunCheck(game, viewerId), [game, viewerId]);
   const value = useMemo<GameSessionValue>(
-    () => ({ game, viewerId, roomCode, gameId: gameId ?? roomCode, actions, canRun, check }),
-    [game, viewerId, roomCode, gameId, actions, canRun, check]
+    () => ({ game, viewerId, roomCode, gameId: gameId ?? roomCode, actions, canRun, check, leaveRoom: onLeave }),
+    [game, viewerId, roomCode, gameId, actions, canRun, check, onLeave]
   );
   return (
     <GameSessionContext.Provider value={value}>

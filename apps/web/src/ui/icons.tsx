@@ -77,3 +77,25 @@ export const SickleIcon = (props: IconProps) => (
     <path d="M16 40 L9 56" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
   </svg>
 );
+
+// The two faces of the end of the game (wireframes 97 and 98): a laughing face with rolled eyes, and a sad one.
+export const HappyFaceIcon = (props: IconProps) => (
+  <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false" {...props}>
+    <circle cx="50" cy="50" r="48" fill="currentColor" />
+    <rect x="17" y="26" width="28" height="22" rx="10" fill="var(--paper)" />
+    <rect x="55" y="26" width="28" height="22" rx="10" fill="var(--paper)" />
+    <circle cx="30" cy="33" r="5" fill="currentColor" />
+    <circle cx="68" cy="33" r="5" fill="currentColor" />
+    <path d="M15 56 L85 56 Q82 86 50 89 Q18 86 15 56 Z" fill="var(--paper)" />
+    <path d="M42 84 Q48 68 70 66 Q68 83 42 84 Z" fill="currentColor" />
+  </svg>
+);
+
+export const SadFaceIcon = (props: IconProps) => (
+  <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false" {...props}>
+    <circle cx="50" cy="50" r="48" fill="currentColor" />
+    <circle cx="35" cy="42" r="6" fill="var(--paper)" />
+    <circle cx="65" cy="42" r="6" fill="var(--paper)" />
+    <path d="M29 74 Q50 50 71 74" fill="none" stroke="var(--paper)" strokeWidth="6" strokeLinecap="round" />
+  </svg>
+);

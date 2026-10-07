@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { networkInterfaces } from "node:os";
-import { MoronarchyGame } from "./game.js";
+import { MoronarchyGame, TEST_SCENARIOS_ENV } from "./game.js";
 import { createRoomCodeGenerator } from "./room-code.js";
 import { applyLobbySecurity } from "./security.js";
 
@@ -59,4 +59,7 @@ applyLobbySecurity(server.app as Parameters<typeof applyLobbySecurity>[0], serve
 server.run(port, () => {
   console.log(`Moronarchy multiplayer server listening on http://localhost:${port}`);
   console.log(`Allowed web origins: ${allowedOrigins.join(", ")}`);
+  if (process.env[TEST_SCENARIOS_ENV] === "1") {
+    console.warn(`WARNING: ${TEST_SCENARIOS_ENV}=1, rooms with rigged test scenarios can be created. Never run this in production.`);
+  }
 });

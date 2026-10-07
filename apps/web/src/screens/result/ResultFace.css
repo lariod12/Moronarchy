@@ -1,0 +1,50 @@
+/* Full-frame faces at the end of the game: Lose (wireframe 98) and Win (wireframe 97). */
+.result-face {
+  gap: 14px;
+}
+
+.result-face__icon {
+  width: min(52vw, 220px);
+  height: auto;
+  aspect-ratio: 1;
+  color: var(--ink);
+}
+
+.result-face__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 400;
+}
+
+.result-face__sub {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--muted);
+}
+
+.result-face__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+  margin-top: 10px;
+}
+
+.result-face__leave {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  font-size: var(--text-md);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The Lose face during play sits over the whole game frame, HUD included. */
+.result-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: var(--paper);
+}

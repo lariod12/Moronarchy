@@ -33,7 +33,7 @@ const GalleryIndex = () => {
 const GalleryEntryView = ({ entryId }: { entryId: string }) => {
   const [lastAction, setLastAction] = useState("");
   const entry = GALLERY_ENTRIES.find((candidate) => candidate.id === entryId);
-  const isBare = Boolean(entry?.id.startsWith("shell-") || entry?.group === "Screens" || entry?.group === "Game" || entry?.group === "Fight" || entry?.group === "Info");
+  const isBare = Boolean(entry?.id.startsWith("shell-") || entry?.group === "Screens" || entry?.group === "Game" || entry?.group === "Fight" || entry?.group === "Info" || entry?.group === "End");
 
   return (
     <div className="gallery">

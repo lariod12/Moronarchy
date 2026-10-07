@@ -23,12 +23,17 @@
   margin-bottom: 4px;
 }
 
+/* A spectator has no Crown; "Game Over" takes its place and, like the Crown, a tap goes Home. */
 .shell-hud__game-over {
   grid-column: 3 / span 2;
   align-self: center;
   margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   font-size: var(--text-xl);
   text-align: center;
+  cursor: pointer;
 }
 
 .shell-hud .shell-crown {

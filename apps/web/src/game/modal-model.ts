@@ -1,5 +1,6 @@
 import { getCrownState, getFightViewerRole, getPlot } from "@moronarchy/core/engine";
 import type { GameState, LogEntry, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
+import { getLoseFace } from "./end-model";
 import { describeFightResult, fightNoticeKey } from "./fight-result";
 import type { FightResultModel } from "./fight-result";
 import { getNotification } from "./log-format";
@@ -8,6 +9,7 @@ import type { Notification } from "./log-format";
 type Pending<K extends PendingDecision["kind"]> = Extract<PendingDecision, { kind: K }>;
 
 export type ModalModel =
+  | { kind: "lose"; key: string; round: number | null }
   | { kind: "buyPlot"; pending: Pending<"buyPlot"> }
   | { kind: "visitorChoice"; pending: Pending<"visitorChoice"> }
   | { kind: "ownerChoice"; pending: Pending<"ownerChoice"> }
@@ -74,12 +76,17 @@ const getFightNotice = (game: GameState, viewerId: PlayerId, seenSeq: number, di
   return { kind: "fightNotice", key, plotId: fight.plotId, attackerId: fight.attacker.playerId, ownerId: getPlot(game, fight.plotId)?.ownerId ?? null };
 };
 
-// Exactly one modal at a time. Priority: your decision, the result of your fight, a fight you can watch, Lucky Die,
+// Exactly one modal at a time. Priority: being knocked out of the game (a full-frame face), your decision, the result of your fight, a fight you can watch, Lucky Die,
 // waiting for someone else, End of turn, notifications, own-plot shortcut. Nothing shows while the king is still
 // walking, and fighters see only their fight (the Fight page is forced on them).
 export const selectModal = ({ game, viewerId, isAnimating, endTurnOpen, seenSeq, dismissed, onFightPage = false, revealedKey = null }: ModalInput): ModalModel | null => {
   if (isAnimating) {
     return null;
+  }
+  // Going bankrupt beats everything else, including a decision or fight popup of the same moment.
+  const lose = getLoseFace(game, viewerId, seenSeq, dismissed);
+  if (lose) {
+    return { kind: "lose", key: lose.key, round: lose.round };
   }
   const { pending, turn } = game;
   const isTurnPlayer = turn.playerId === viewerId;

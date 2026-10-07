@@ -38,7 +38,8 @@ describe("lobby seats", () => {
       chat: [],
       chatSeq: 0,
       game: null,
-      gamesPlayed: 0
+      gamesPlayed: 0,
+      scenario: null
     });
   });
 
@@ -160,6 +161,44 @@ describe("startGame", () => {
     fails(setReady(state, "1", false), "WRONG_STAGE");
     fails(sendChat(state, "1", "hi"), "WRONG_STAGE");
     fails(kickSeat(state, "0", "1"), "WRONG_STAGE");
+  });
+});
+
+describe("leaveSeat after the game", () => {
+  const finishedMatch = (): MatchState => {
+    const state = seated(["0", "1", "2"]);
+    ok(setReady(state, "1", true));
+    ok(setReady(state, "2", true));
+    ok(startGame(state, "0", createSeededRng(3)));
+    state.stage = "finished";
+    return state;
+  };
+
+  it("releases the seat but leaves the finished game untouched", () => {
+    const state = finishedMatch();
+    const gameBefore = JSON.stringify(state.game);
+    ok(leaveSeat(state, "1"));
+    expect(state.seats.map((seat) => seat.playerId)).toEqual(["0", "2"]);
+    expect(state.stage).toBe("finished");
+    expect(JSON.stringify(state.game)).toBe(gameBefore);
+    fails(leaveSeat(state, "1"), "NOT_SEATED");
+  });
+
+  it("hands the host role on, and the new host can return to the lobby", () => {
+    const state = finishedMatch();
+    ok(leaveSeat(state, "0"));
+    expect(state.hostId).toBe("1");
+    fails(returnToLobby(state, "0"), "NOT_HOST");
+    ok(returnToLobby(state, "1"));
+    expect(state.stage).toBe("lobby");
+    expect(state.seats.map((seat) => seat.playerId)).toEqual(["1", "2"]);
+    expect(state.seats.every((seat) => !seat.ready)).toBe(true);
+  });
+
+  it("is still refused while a game is running", () => {
+    const state = finishedMatch();
+    state.stage = "playing";
+    fails(leaveSeat(state, "1"), "WRONG_STAGE");
   });
 });
 

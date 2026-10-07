@@ -1,7 +1,8 @@
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
+import { createMoronarchyMatchGame } from "@moronarchy/core/match";
 import type { MatchState } from "@moronarchy/core/match";
-import { MoronarchyGame } from "./game.js";
+import { MoronarchyGame, TEST_SCENARIOS_ENV } from "./game.js";
 
 const require = createRequire(import.meta.url);
 const { Client } = require("boardgame.io/client") as {
@@ -53,6 +54,15 @@ describe("Moronarchy boardgame.io match game", () => {
   it("only accepts 6-seat rooms", () => {
     expect(MoronarchyGame.validateSetupData(undefined, 4)).toEqual(expect.any(String));
     expect(MoronarchyGame.validateSetupData(undefined, 6)).toBeUndefined();
+  });
+
+  it("refuses rooms with a test scenario unless the e2e switch is on", () => {
+    expect(process.env[TEST_SCENARIOS_ENV]).toBeUndefined();
+    expect(MoronarchyGame.validateSetupData({ scenario: "finale" }, 6)).toBe("Test scenarios are disabled.");
+    expect(MoronarchyGame.setup(undefined, { scenario: "finale" }).scenario).toBeNull();
+    const allowed = createMoronarchyMatchGame("INVALID", { allowScenarios: true });
+    expect(allowed.validateSetupData({ scenario: "finale" }, 6)).toBeUndefined();
+    expect(allowed.setup(undefined, { scenario: "finale" }).scenario).toBe("finale");
   });
 
   it("runs lobby, start and the first turn between real clients", async () => {

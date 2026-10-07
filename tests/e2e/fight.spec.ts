@@ -226,7 +226,7 @@ const resolveUntilSettled = async (active: Player, other: Player, log: FightLog,
   const deadline = Date.now() + 120_000;
   let calmSince = 0;
   while (Date.now() < deadline) {
-    if ((await active.page.getByRole("heading", { name: "Game over" }).count()) > 0) {
+    if ((await active.page.getByTestId("lose-face").count()) + (await active.page.getByTestId("win-face").count()) + (await active.page.getByTestId("ranking").count()) > 0) {
       throw new Error("The match ended early (a king went bankrupt), so the turn loop cannot continue");
     }
     for (const player of [active, other]) {

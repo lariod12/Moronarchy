@@ -3,6 +3,9 @@ import type { PlayerId } from "@moronarchy/core/engine";
 // What this browser tab already showed, kept in sessionStorage so a reload does not replay popups.
 // Storage can be missing or throw (private windows, blocked site data), so every access is guarded.
 
+// One id per game of a room: "Play Again" bumps `gamesPlayed`, so nothing shown in the last game is remembered.
+export const toGameId = (roomCode: string, gamesPlayed: number): string => `${roomCode}-${gamesPlayed}`;
+
 export interface SeenSnapshot {
   seq: number | null;
   dismissed: string[];

@@ -109,11 +109,21 @@ const GAME_ENTRY_IDS = [
   "station-confirm",
   "manage-plot",
   "activity-line",
-  "result-placeholder",
   "shell-spectator",
   "dialog-visitor-attack",
   ...FIGHT_ENTRY_IDS,
   ...INFO_ENTRY_IDS
+];
+
+// The gallery group "End": the Lose and Win faces and the final Ranking.
+const END_ENTRY_IDS = [
+  "end-lose-midgame",
+  "end-lose-final",
+  "end-win",
+  "end-ranking-host",
+  "end-ranking-guest",
+  "end-ranking-6-players",
+  "end-spectator-hud"
 ];
 
 const holdCrown = async (page: Page, name: RegExp, ms: number): Promise<void> => {
@@ -365,21 +375,112 @@ test.describe("gallery", () => {
     expect(errors).toEqual([]);
   });
 
-  test("result placeholder lists the ranking with host actions", async ({ page }) => {
-    const errors = watchErrors(page);
-    await page.goto("/dev/gallery/result-placeholder");
-    await expect(page.getByRole("heading", { name: "Game over" })).toBeVisible();
-    await expect(page.getByText("Winner: Alice")).toBeVisible();
-    await expect(page.getByRole("listitem")).toHaveText(["1. Alice", "2. Bob", "3. Cara"]);
-    await expect(page.getByRole("button", { name: "Back to lobby" })).toBeVisible();
-    expect(errors).toEqual([]);
-  });
-
   test("spectator shell shows Game Over and no crown", async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto("/dev/gallery/shell-spectator");
     await expect(page.getByText("Game Over")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Crown/ })).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test("every End entry is listed in the gallery", async ({ page }) => {
+    const hrefs = await getEntryHrefs(page);
+    for (const id of END_ENTRY_IDS) {
+      expect(hrefs, id).toContain(`/dev/gallery/${id}`);
+    }
+    expect(hrefs).not.toContain("/dev/gallery/result-placeholder");
+  });
+
+  test("Lose face during play says you are out, in which round, and offers Keep watching and Leave room", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/end-lose-midgame");
+    const face = page.getByTestId("lose-face");
+    await expect(face).toBeVisible();
+    await expect(face.getByRole("heading", { name: "You are out!" })).toBeVisible();
+    await expect(face.getByText("Bankrupt in round 3")).toBeVisible();
+    await expect(face.getByRole("button", { name: "Keep watching" })).toBeVisible();
+    await expect(face.getByRole("button", { name: "Leave room" })).toBeVisible();
+    await face.getByRole("button", { name: "Keep watching" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("keepWatching");
+    expect(errors).toEqual([]);
+  });
+
+  test("Lose face at the finish continues to the ranking", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/end-lose-final");
+    await expect(page.getByRole("heading", { name: "You are out!" })).toBeVisible();
+    await expect(page.getByText("Bankrupt in round 2")).toBeVisible();
+    await page.getByRole("button", { name: "See ranking" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("seeRanking");
+    expect(errors).toEqual([]);
+  });
+
+  test("Win face celebrates the last king standing", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/end-win");
+    await expect(page.getByRole("heading", { name: "You win!" })).toBeVisible();
+    await expect(page.getByText("Last king standing")).toBeVisible();
+    await page.getByRole("button", { name: "See ranking" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("seeRanking");
+    expect(errors).toEqual([]);
+  });
+
+  test("ranking lists the kings in order and gates Play Again on the host", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/end-ranking-host");
+    await expect(page.locator(".result-ranking__name")).toHaveText(["Alice (you)", "Bob", "Cara"]);
+    await expect(page.locator(".result-ranking__status")).toHaveText(["Winner", "Out in round 2", "Out in round 1"]);
+    const playAgain = page.getByRole("button", { name: "Play Again" });
+    const quit = page.getByRole("button", { name: "Quit" });
+    await expect(playAgain).toBeEnabled();
+    const [playBox, quitBox] = [await playAgain.boundingBox(), await quit.boundingBox()];
+    expect(Math.abs((playBox?.y ?? 0) - (quitBox?.y ?? 99))).toBeLessThan(2); // side by side
+    await playAgain.click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("playAgain");
+    await expect(page.getByText("Waiting for the host to start again")).toHaveCount(0);
+
+    await page.goto("/dev/gallery/end-ranking-guest");
+    await expect(page.locator(".result-ranking__name")).toHaveText(["Alice", "Bob (you)", "Cara"]);
+    await expect(page.getByRole("button", { name: "Play Again" })).toBeDisabled();
+    await expect(page.getByText("Waiting for the host to start again")).toBeVisible();
+    await page.getByRole("button", { name: "Quit" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("quit");
+
+    await page.goto("/dev/gallery/end-ranking-6-players");
+    await expect(page.locator(".result-ranking__name")).toHaveText(["Alice", "Bob", "Cara (you)", "Dan", "Eve", "Finn"]);
+    expect(errors).toEqual([]);
+  });
+
+  test("spectator HUD is crossed out and shows Game Over instead of Back and Crown", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/end-spectator-hud");
+    await expect(page.getByText("Game Over")).toBeVisible();
+    await expect(page.locator(".ui-avatar--crossed")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Crown/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
+    await page.getByRole("button", { name: /^Game Over/ }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("press");
+    expect(errors).toEqual([]);
+  });
+
+  test("end entries have no horizontal overflow at 320px", async ({ page }) => {
+    test.setTimeout(120_000);
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 320, height: 640 });
+    for (const id of END_ENTRY_IDS) {
+      await page.goto(`/dev/gallery/${id}`);
+      await expect(page.locator("[data-gallery-entry]")).toBeVisible();
+      expect(await hasHorizontalOverflow(page), `overflow on ${id} at 320px`).toBe(false);
+    }
+    // The six-player ranking still shows both buttons inside the frame.
+    await page.goto("/dev/gallery/end-ranking-6-players");
+    for (const name of ["Play Again", "Quit"]) {
+      const box = await page.getByRole("button", { name }).boundingBox();
+      expect(box, name).not.toBeNull();
+      expect(box!.x, name).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width, name).toBeLessThanOrEqual(320);
+      expect(box!.y + box!.height, name).toBeLessThanOrEqual(640);
+    }
     expect(errors).toEqual([]);
   });
 
@@ -625,7 +726,6 @@ test.describe("gallery", () => {
       "dialog-visitor",
       "cards-pick",
       "station-plots",
-      "result-placeholder",
       "fight-king-mid",
       "fight-garrison",
       "fight-final-round",
@@ -637,7 +737,8 @@ test.describe("gallery", () => {
       "residents-overview",
       "item-detail",
       "events-list",
-      "map-positions"
+      "map-positions",
+      ...END_ENTRY_IDS
     ]) {
       await page.goto(`/dev/gallery/${id}`);
       await expect(page.locator("[data-gallery-entry]")).toBeVisible();

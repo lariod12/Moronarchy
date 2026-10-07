@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { getFightView, getFinalFightView, getFinalRanking, getItemCount, getPlot, getPlotFee } from "@moronarchy/core/engine";
+import { getFightView, getFinalFightView, getItemCount, getPlot, getPlotFee } from "@moronarchy/core/engine";
 import type { GameState, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
 import {
   BuyPlotDialog,
@@ -23,7 +23,6 @@ import { ItemSheet } from "../../screens/fight/ItemSheet";
 import { CardPickView } from "../../screens/cards/CardPickView";
 import { GameFrame } from "../../screens/game/GameFrame";
 import { MapView } from "../../screens/map/MapView";
-import { ResultPlaceholderView } from "../../screens/result/ResultPlaceholderView";
 import { StationView } from "../../screens/station/StationView";
 import type { StationAction, StationScope } from "../../screens/station/StationView";
 import { ActivityLine } from "../../shell/ActivityLine/ActivityLine";
@@ -68,7 +67,7 @@ export const frame = ({ game, viewerId }: GameScenario, title: string, content: 
   </GameFrame>
 );
 
-const mapContent = (scenario: GameScenario, log: Log, rolling = false): ReactNode => {
+export const mapContent = (scenario: GameScenario, log: Log, rolling = false): ReactNode => {
   const { game, viewerId } = scenario;
   const canRun = createCanRun(game, viewerId);
   return (
@@ -355,23 +354,6 @@ export const GAME_ENTRIES: GalleryEntry[] = [
         <ActivityLine text={null} />
       </div>
     )
-  },
-  {
-    id: "result-placeholder",
-    group: "Game",
-    title: "Result placeholder (host)",
-    render: (log) => {
-      const { game } = scenarios.finished();
-      return (
-        <ResultPlaceholderView
-          winnerName={game.winnerId ? (game.kings[game.winnerId]?.name ?? null) : null}
-          ranking={getFinalRanking(game).map((playerId) => ({ playerId, name: game.kings[playerId]?.name ?? "Someone" }))}
-          isHost
-          onBackToLobby={() => log("backToLobby")}
-          onQuit={() => log("quit")}
-        />
-      );
-    }
   },
   ...FIGHT_ENTRIES,
   {

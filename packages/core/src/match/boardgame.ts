@@ -2,6 +2,7 @@ import type { Rng } from "../rules/rng";
 import { GAME_COMMAND_NAMES, runGameCommand } from "./commands";
 import type { GameCommandName } from "./commands";
 import { createMatchState, kickSeat, leaveSeat, returnToLobby, sendChat, setReady, sit, startGame } from "./lobby";
+import { isMatchScenario, readScenario } from "./scenarios";
 import { MATCH_SEATS } from "./types";
 import type { MatchResult, MatchState } from "./types";
 
@@ -36,7 +37,12 @@ export const maskMatchFor = (G: MatchState, playerID: string | null | undefined)
 
 export const toRng = (random: BoardgameRandom): Rng => ({ d6: () => random.D6(), next: () => random.Number() });
 
-export const createMoronarchyMatchGame = <TInvalid>(invalidMove: TInvalid) => {
+export interface MatchGameOptions {
+  // Lets rooms be created with a test scenario in their setupData. Only the e2e server turns this on.
+  allowScenarios?: boolean;
+}
+
+export const createMoronarchyMatchGame = <TInvalid>(invalidMove: TInvalid, { allowScenarios = false }: MatchGameOptions = {}) => {
   const wrap =
     (run: (G: MatchState, playerID: string, rng: Rng, args: unknown[]) => MatchResult) =>
     ({ G, playerID, random }: MoveRuntime, ...args: unknown[]): TInvalid | void => {
@@ -73,9 +79,21 @@ export const createMoronarchyMatchGame = <TInvalid>(invalidMove: TInvalid) => {
     name: "moronarchy",
     minPlayers: 2,
     maxPlayers: 6,
-    validateSetupData: (_setupData: unknown, numPlayers: number): string | undefined =>
-      numPlayers === MATCH_SEATS ? undefined : "Moronarchy rooms always have 6 seats.",
-    setup: (): MatchState => createMatchState(),
+    validateSetupData: (setupData: unknown, numPlayers: number): string | undefined => {
+      if (numPlayers !== MATCH_SEATS) {
+        return "Moronarchy rooms always have 6 seats.";
+      }
+      if (typeof setupData === "object" && setupData !== null && "scenario" in setupData) {
+        if (!allowScenarios) {
+          return "Test scenarios are disabled.";
+        }
+        if (!isMatchScenario((setupData as { scenario?: unknown }).scenario)) {
+          return "Unknown test scenario.";
+        }
+      }
+      return undefined;
+    },
+    setup: (_ctx?: unknown, setupData?: unknown): MatchState => createMatchState(allowScenarios ? readScenario(setupData) : null),
     // One long boardgame.io turn: every connected player may submit moves; engine and lobby validate the actor.
     turn: { activePlayers: { all: null } },
     playerView: ({ G, playerID }: { G: MatchState; playerID?: string | null }): MatchState => maskMatchFor(G, playerID),
