@@ -151,7 +151,7 @@ Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 7. **Kết thúc ván**: khán giả, Win/Lose, Ranking, Play Again.
 8. **Màn Fight** (luật đã có trong engine).
 9. ✅ Dọn `design/`, cập nhật `AGENTS.md`, README (làm cùng bước 3).
-10. **E2E multiplayer mới** (`tests/e2e`) và xử lý người chơi mất kết nối giữa ván.
+10. **Độ bền multiplayer:** xử lý người chơi mất kết nối giữa ván (lượt bị kẹt); giải phóng slot boardgame.io khi chủ phòng kick (hiện slot vẫn bị giữ, kick rồi vào lại nhiều lần có thể làm đầy phòng); bàn phím ảo che ô chat trên điện thoại. (E2E lobby đã có ở bước 4.)
 
 ## 9. Lệnh
 
