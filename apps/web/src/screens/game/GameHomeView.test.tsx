@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { createTestGame } from "@moronarchy/core/testing";
 import { GameHomeView } from "./GameHomeView";
 
@@ -8,13 +8,23 @@ describe("GameHomeView", () => {
     render(<GameHomeView game={createTestGame(3)} viewerId="0" roomCode="RABCD" />);
     expect(screen.getByText("Round 1")).toBeInTheDocument();
     expect(screen.getByText("RABCD")).toBeInTheDocument();
-    expect(screen.getByText("Home")).toBeInTheDocument();
+    expect(screen.getAllByText("Home").length).toBeGreaterThan(0);
     for (const title of ["Stats", "Plots", "Dice Status", "Residents", "Items", "Events"]) {
       expect(screen.getByRole("button", { name: title })).toBeDisabled();
     }
   });
 
-  it("shows the viewer's own stats", () => {
+  it("opens the Map from Dice Status and keeps the other tiles disabled", () => {
+    const onOpenMap = vi.fn();
+    render(<GameHomeView game={createTestGame(3)} viewerId="0" roomCode="RABCD" onOpenMap={onOpenMap} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dice Status" }));
+    expect(onOpenMap).toHaveBeenCalledTimes(1);
+    for (const title of ["Stats", "Plots", "Residents", "Items", "Events"]) {
+      expect(screen.getByRole("button", { name: title })).toBeDisabled();
+    }
+  });
+
+  it("shows the viewer's own stats and the activity line", () => {
     const game = createTestGame(2);
     const king = game.kings["1"];
     if (!king) {
@@ -24,6 +34,7 @@ describe("GameHomeView", () => {
     expect(screen.getByText(`health: ${king.health}`)).toBeInTheDocument();
     expect(screen.getByText(`coin: ${king.coin}`)).toBeInTheDocument();
     expect(screen.getByText(`level: ${king.level}`)).toBeInTheDocument();
+    expect(screen.getByTestId("activity-line")).toHaveTextContent("Game started");
   });
 
   it("shakes the crown for the turn player only", () => {
@@ -35,5 +46,10 @@ describe("GameHomeView", () => {
     rerender(<GameHomeView game={game} viewerId={other} roomCode="RABCD" />);
     expect(screen.queryByRole("button", { name: /hold to take your turn/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Crown/ })).toBeInTheDocument();
+  });
+
+  it("disables Back on the Home page", () => {
+    render(<GameHomeView game={createTestGame(2)} viewerId="0" roomCode="RABCD" />);
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
   });
 });

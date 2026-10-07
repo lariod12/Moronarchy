@@ -22,6 +22,8 @@ import { TopBar } from "../../shell/TopBar/TopBar";
 import { GameHomeView } from "../../screens/game/GameHomeView";
 import { LobbyView } from "../../screens/lobby/LobbyView";
 import { WelcomeView } from "../../screens/welcome/WelcomeView";
+import { END_TURN_TEXT } from "../../game/dialogs/dialogs";
+import { GAME_ENTRIES } from "./game-entries";
 import { HomeHub, renderShell, ROOM_CODE } from "./fixtures";
 import { createLobbyState, lobbyGuestReady, lobbyHostCanStart, lobbyHostWaiting, toLobbyViewProps } from "./lobby-fixtures";
 import type { GalleryEntry } from "./types";
@@ -54,8 +56,6 @@ const PLOT_COLUMNS = [
 ];
 
 const CROWN_STATES: CrownButtonState[] = ["idle", "shaking", "active", "canEndTurn", "eliminated", "finished"];
-
-const END_TURN_TEXT = "This action will be end turn and you cannot interactive some action. Are you sure?";
 
 const Stack = ({ children }: { children: ReactNode }) => <div className="gallery-stack">{children}</div>;
 
@@ -456,5 +456,6 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
         onCrownLongPress={() => log("longPress")}
       />
     )
-  }
+  },
+  ...GAME_ENTRIES
 ];

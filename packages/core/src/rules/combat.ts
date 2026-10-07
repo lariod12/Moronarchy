@@ -256,9 +256,10 @@ export const endFight = (state: GameState, winner: "attacker" | "defender", retr
       result.plotOutcome = "levelDown";
       pushLog(state, "plotLevelDown", plot.ownerId, { plotId: plot.id, level: plot.level });
     } else {
+      const formerOwnerId = plot.ownerId;
       releasePlot(state, plot);
       result.plotOutcome = "destroyed";
-      pushLog(state, "plotDestroyed", attackerId, { plotId: plot.id });
+      pushLog(state, "plotDestroyed", attackerId, formerOwnerId ? { plotId: plot.id, ownerId: formerOwnerId } : { plotId: plot.id });
       const attacker = state.kings[attackerId];
       if (attacker && !attacker.eliminated) {
         state.pending = {

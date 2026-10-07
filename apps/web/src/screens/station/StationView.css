@@ -1,0 +1,97 @@
+.station {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.station__summary {
+  margin: 0;
+  padding: 4px 8px;
+  border: var(--stroke) solid var(--ink);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.station__list {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.station__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.station__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  border: var(--stroke-thin) solid var(--ink);
+}
+
+.station__row--recruit {
+  border-style: dashed;
+}
+
+.station__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.station__name {
+  font-size: var(--text-lg);
+}
+
+.station__meta {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.station__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.station__buttons .ui-button {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.station__groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.station__group-title {
+  margin: 0 0 4px;
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.station__empty {
+  margin: var(--gap) 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.station__done {
+  width: 100%;
+  flex: none;
+  /* keep clear of the "your turn!" bubble that sticks out of the Crown above the HUD */
+  margin-bottom: 26px;
+}

@@ -45,3 +45,37 @@ describe("Dialog", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Dialog actions", () => {
+  it("disables an action and focuses the first enabled one", () => {
+    const onSkip = vi.fn();
+    const onBuy = vi.fn();
+    render(
+      <Dialog
+        title="Plot 12"
+        actions={[
+          { label: "Skip", onSelect: onSkip, disabled: true },
+          { label: "Buy", onSelect: onBuy }
+        ]}
+      >
+        Buy this plot?
+      </Dialog>
+    );
+    expect(screen.getByRole("button", { name: "Skip" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(onSkip).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Buy" }));
+    expect(onBuy).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders a message-only dialog without an action row", () => {
+    render(
+      <Dialog title="Message" actions={[]}>
+        Waiting…
+      </Dialog>
+    );
+    expect(screen.getByRole("dialog", { name: "Message" })).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});

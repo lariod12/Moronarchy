@@ -1,0 +1,25 @@
+.ui-tabs {
+  display: flex;
+  border: var(--stroke) solid var(--ink);
+}
+
+.ui-tabs__tab {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 4px 6px;
+  border: 0;
+  background: var(--paper);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ui-tabs__tab + .ui-tabs__tab {
+  border-left: var(--stroke-thin) solid var(--ink);
+}
+
+.ui-tabs__tab--active {
+  background: var(--ink);
+  color: var(--paper);
+}

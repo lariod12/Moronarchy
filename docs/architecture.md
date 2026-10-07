@@ -22,7 +22,7 @@ apps/
       app/                App (routes)
       match/              MatchProvider/useMatch: kết nối boardgame.io, state lobby/ván
       screens/            welcome/ lobby/ room/ game/: mỗi màn gồm View thuần + container
-      shell/              GameShell, TopBar, BottomHud, CrownButton (ModalHost sau)
+      shell/              GameShell, TopBar, ActivityLine, BottomHud, CrownButton
       screens/            (thêm dần ở bước 5+) map/ stats/ plots/ residents/ ...
       ui/                 UI kit, mỗi component một thư mục: Tag, SketchBox, Tile, TileGrid,
                           DataTable, Dialog, BlockingOverlay, SpeechBubble, StatTag,
@@ -107,7 +107,10 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 ## 5. Web
 
 - **GameShell** bọc mọi màn trong ván. Màn con là route lồng nhau (`/game/:matchId/home`, `/map`, `/plots/:id`…), nên nút Back dùng được lịch sử router.
-- **ModalHost** hiển thị modal theo `pending` và sự kiện game, tách khỏi màn đang xem: popup hiện đúng dù người chơi đang ở màn nào.
+- **ModalHost** (`apps/web/src/game/ModalHost.tsx`) hiển thị modal theo `pending` và sự kiện game, tách khỏi màn đang xem: popup hiện đúng dù người chơi đang ở màn nào. Thứ tự ưu tiên nằm ở hàm thuần `selectModal` (`game/modal-model.ts`): quyết định của mình → Lucky Die → "waiting for decision" → End of turn → thông báo từ log → lối tắt "Your plot". Log đã xem được nhớ trong `sessionStorage` theo phòng + lượt chơi + người chơi (`game/seen-store.ts`).
+- **MovementContext** (`game/MovementContext.tsx`): từ `turn.path` của engine, mọi máy tự đi từng ô cho token của người đang đi (~220 ms/ô); `isAnimating` giữ popup lại đến khi đi xong, tải lại trang giữa lượt không chạy lại animation.
+- **GameSession / GameLayout** (`game/GameSession.tsx`, `game/GameLayout.tsx`): context `{ game, viewerId, actions, canRun }` và khung chung (TopBar, activity line, HUD, ModalHost). Nút Crown, Back và việc ép sang Upgrade Card / Start Station nằm ở đây. `canRun(name, ...args)` dùng `previewCommand` của core để khóa đúng các nút mà engine sẽ từ chối.
+- **previewCommand** (`packages/core/src/flow/preview.ts`): chạy thử một command của engine trên bản sao state (rng cố định) và trả đúng kết quả của command thật; dùng chung bước kiểm tra tham số với `match/commands.ts`. Web không tự suy luận luật.
 - **UI kit** dựng một lần, các màn chỉ ghép lại. Style là CSS thuần dùng design tokens (`styles/tokens.css`), font Balsamiq Sans, không dùng Tailwind; đổi từ wireframe sang art cuối cùng chỉ cần sửa token.
 - **Gallery** (`/dev/gallery`, chỉ bật ở dev) render mọi màn và trạng thái với state từ `core/testing`. Đây là chỗ thay prototype HTML và là chỗ Playwright chụp/kiểm tra.
 
@@ -122,7 +125,7 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 | server | Vitest | Game config qua boardgame.io test client: move hợp lệ/không hợp lệ, ngoài lượt |
 | web | Vitest + Testing Library | Component UI kit, selectors |
 | gallery | Playwright (`pnpm ui:check`) | Mỗi entry render không lỗi console, không tràn ngang, long-press và dialog hoạt động |
-| e2e | Playwright (`pnpm e2e`) | 3–4 trình duyệt: tạo phòng → join bằng mã → chat → ready → start → Home hub (vòng lượt sẽ thêm ở bước 5+) |
+| e2e | Playwright (`pnpm e2e`) | `lobby.spec.ts`: 3–4 trình duyệt tạo phòng → join bằng mã → chat → ready → start → Home hub. `game.spec.ts`: 2 người chơi nhận lượt, đổ, đi từng ô, quyết định, qua Start (thẻ + Start Station), kết thúc lượt nhiều vòng |
 
 ## 7. Giữ / bỏ / làm lại
 
@@ -146,7 +149,7 @@ Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 2. ✅ **Server + lobby** (đã xong): `MatchState`/lobby/chat/start/Play Again + game boardgame.io trong `@moronarchy/core/match` (`packages/core/src/match`), `apps/server` chuyển sang đó, bỏ server chat riêng. `apps/web` và `tests/e2e` được phép hỏng lúc chạy cho đến bước 3–5.
 3. ✅ **Web nền** (đã xong): router, GameShell (TopBar, BottomHud, Crown long-press), UI kit, tokens, gallery `/dev/gallery`, `pnpm ui:check`; đã xóa `design/`, `legacy/`, Tailwind.
 4. ✅ **Màn Welcome + Lobby** (đã xong): Welcome/Lobby/Home hub (placeholder) nối server thật, mã phòng ngắn, kick, chat bong bóng, đếm ngược, e2e nhiều trình duyệt (`pnpm e2e`).
-5. **Home hub + Map + đổ xúc xắc + di chuyển + Start Station + mua/phí**: vòng chơi tối thiểu chạy được.
+5. **Home hub + Map + đổ xúc xắc + di chuyển + Start Station + mua/phí**: vòng chơi tối thiểu chạy được. ✅ **5A** (đã xong): Crown nhận lượt / kết thúc lượt, Map + đổ xúc xắc + animation di chuyển, mọi popup quyết định, Upgrade Card + Start Station + quản lý đất của mình, activity line, thông báo, màn kết quả tạm; e2e `tests/e2e/game.spec.ts`. Nút Attack còn khóa. **5B** (còn lại): màn Fight.
 6. **Plots, Residents, Items, Events, Stats, Steps.**
 7. **Kết thúc ván**: khán giả, Win/Lose, Ranking, Play Again.
 8. **Màn Fight** (luật đã có trong engine).

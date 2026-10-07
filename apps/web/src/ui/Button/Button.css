@@ -24,3 +24,10 @@
   color: var(--muted);
   cursor: not-allowed;
 }
+
+.ui-button--sm {
+  min-height: 36px;
+  padding: 4px 10px;
+  box-shadow: var(--shadow-sm);
+  font-size: var(--text-md);
+}

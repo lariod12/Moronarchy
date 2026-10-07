@@ -24,6 +24,8 @@
   right: 0;
   bottom: calc(100% + 10px);
   z-index: 5;
+  /* Anchored to the right edge: let the text grow leftwards instead of being capped to the narrow crown cell. */
+  max-width: none;
   white-space: nowrap;
 }
 

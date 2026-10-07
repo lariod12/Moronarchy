@@ -1,0 +1,11 @@
+.shell-activity {
+  margin: 0;
+  padding: 3px 10px;
+  overflow: hidden;
+  border-bottom: var(--stroke-thin) solid var(--ink);
+  background: var(--wash);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

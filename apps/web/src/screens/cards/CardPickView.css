@@ -1,0 +1,51 @@
+.card-pick__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-pick__cell {
+  display: flex;
+  min-width: 0;
+}
+
+.card-pick__cell:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  justify-content: center;
+}
+
+.card-pick__cell:last-child:nth-child(odd) .card-pick__card {
+  width: calc(50% - var(--gap) / 2);
+}
+
+.card-pick__card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 18px;
+  border: var(--stroke) solid var(--ink);
+  background: var(--paper);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.card-pick__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.card-pick .card-pick__value {
+  position: absolute;
+  bottom: -10px;
+  font-size: var(--text-md);
+}

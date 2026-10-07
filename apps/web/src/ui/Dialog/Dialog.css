@@ -53,3 +53,15 @@
 .ui-dialog__action--strong {
   font-weight: 700;
 }
+
+.ui-dialog__action:disabled {
+  background: var(--wash);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.ui-dialog__hint {
+  margin: 6px 0 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

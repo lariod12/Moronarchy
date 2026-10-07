@@ -1,4 +1,4 @@
-import type { GameState, PlayerId, Plot, TileId } from "../model/types";
+import type { GameState, LogEntry, PlayerId, Plot, TileId } from "../model/types";
 import { getPlot } from "../rules/board";
 import { getAliveKingIds, getFinalRanking } from "../rules/elimination";
 import { getActiveGlobalEvent, getGarrisonStats, getResidentsOnPlot } from "../rules/stats";
@@ -47,3 +47,10 @@ export {
   getResidentUpgradeCost
 } from "../rules/economy";
 export { getKingStats, getResidentStats } from "../rules/stats";
+
+export { getItemCount } from "../rules/items";
+export { getMaxResidents } from "../rules/residents";
+
+// Newest log entry of a type (optionally by one player), e.g. the `lapCompleted` entry behind the Start Station summary.
+export const getLatestLogEntry = (state: GameState, type: string, playerId?: PlayerId): LogEntry | undefined =>
+  [...state.log].reverse().find((entry) => entry.type === type && (playerId === undefined || entry.playerId === playerId));

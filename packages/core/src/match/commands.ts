@@ -45,7 +45,7 @@ const isResidentKind = (value: unknown): value is ResidentKind => value === "war
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
 // Validates raw (client-supplied) arguments, then calls the engine command.
-const dispatch = (game: GameState, actorId: PlayerId, rng: Rng, name: GameCommandName, args: unknown[]): MatchResult => {
+export const dispatchGameCommand = (game: GameState, actorId: PlayerId, rng: Rng, name: GameCommandName, args: unknown[]): MatchResult => {
   const [first, second] = args;
   switch (name) {
     case "claimTurn":
@@ -114,7 +114,7 @@ export const runGameCommand = (
   if (state.stage !== "playing" || !game) {
     return { ok: false, error: "WRONG_STAGE" };
   }
-  const result = dispatch(game, actorId, rng, name, args);
+  const result = dispatchGameCommand(game, actorId, rng, name, args);
   if (result.ok) {
     syncStage(state);
   }

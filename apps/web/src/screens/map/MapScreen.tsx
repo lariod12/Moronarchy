@@ -1,0 +1,50 @@
+import { useEffect, useState } from "react";
+import type { PlayerId, TileId } from "@moronarchy/core/engine";
+import { useGameSession } from "../../game/GameSession";
+import { useMovement } from "../../game/MovementContext";
+import { MapView } from "./MapView";
+
+const ROLL_FEEDBACK_MAX_MS = 3000;
+
+export const MapScreen = () => {
+  const { game, viewerId, actions, canRun } = useGameSession();
+  const { animatedPosition, isAnimating } = useMovement();
+  const [rolling, setRolling] = useState(false);
+
+  // The die shakes from the tap until the server answers with the roll (or a short while, if it never does).
+  useEffect(() => {
+    if (!rolling) {
+      return;
+    }
+    const timer = setTimeout(() => setRolling(false), ROLL_FEEDBACK_MAX_MS);
+    return () => clearTimeout(timer);
+  }, [rolling]);
+
+  useEffect(() => {
+    if (game.turn.rolled) {
+      setRolling(false);
+    }
+  }, [game.turn.rolled]);
+
+  const positions: Record<PlayerId, TileId> = {};
+  for (const playerId of game.turnOrder) {
+    positions[playerId] = animatedPosition(playerId);
+  }
+
+  return (
+    <MapView
+      game={game}
+      viewerId={viewerId}
+      positions={positions}
+      canRoll={canRun("rollDice")}
+      canUseHorse={canRun("useItem", "horse")}
+      rolling={rolling}
+      animating={isAnimating}
+      onRoll={() => {
+        setRolling(true);
+        actions.rollDice();
+      }}
+      onUseHorse={() => actions.useItem("horse")}
+    />
+  );
+};

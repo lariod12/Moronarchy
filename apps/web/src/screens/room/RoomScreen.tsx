@@ -5,8 +5,9 @@ import { useMatch } from "../../match/MatchProvider";
 import { BlockingOverlay } from "../../ui/BlockingOverlay/BlockingOverlay";
 import { Button } from "../../ui/Button/Button";
 import { SketchBox } from "../../ui/SketchBox/SketchBox";
-import { GameHomeScreen } from "../game/GameHomeScreen";
+import { GameRoutes } from "../game/GameRoutes";
 import { LobbyScreen } from "../lobby/LobbyScreen";
+import { ResultScreen } from "../result/ResultScreen";
 import { useStartCountdown } from "./useStartCountdown";
 
 const CONNECT_TIMEOUT_MS = 8000;
@@ -64,5 +65,8 @@ export const RoomScreen = () => {
   if (state.stage === "lobby") {
     return <LobbyScreen />;
   }
-  return <GameHomeScreen />;
+  if (state.stage === "finished") {
+    return <ResultScreen />;
+  }
+  return <GameRoutes />;
 };

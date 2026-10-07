@@ -27,7 +27,8 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
   - health / coin / level của vua mình.
   - **Back:** về trang trước trong ván.
   - **Crown:** điều khiển lượt (mục 2).
-- **Modal:** phủ nền xám lên toàn màn (cả TopBar/BottomHud), hộp thoại bo góc ở giữa, nút Yes/No hoặc Done/Close.
+- **Activity line (bước 5A):** một dòng chữ ngay dưới TopBar, hiện sự kiện mới nhất trong log bằng tiếng Anh, nhìn từ phía người xem ("You rolled 4 → Plot 15", "Bob bought Plot 7", "Cara paid 40 coin to Bob", "Bob completed a lap"). Có ở mọi trang trong ván.
+- **Modal:** phủ nền xám lên toàn màn (cả TopBar/BottomHud), hộp thoại bo góc ở giữa, nút Yes/No hoặc Done/Close. Chỉ hiện một modal một lúc, ở bất kỳ trang nào người chơi đang xem (`ModalHost`): quyết định dành cho mình → chọn Lucky Die → "waiting for decision" → End of turn → thông báo (item, event cá nhân, nhận phí, bị hạ gục, mất đất, bị loại) → lối tắt "Your plot". Mọi modal chờ đến khi vua đi xong.
 - **Tooltip / bong bóng:** bong bóng nói nhỏ trỏ vào phần tử (vd "your turn!", "end turn!", số xúc xắc).
 
 ## 2. Nút Crown (theo Tutorial button.png)
@@ -55,12 +56,14 @@ Welcome ──Create/Join──► Lobby ──Start (chủ phòng) + đếm ng�
        ├─ Residents ─► Warrior / Farmer table|grid ─► Resident detail│
        ├─ Items ─► Item detail ─► Description                        │
        ├─ Events ─► History events                                   │
-       └─ Map (đổ xúc xắc)  ◄── TBD: vào Map từ đâu (xem mục 6)      │
+       └─ Dice Status ─► Map (đổ xúc xắc; nhận lượt cũng tự mở Map)  │
                                                                     ▼
                                   Win / Lose ─► Ranking ─► Play Again (Lobby) | Quit (Welcome)
 ```
 
 Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrade Card, nâng cấp, tuyển, cửa hàng), các popup trên Map, Fight, End of turn.
+
+Bước 5A: route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/station`, `/manage/<plotId>`. Ô **Dice Status** mở Map (các ô khác ở Home còn khóa đến bước 6). Nhấn giữ Crown đang rung nhận lượt và tự mở Map. Nút Back = về trang trước, khóa ở Home và khi bị buộc ở Upgrade Card / Start Station. Khi qua Start, người chơi bị đưa tới Upgrade Card rồi Start Station và chỉ rời khi bấm "Continue moving".
 
 ## 4. Welcome & Lobby
 
@@ -96,19 +99,23 @@ Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrad
 ## 6. Map — [61](ui/61-map.png)
 
 - 40 ô viền quanh màn: hàng trên 31…40, 01 (01 ở góc trên phải); cột phải 02…10; hàng dưới 11 (góc dưới phải) … 21; cột trái 22…30.
-- Ô xám: đất của mình. Icon người: vị trí vua của mình.
-- Giữa bản đồ: xúc xắc, bong bóng hiện kết quả, nút **Tap to Roll** (thiết kế ghi "Tap to Scroll"). Nút chỉ bật trong lượt mình khi chưa đổ.
-- Sau khi đổ: vua đi từng ô (có animation), đi qua Start thì mở Start Station, xong thì đi tiếp.
+- Ô xám đậm: đất của mình. Đất của người khác có nền xám nhạt và huy hiệu **số ghế** của chủ đất (ghế 1 = playerID 0). Ô 01 (Start) viền đôi.
+- Mọi vua còn sống là một token tròn có chữ cái đầu của tên (token của mình đảo màu), nằm trên ô vua đang đứng; nhiều vua trên một ô thì xếp chồng lệch nhau.
+- Giữa bản đồ: xúc xắc, bong bóng hiện kết quả (số xúc xắc + bonus), nút **Tap to Roll** (thiết kế ghi "Tap to Scroll"). Nút chỉ bật trong lượt mình khi đã nhận lượt và chưa đổ. Trước khi đổ, nếu có Horse thì có thêm nút **Use Horse (+3)**. Dòng chữ nhỏ bên dưới cho biết đang là lượt ai / cần làm gì.
+- Sau khi đổ: xúc xắc hiện số, vua của người đang đi di chuyển từng ô theo `turn.path` (khoảng 220 ms mỗi ô, tắt animation khi người dùng chọn giảm chuyển động) trên **mọi máy**; popup chỉ hiện sau khi vua đi xong. Tải lại trang giữa lượt không chạy lại animation. Đi qua Start thì mở Upgrade Card rồi Start Station, xong thì đi tiếp.
+- Có Lucky Die: sau khi đổ hiện popup "You rolled N" với **Reroll (Lucky Die)** / **Move**.
+- Nút **Attack** trong mọi popup quyết định đang bị khóa kèm gợi ý "Fights arrive in the next update" cho đến bước 5B (màn Fight); khi có Peace Treaty gợi ý là "Peace Treaty: no attacks".
 - Popup trên Map:
-  - [62](ui/62-map-waiting-decision.png) "You stand on other players plot, waiting for decision…": A chờ B quyết định, không có nút.
+  - [62](ui/62-map-waiting-decision.png) "You stand on <Tên>'s plot, waiting for decision…": A chờ B quyết định, không có nút và không đóng được.
   - ~~[63](ui/63-map-fight-back-prompt.png) "fight back?"~~: **bỏ**. Thay bằng popup cho B khi B đứng trên đất: "Player A stopped on your plot" với **Collect fee** / **Attack** (dùng style của 63).
   - B vắng mặt khi đất bị tấn công: thông báo "Player A is attacking your plot", có nút xem trận.
   - [64](ui/64-map-attack-prompt.png) "You get in other players plot. Do you want to attack on it?" Yes / No: hiện cho A khi B không ở đó.
-  - Mua đất trống: popup "Buy this plot? Price X" Buy / Skip. Thiết kế chưa vẽ, Đề xuất theo style popup chung.
-  - Dừng trên đất của mình: popup "Your plot" với các lối tắt Upgrade plot / Heal / Recruit / Upgrade residents (mở màn Plot detail ở chế độ quản lý), hoặc Done. Thiết kế chưa vẽ.
-  - Nhặt được item / gặp event cá nhân khi dừng trên đất: popup thông báo, nút Done.
-  - Trả phí: TBD (đề xuất popup thông báo "You paid X coin to Player B", nút Done).
-- **Câu hỏi mở:** Home hub mới không có ô Map, vậy vào Map bằng cách nào? Đề xuất: ô **Dice Status** mở Map (nơi đổ xúc xắc), còn Steps là một tab trong Map.
+  - Mua đất trống (đã làm ở 5A): tiêu đề "Plot 12", nội dung "Buy this plot for 80 coin?" với **Skip** / **Buy** (Buy khóa khi không đủ coin). Đất vừa bị phá: "You broke Plot 12. Buy it now for 80 coin?".
+  - Đứng trên đất người khác (B vắng): "You get in Bob's plot (Plot 12). Pay 40 coin or attack?" với **Pay 40** / **Attack**. Khi B có mặt, B nhận "Alice stopped on your Plot 12. Collect 40 coin or attack?" với **Collect** / **Attack**.
+  - Dừng trên đất của mình (hoặc vừa mua xong): popup "Your plot (Plot 12)" với **Manage** (mở `/manage/12`, màn kiểu Start Station chỉ có đất đó, không có Shop) hoặc **Done**.
+  - Nhặt được item / gặp event cá nhân / nhận phí / bị hạ gục / mất đất / bị loại: popup thông báo, nút Done. Popup của một lần đã xem được nhớ trong `sessionStorage` nên tải lại trang không hiện lại.
+  - Trả phí: người trả chỉ thấy dòng trong activity line; chủ đất nhận popup "Fee received".
+- Vào Map: ô **Dice Status** ở Home mở Map, và nhận lượt cũng mở Map. Steps (mục 13) sẽ là một tab trong Map ở bước 6.
 
 ## 7. Stats / Players Info — [20](ui/20-player-stats.png)
 
@@ -151,9 +158,9 @@ Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrad
 
 - **Upgrade Card** — [80](ui/80-upgrade-card-pick.png), [81](ui/81-upgrade-card-confirm.png), [82](ui/82-upgrade-card-congrats.png)
   - 3 thẻ random. Mỗi thẻ có tên chỉ số, icon và giá trị "+N".
-  - Chạm thẻ → "You have picked <Max Health +10>. Are you sure?" Yes / No → "Congratulation! You got Max Health +10" Done.
-- Thông báo nhận Start bonus, level up, Income: thiết kế chưa vẽ. Đề xuất một popup tổng kết "Lap complete: +50 coin, Level 2, Income +X".
-- Nâng cấp Plot / tuyển Resident / cửa hàng Item: thiết kế chưa vẽ. Đề xuất dùng lại màn Plots/Residents/Items ở chế độ "Start Station", có thanh "Done → continue moving" ở dưới.
+  - Chạm thẻ → "You have picked <Max Health +10>. Are you sure?" Yes / No → "Congratulation! You got Max Health +10" Done. (Bản dựng bỏ cặp dấu `<>` của bản thiết kế: "You have picked" / "Max Health +10. Are you sure?".) Xong thì sang Start Station.
+- **Start Station** (bước 5A, `/room/<MÃ>/station`, TopBar "Start Station"): thanh tóm tắt "Lap complete: +100 coin · Level N · Income +X" lấy từ log `lapCompleted`; ba tab **Plots** / **Residents** / **Shop**; hàng nào cũng có nút kèm giá lấy từ engine: Plots (`Upgrade 45`, `Heal 12`), Residents (`Upgrade 40`, `Heal 8`, `Recruit Warrior 70`, `Recruit Farmer 40` cho từng đất còn chỗ), Shop (`Buy 40`...). Nút khóa đúng lúc engine sẽ từ chối (`previewCommand`). Nâng cấp / tuyển / mua hỏi "Spend X coin …?" No / Yes; hồi máu làm ngay. Thanh dưới cùng là **Continue moving** (còn bước chưa đi) hoặc **Done**.
+- **Manage** (`/room/<MÃ>/manage/<plotId>`): cùng màn nhưng giới hạn trong đất vừa dừng/mua, chỉ có tab Plots và Residents, nút dưới cùng là **Done**.
 
 ## 13. Steps / Dice Status — [60](ui/60-steps.png)
 
@@ -182,6 +189,7 @@ Luật: [game-design.md mục 10](game-design.md#10-fight).
 - Bị loại: màn mặt buồn (98) → về Game Shell ở chế độ khán giả (96). BottomHud: avatar gạch chéo đỏ, các chỉ số xám, chữ "Game Over" thay Back/Crown.
 - Người thắng: màn mặt cười (97).
 - Ranking (99): danh sách "Player 1…N" theo thứ hạng, nút **Play Again** và **Quit**.
+- **Tạm thời (đến bước 7):** khi ván kết thúc mọi máy thấy màn placeholder "Game over" + "Winner: <tên>" + danh sách xếp hạng (người thắng, rồi những người bị loại theo thứ tự ngược). Chủ phòng có **Back to lobby** (`returnToLobby`), ai cũng có **Quit** (xóa session, về Welcome). Người bị loại khi ván còn tiếp tục thấy HUD "Game Over" và xem Map như khán giả, không có thao tác nào.
 
 ## 16. Phong cách hình ảnh
 
