@@ -1,26 +1,8 @@
 import { Navigate, useNavigate, useParams } from "react-router";
 import { useGameSession } from "../../game/GameSession";
-import type { GameActions } from "../../game/game-actions";
 import { roomPath } from "../../game/labels";
+import { runStationAction } from "./run-action";
 import { StationView } from "./StationView";
-import type { StationAction } from "./StationView";
-
-const runAction = (actions: GameActions, action: StationAction): void => {
-  switch (action.name) {
-    case "upgradePlot":
-      return actions.upgradePlot(action.plotId);
-    case "healPlot":
-      return actions.healPlot(action.plotId);
-    case "recruitResident":
-      return actions.recruitResident(action.plotId, action.kind);
-    case "upgradeResident":
-      return actions.upgradeResident(action.residentId);
-    case "healResident":
-      return actions.healResident(action.residentId);
-    case "buyItem":
-      return actions.buyItem(action.itemId);
-  }
-};
 
 // The Start Station: manage everything you own, shop, then keep moving.
 export const StationScreen = () => {
@@ -38,7 +20,7 @@ export const StationScreen = () => {
       viewerId={viewerId}
       scope={{ kind: "station" }}
       canRun={canRun}
-      onAction={(action) => runAction(actions, action)}
+      onAction={(action) => runStationAction(actions, action)}
       onDone={() => {
         actions.leaveStartStation();
         navigate(roomPath(roomCode, "map"), { replace: true });
@@ -66,7 +48,7 @@ export const ManageScreen = () => {
       viewerId={viewerId}
       scope={{ kind: "plot", plotId }}
       canRun={canRun}
-      onAction={(action) => runAction(actions, action)}
+      onAction={(action) => runStationAction(actions, action)}
       onDone={() => navigate(roomPath(roomCode, "map"), { replace: true })}
     />
   );

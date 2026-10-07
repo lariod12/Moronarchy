@@ -1,26 +1,14 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { createRoomAs, hasHorizontalOverflow, holdButton, joinRoomAs, openPlayer, readRoomCode } from "./helpers";
+import { END_TURN_CROWN, SHAKING_CROWN, createRoomAs, hasHorizontalOverflow, holdButton, joinRoomAs, live, openPlayer, readRoomCode, resolveUntilSettled, whoShakes } from "./helpers";
 import type { Player } from "./helpers";
 
 // Play at least MIN_TURNS turns, and keep going (up to MAX_TURNS) until a king has crossed Start, so that the
 // card pick and the Start Station are exercised against the real server too.
 const MIN_TURNS = 8;
 const MAX_TURNS = 34;
-const COIN_RESERVE = 150;
-
-// What the turn loop met along the way; printed at the end of the test.
-const live = { cards: 0, stations: 0, answered: new Map<string, number>() };
-
-const SHAKING_CROWN = /hold to take your turn/;
-const END_TURN_CROWN = /hold to end your turn/;
 
 const activityText = async (page: Page): Promise<string> => (await page.getByTestId("activity-line").innerText()).trim();
-
-const readCoin = async (page: Page): Promise<number> => {
-  const text = await page.getByText(/^coin: \d+$/).innerText({ timeout: 3000 });
-  return Number(text.replace("coin: ", ""));
-};
 
 // Records which tile a king token is on (and whether a popup ever appeared while the king was still walking).
 const startTrace = (page: Page, playerId: string): Promise<void> =>
@@ -48,142 +36,6 @@ const stopTrace = (page: Page): Promise<{ trace: string[]; violations: number }>
     return { trace: w.__trace, violations: w.__violations };
   });
 
-// Answers whatever popup is open, the way a careful player would. Returns false when nothing could be answered
-// (no popup, a waiting popup, or the End of turn question that the test opens on purpose).
-const tryAnswerDialog = async (page: Page): Promise<boolean> => {
-  const dialog = page.getByRole("dialog");
-  if ((await dialog.count()) === 0) {
-    return false;
-  }
-  const title = (await dialog.getByRole("heading").innerText({ timeout: 3000 })).trim();
-  const key = title.replace(/[0-9]+/g, "N");
-  const click = async (name: string | RegExp): Promise<boolean> => {
-    const button = dialog.getByRole("button", { name });
-    if ((await button.count()) === 0 || !(await button.first().isEnabled())) {
-      return false;
-    }
-    await button.first().click({ timeout: 3000 });
-    live.answered.set(key, (live.answered.get(key) ?? 0) + 1);
-    return true;
-  };
-
-  if (title === "End of turn") {
-    return false;
-  }
-  if (/^Plot \d+$/.test(title)) {
-    // Buy while a reserve stays in the purse so that fees cannot bankrupt the test.
-    const price = Number(/for (\d+) coin/.exec(await dialog.innerText({ timeout: 3000 }))?.[1]);
-    if ((await readCoin(page)) - price >= COIN_RESERVE && (await click("Buy"))) {
-      return true;
-    }
-    return click("Skip");
-  }
-  if (title === "Message") {
-    return (await click(/^Pay \d+$/)) || (await click("Collect"));
-  }
-  if (/^You rolled/.test(title)) {
-    return click("Move");
-  }
-  if (title === "You have picked") {
-    return click("Yes");
-  }
-  return click("Done");
-};
-
-// A popup can close between looking at it and answering it (the other player answered, or the server moved on).
-const answerDialog = async (page: Page): Promise<boolean> => {
-  try {
-    return await tryAnswerDialog(page);
-  } catch (error) {
-    if (error instanceof Error && error.name === "TimeoutError") {
-      return false;
-    }
-    throw error;
-  }
-};
-
-// On the card page and the Start Station the active player has to act on the page itself.
-const answerPage = async (page: Page): Promise<boolean> => {
-  if ((await page.getByRole("dialog").count()) > 0) {
-    return false;
-  }
-  const path = new URL(page.url()).pathname;
-  if (path.endsWith("/cards")) {
-    // E7: three cards; tap one, then the "Are you sure?" and "Congratulation!" popups follow.
-    await expect(page.getByTestId("upgrade-card")).toHaveCount(3);
-    await expect(page.getByText("Upgrade Card", { exact: true })).toBeVisible();
-    await page.getByTestId("upgrade-card").first().click();
-    live.cards += 1;
-    return true;
-  }
-  if (path.endsWith("/station")) {
-    // E8: lap summary, the three tabs and the bottom bar.
-    await expect(page.getByTestId("station-summary")).toContainText(/^Lap complete: \+100 coin · Level \d · Income \+\d+$/);
-    for (const tab of ["Plots", "Residents", "Shop"]) {
-      await expect(page.getByRole("tab", { name: tab })).toBeVisible();
-    }
-    expect(await hasHorizontalOverflow(page)).toBe(false);
-    await page.getByRole("tab", { name: "Shop" }).click();
-    await expect(page.getByRole("button", { name: /^Buy \d+$/ }).first()).toBeVisible();
-    await page.getByRole("button", { name: /^(Continue moving|Done)$/ }).click();
-    live.stations += 1;
-    return true;
-  }
-  return false;
-};
-
-const isSettled = async (active: Page): Promise<boolean> =>
-  (await active.getByText("end turn!").isVisible()) &&
-  new URL(active.url()).pathname.endsWith("/map") &&
-  (await active.locator('.map[data-animating="false"]').count()) === 1 &&
-  (await active.getByRole("dialog").count()) === 0;
-
-// Plays the turn out until the Crown can end it and nothing else is open on the active page.
-const resolveUntilSettled = async (active: Page, other: Page): Promise<void> => {
-  const deadline = Date.now() + 60_000;
-  let calmSince = 0;
-  while (Date.now() < deadline) {
-    if ((await active.getByRole("heading", { name: "Game over" }).count()) > 0) {
-      throw new Error("The match ended early (a king went bankrupt), so the turn loop cannot continue");
-    }
-    if (await isSettled(active)) {
-      calmSince = calmSince || Date.now();
-      if (Date.now() - calmSince > 500) {
-        return;
-      }
-    } else {
-      calmSince = 0;
-    }
-    const handled = (await answerDialog(active)) || (await answerDialog(other)) || (await answerPage(active));
-    if (!handled) {
-      await active.waitForTimeout(120);
-    }
-  }
-  throw new Error(`The turn never settled. Active URL ${active.url()}`);
-};
-
-const whoShakes = async (players: Player[]): Promise<Player> => {
-  let found: Player | undefined;
-  await expect
-    .poll(
-      async () => {
-        for (const player of players) {
-          if ((await player.page.getByRole("button", { name: SHAKING_CROWN }).count()) === 1) {
-            found = player;
-            return player.name;
-          }
-        }
-        return "";
-      },
-      { timeout: 20_000 }
-    )
-    .not.toBe("");
-  if (!found) {
-    throw new Error("Nobody has a shaking crown");
-  }
-  return found;
-};
-
 test.describe("playing turns", () => {
   test("two players play several turns: claim, roll, walk, decide, end turn", async ({ browser }) => {
     test.setTimeout(420_000);
@@ -205,9 +57,9 @@ test.describe("playing turns", () => {
         expect(await readRoomCode(player.page)).toBe(code);
       }
 
-      // E2: Dice Status opens the Map, the other hub tiles stay locked.
+      // E2: every hub tile is enabled now (the info pages are covered by info.spec.ts); Back is locked on Home.
       for (const player of players) {
-        await expect(player.page.getByRole("button", { name: "Stats" })).toBeDisabled();
+        await expect(player.page.getByRole("button", { name: "Stats" })).toBeEnabled();
         await expect(player.page.getByRole("button", { name: "Back" })).toBeDisabled();
       }
 

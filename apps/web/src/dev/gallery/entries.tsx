@@ -24,6 +24,7 @@ import { LobbyView } from "../../screens/lobby/LobbyView";
 import { WelcomeView } from "../../screens/welcome/WelcomeView";
 import { END_TURN_TEXT } from "../../game/dialogs/dialogs";
 import { GAME_ENTRIES } from "./game-entries";
+import { INFO_ENTRIES } from "./info-entries";
 import { HomeHub, renderShell, ROOM_CODE } from "./fixtures";
 import { createLobbyState, lobbyGuestReady, lobbyHostCanStart, lobbyHostWaiting, toLobbyViewProps } from "./lobby-fixtures";
 import type { GalleryEntry } from "./types";
@@ -450,6 +451,7 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
         game={createTestGame(3)}
         viewerId="0"
         roomCode={ROOM_CODE}
+        onOpen={(page) => log(`open:${page}`)}
         onAvatarPress={() => log("avatar")}
         onBack={() => log("back")}
         onCrownPress={() => log("press")}
@@ -457,5 +459,6 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
       />
     )
   },
-  ...GAME_ENTRIES
+  ...GAME_ENTRIES,
+  ...INFO_ENTRIES
 ];

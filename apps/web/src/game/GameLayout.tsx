@@ -6,27 +6,9 @@ import { FightRevealProvider } from "./FightRevealContext";
 import { getForcedPage, getPageName } from "./forced-route";
 import { useGameSession } from "./GameSession";
 import { roomPath } from "./labels";
+import { getPageTitle } from "./page-title";
 import { ModalHost } from "./ModalHost";
 import { useMovement } from "./MovementContext";
-
-const pageTitle = (pageName: string, pathname: string): string => {
-  switch (pageName) {
-    case "map":
-      return "Map";
-    case "cards":
-      return "Upgrade Card";
-    case "station":
-      return "Start Station";
-    case "fight":
-      return "Fight";
-    case "manage": {
-      const plotId = pathname.split("/").pop();
-      return plotId ? `Plot ${plotId}` : "Plot";
-    }
-    default:
-      return "Home";
-  }
-};
 
 // Chrome for every in-game page: TopBar, activity line, HUD with the Crown, and the modal host.
 export const GameLayout = () => {
@@ -55,6 +37,8 @@ export const GameLayout = () => {
   }, [crownState]);
 
   const goHome = () => navigate(roomPath(roomCode, "home"));
+  // The avatar in the HUD opens my own Players Info (replacing the entry when already looking at one).
+  const openMyStats = () => navigate(roomPath(roomCode, `stats/${viewerId}`), { replace: pageName === "stats" });
 
   const handleCrownLongPress = () => {
     if (crownState === "shaking") {
@@ -74,8 +58,9 @@ export const GameLayout = () => {
         game={game}
         viewerId={viewerId}
         roomCode={roomCode}
-        title={pageTitle(pageName, location.pathname)}
+        title={getPageTitle(location.pathname)}
         backDisabled={pageName === "home" || forced !== null}
+        onAvatarPress={openMyStats}
         onBack={handleBack}
         onCrownPress={goHome}
         onCrownLongPress={handleCrownLongPress}

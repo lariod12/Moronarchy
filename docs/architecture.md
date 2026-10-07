@@ -150,7 +150,7 @@ Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 3. ✅ **Web nền** (đã xong): router, GameShell (TopBar, BottomHud, Crown long-press), UI kit, tokens, gallery `/dev/gallery`, `pnpm ui:check`; đã xóa `design/`, `legacy/`, Tailwind.
 4. ✅ **Màn Welcome + Lobby** (đã xong): Welcome/Lobby/Home hub (placeholder) nối server thật, mã phòng ngắn, kick, chat bong bóng, đếm ngược, e2e nhiều trình duyệt (`pnpm e2e`).
 5. **Home hub + Map + đổ xúc xắc + di chuyển + Start Station + mua/phí**: vòng chơi tối thiểu chạy được. ✅ **5A** (đã xong): Crown nhận lượt / kết thúc lượt, Map + đổ xúc xắc + animation di chuyển, mọi popup quyết định, Upgrade Card + Start Station + quản lý đất của mình, activity line, thông báo, màn kết quả tạm; e2e `tests/e2e/game.spec.ts`. **5B** (đã xong): nút Attack bật, màn Fight (`/room/:code/fight`, `getFightView` trong core), popup thông báo/kết quả trận, e2e `tests/e2e/fight.spec.ts`.
-6. **Plots, Residents, Items, Events, Stats, Steps.**
+6. ✅ **Plots, Residents, Items, Events, Stats, Steps** (đã xong): mọi ô ở Home mở được. Core thêm `getKingInfo`, `getPlotInfo`, `getResidentInfo`, `getResidentsByKind`, `getEventHistoryView`, `getPositionsView` (`flow/info-view.ts`) và mô tả item / event nằm cạnh số liệu trong `content/` (`ITEMS[id].summary|description|use`, `GLOBAL_EVENTS`, `PERSONAL_EVENTS`). Web thêm `screens/{stats,plots,residents,items,events}` và tab Board / Positions ở Map; nút Upgrade/Heal/Use khóa theo `previewCommand` kèm lý do (`createRunCheck`), hộp xác nhận dùng chung với Start Station. Gallery nhóm `Info`; e2e `tests/e2e/info.spec.ts`.
 7. **Kết thúc ván**: khán giả, Win/Lose, Ranking, Play Again.
 8. ✅ **Màn Fight** (đã xong cùng bước 5B).
 9. ✅ Dọn `design/`, cập nhật `AGENTS.md`, README (làm cùng bước 3).

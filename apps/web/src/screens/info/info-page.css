@@ -1,0 +1,66 @@
+/* Shared layout of the info pages (Stats, Plots, Residents, Items, Events). */
+.info-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.info-page--fill {
+  height: 100%;
+  min-height: 0;
+}
+
+.info-empty {
+  margin: var(--gap) 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.info-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+  text-align: center;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.info-grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+.info-grid .ui-tile {
+  width: 100%;
+  /* the tag(s) sit in the bottom corner: leave them room under the icon */
+  padding-bottom: 14px;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.info-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.info-footer {
+  display: flex;
+  justify-content: flex-end;
+}

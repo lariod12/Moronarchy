@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-const watchErrors = (page: Page): string[] => {
-  const errors: string[] = [];
+const watchErrors = (page: Page, errors: string[] = []): string[] => {
   page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
     if (message.type() === "error") {
@@ -10,6 +9,20 @@ const watchErrors = (page: Page): string[] => {
     }
   });
   return errors;
+};
+
+// Every page load leaves a few MB behind in the browser tab; after about 80 loads in one tab it stalls. Walks over the
+// whole gallery therefore move to a fresh tab every FRESH_PAGE_EVERY entries (errors keep going into the same list).
+const FRESH_PAGE_EVERY = 25;
+
+const freshPage = async (page: Page, errors: string[], viewport?: { width: number; height: number }): Promise<Page> => {
+  const next = await page.context().newPage();
+  watchErrors(next, errors);
+  if (viewport) {
+    await next.setViewportSize(viewport);
+  }
+  await page.close();
+  return next;
 };
 
 const getEntryHrefs = async (page: Page): Promise<string[]> => {
@@ -45,6 +58,32 @@ const FIGHT_ENTRY_IDS = [
   "dialog-fight-notice-owner"
 ];
 
+// The gallery group "Info": the in-game information pages.
+const INFO_ENTRY_IDS = [
+  "stats-me",
+  "stats-other",
+  "stats-eliminated",
+  "plots-mine-table",
+  "plots-all-table",
+  "plots-grid",
+  "plots-empty",
+  "plot-detail-upgradable",
+  "plot-detail-locked",
+  "plot-upgrade-confirm",
+  "residents-overview",
+  "residents-warrior-table",
+  "residents-farmer-grid",
+  "resident-detail",
+  "items-grid",
+  "items-empty",
+  "item-detail",
+  "item-description",
+  "item-choose-plot",
+  "events-list",
+  "events-empty",
+  "map-positions"
+];
+
 // Every entry of the gallery group "Game" (plus the spectator shell), checked at phone width.
 const GAME_ENTRY_IDS = [
   "map-start",
@@ -73,7 +112,8 @@ const GAME_ENTRY_IDS = [
   "result-placeholder",
   "shell-spectator",
   "dialog-visitor-attack",
-  ...FIGHT_ENTRY_IDS
+  ...FIGHT_ENTRY_IDS,
+  ...INFO_ENTRY_IDS
 ];
 
 const holdCrown = async (page: Page, name: RegExp, ms: number): Promise<void> => {
@@ -96,13 +136,17 @@ test.describe("gallery", () => {
   });
 
   test("every entry renders without errors or horizontal overflow", async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
     const errors = watchErrors(page);
     const hrefs = await getEntryHrefs(page);
-    for (const href of hrefs) {
-      await page.goto(href);
-      await expect(page.locator("[data-gallery-entry]"), href).toBeVisible();
-      expect(await hasHorizontalOverflow(page), `overflow on ${href}`).toBe(false);
+    let current = page;
+    for (const [index, href] of hrefs.entries()) {
+      if (index > 0 && index % FRESH_PAGE_EVERY === 0) {
+        current = await freshPage(current, errors);
+      }
+      await current.goto(href);
+      await expect(current.locator("[data-gallery-entry]"), href).toBeVisible();
+      expect(await hasHorizontalOverflow(current), `overflow on ${href}`).toBe(false);
     }
     expect(errors).toEqual([]);
   });
@@ -135,12 +179,15 @@ test.describe("gallery", () => {
   });
 
   test("index has no horizontal overflow at 320px", async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
     const errors = watchErrors(page);
-    await page.setViewportSize({ width: 320, height: 640 });
+    const narrow = { width: 320, height: 640 };
+    await page.setViewportSize(narrow);
     await page.goto("/dev/gallery");
     await expect(page.getByTestId("gallery-link").first()).toBeVisible();
     expect(await hasHorizontalOverflow(page)).toBe(false);
+    let current = page;
+    let visited = 0;
     for (const id of [
       "shell-active",
       "shell-with-dialog",
@@ -156,9 +203,13 @@ test.describe("gallery", () => {
       "game-home",
       ...GAME_ENTRY_IDS
     ]) {
-      await page.goto(`/dev/gallery/${id}`);
-      await expect(page.locator("[data-gallery-entry]")).toBeVisible();
-      expect(await hasHorizontalOverflow(page), `overflow on ${id} at 320px`).toBe(false);
+      visited += 1;
+      if (visited % FRESH_PAGE_EVERY === 0) {
+        current = await freshPage(current, errors, narrow);
+      }
+      await current.goto(`/dev/gallery/${id}`);
+      await expect(current.locator("[data-gallery-entry]")).toBeVisible();
+      expect(await hasHorizontalOverflow(current), `overflow on ${id} at 320px`).toBe(false);
     }
     expect(errors).toEqual([]);
   });
@@ -212,6 +263,12 @@ test.describe("gallery", () => {
     await expect(page.getByText("Round 1")).toBeVisible();
     await expect(page.getByRole("button", { name: "Crown: hold to take your turn" })).toBeVisible();
     await expect(page.locator(".ui-tile")).toHaveCount(6);
+    // Every tile opens something now.
+    for (const title of ["Stats", "Plots", "Dice Status", "Residents", "Items", "Events"]) {
+      await expect(page.getByRole("button", { name: title })).toBeEnabled();
+    }
+    await page.getByRole("button", { name: "Residents" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("open:residents");
     expect(errors).toEqual([]);
   });
 
@@ -406,6 +463,155 @@ test.describe("gallery", () => {
     expect(errors).toEqual([]);
   });
 
+  test("every Info entry is listed in the gallery", async ({ page }) => {
+    const hrefs = await getEntryHrefs(page);
+    for (const id of INFO_ENTRY_IDS) {
+      expect(hrefs, id).toContain(`/dev/gallery/${id}`);
+    }
+  });
+
+  test("stats show every stat, the equipment bonus and cycle through the kings", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/stats-other");
+    await expect(page.getByRole("heading", { name: "Bob" })).toBeVisible();
+    for (const label of ["Level", "Coin", "Health", "Max Health", "Attack", "Defense", "Lucky", "Laps", "Plots"]) {
+      await expect(page.getByText(new RegExp(`^${label}: `))).toBeVisible();
+    }
+    await expect(page.getByText(/^Attack: \d+ \(\+2\)$/)).toBeVisible();
+    await page.getByRole("button", { name: "Next king" }).click();
+    await expect(page.getByRole("heading", { name: "Cara" })).toBeVisible();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("stats:2");
+    await page.getByRole("button", { name: "Previous king" }).click();
+    await page.getByRole("button", { name: "Previous king" }).click();
+    await expect(page.getByRole("heading", { name: "Alice" })).toBeVisible();
+    await page.goto("/dev/gallery/stats-eliminated");
+    await expect(page.getByRole("heading", { name: "Cara" })).toBeVisible();
+    await expect(page.locator(".ui-avatar--crossed")).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
+
+  test("plots list mine, all with an Owner column, a grid and an empty state", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/plots-mine-table");
+    await expect(page.getByRole("columnheader")).toHaveText(["Plots", "Level", "Income", "Price"]);
+    await expect(page.locator("tbody tr:not(.ui-data-table__action-row)")).toHaveCount(3);
+    await page.getByRole("tab", { name: "All" }).click();
+    await expect(page.getByRole("columnheader", { name: "Owner" })).toBeVisible();
+    await expect(page.locator("tbody tr:not(.ui-data-table__action-row)")).toHaveCount(39);
+    await page.goto("/dev/gallery/plots-all-table");
+    await expect(page.getByRole("columnheader", { name: "Owner" })).toBeVisible();
+    await expect(page.locator("tbody tr:not(.ui-data-table__action-row)")).toHaveCount(39);
+    await page.getByRole("button", { name: "details" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("plot:2");
+    await page.getByRole("button", { name: "View All" }).click();
+    await expect(page.getByTestId("plots-grid").getByRole("button")).toHaveCount(39);
+    await page.goto("/dev/gallery/plots-grid");
+    await expect(page.getByTestId("plots-grid").getByRole("button")).toHaveCount(3);
+    await expect(page.getByTestId("plots-grid")).toContainText("Level: 2");
+    await page.goto("/dev/gallery/plots-empty");
+    await expect(page.getByText("You own no plots yet")).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("plot detail gates Upgrade on the engine and asks before spending", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/plot-detail-upgradable");
+    await expect(page.getByRole("button", { name: /^Upgrade \d+$/ })).toBeEnabled();
+    await expect(page.getByTestId("upgrade-hint")).toHaveCount(0);
+    await page.goto("/dev/gallery/plot-detail-locked");
+    await expect(page.getByRole("button", { name: /^Upgrade \d+$/ })).toBeDisabled();
+    await expect(page.getByTestId("upgrade-hint")).toHaveText("Upgrade at the Start station or while standing on this plot");
+    await expect(page.getByText(/^Health: \d+\/\d+$/)).toBeVisible();
+    await page.goto("/dev/gallery/plot-upgrade-confirm");
+    await expect(page.getByRole("dialog", { name: "Upgrade" })).toContainText("Spend");
+    await page.getByRole("button", { name: "Yes" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("action:upgradePlot");
+    expect(errors).toEqual([]);
+  });
+
+  test("residents: overview counts, warrior table, farmer grid and detail", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/residents-overview");
+    await expect(page.getByRole("button", { name: /Warrior/ })).toContainText("x3");
+    await expect(page.getByRole("button", { name: /Farmer/ })).toContainText("x2");
+    await page.goto("/dev/gallery/residents-warrior-table");
+    await expect(page.getByRole("columnheader")).toHaveText(["Name", "Level", "Plots", "Plots LV"]);
+    await page.getByRole("button", { name: "View All" }).click();
+    await expect(page.getByTestId("residents-grid").getByRole("button")).toHaveCount(3);
+    await page.goto("/dev/gallery/residents-farmer-grid");
+    await expect(page.getByTestId("residents-grid").getByRole("button").first()).toContainText("Name: 02");
+    await page.goto("/dev/gallery/resident-detail");
+    for (const label of ["Name", "Level", "Attack", "Defense", "Health", "Plot"]) {
+      await expect(page.getByText(new RegExp(`^${label}: `))).toBeVisible();
+    }
+    await expect(page.getByRole("button", { name: /^Upgrade/ })).toBeDisabled();
+    expect(errors).toEqual([]);
+  });
+
+  test("items: grid with counts, detail, description popup and plot choice", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/items-grid");
+    await expect(page.getByTestId("items-grid").getByRole("button")).toHaveCount(6);
+    await expect(page.getByTestId("items-grid")).toContainText("Equipped");
+    await page.goto("/dev/gallery/items-empty");
+    await expect(page.getByText("You have no items yet")).toBeVisible();
+    await page.goto("/dev/gallery/item-detail");
+    await expect(page.getByTestId("item-summary")).toContainText("+3");
+    await page.getByRole("button", { name: "View Details" }).click();
+    await expect(page.getByRole("dialog", { name: "Description" })).toBeVisible();
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.goto("/dev/gallery/item-description");
+    await expect(page.getByRole("dialog", { name: "Description" })).toContainText("before you roll");
+    await page.goto("/dev/gallery/item-choose-plot");
+    await expect(page.getByRole("dialog", { name: "Choose a plot" })).toBeVisible();
+    await page.getByRole("button", { name: "Use on Plot 12" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("use:sickle:12");
+    expect(errors).toEqual([]);
+  });
+
+  test("events pin the active global event and tag who it concerns", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/events-list");
+    const cards = page.getByTestId("event-card");
+    await expect(cards).toHaveCount(3);
+    await expect(cards.first()).toContainText("Active · 2 rounds left");
+    await expect(cards.nth(1)).toContainText("Bob");
+    await expect(cards.nth(2)).toContainText("You");
+    await expect(cards.nth(2)).toContainText("Instant");
+    await page.goto("/dev/gallery/events-empty");
+    await expect(page.getByText("No events yet")).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("map positions list every king in turn order and grey out the eliminated one", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/map-positions");
+    await expect(page.getByRole("tab", { name: "Positions" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("columnheader")).toHaveText(["Turn", "Player", "Position", "Laps"]);
+    const rows = page.locator("tbody tr");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.nth(0)).toContainText("Alice");
+    await expect(rows.nth(1)).toContainText("Bob");
+    await expect(rows.nth(2)).toContainText("Cara");
+    await expect(rows.nth(3)).toContainText("Dan");
+    await expect(rows.nth(0)).toHaveClass(/positions-row--current/);
+    await expect(rows.nth(2)).toHaveClass(/positions-row--out/);
+    expect(errors).toEqual([]);
+  });
+
+  test("info entries have no horizontal overflow at 320px", async ({ page }) => {
+    test.setTimeout(120_000);
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 320, height: 640 });
+    for (const id of INFO_ENTRY_IDS) {
+      await page.goto(`/dev/gallery/${id}`);
+      await expect(page.locator("[data-gallery-entry]")).toBeVisible();
+      expect(await hasHorizontalOverflow(page), `overflow on ${id} at 320px`).toBe(false);
+    }
+    expect(errors).toEqual([]);
+  });
+
   test("saves reference screenshots", async ({ page }) => {
     for (const id of [
       "shell-active",
@@ -424,7 +630,14 @@ test.describe("gallery", () => {
       "fight-garrison",
       "fight-final-round",
       "fight-result-victory",
-      "dialog-fight-notice"
+      "dialog-fight-notice",
+      "stats-other",
+      "plots-mine-table",
+      "plot-detail-locked",
+      "residents-overview",
+      "item-detail",
+      "events-list",
+      "map-positions"
     ]) {
       await page.goto(`/dev/gallery/${id}`);
       await expect(page.locator("[data-gallery-entry]")).toBeVisible();

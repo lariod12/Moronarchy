@@ -1,0 +1,7 @@
+.ui-icon-button.stats-arrow {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 4px;
+  box-shadow: var(--shadow-sm);
+}

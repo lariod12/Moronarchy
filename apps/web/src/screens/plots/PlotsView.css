@@ -1,0 +1,58 @@
+.plots {
+  padding-bottom: 20px;
+}
+
+.plots .ui-data-table {
+  flex: 1;
+  min-height: 0;
+}
+
+.plots .ui-data-table__scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+.plots-table .ui-data-table__table th,
+.plots-table .ui-data-table__table td {
+  padding: 4px 6px;
+  font-size: var(--text-md);
+}
+
+.plots-table--all .ui-data-table__table th,
+.plots-table--all .ui-data-table__table td {
+  padding: 4px 4px;
+  font-size: var(--text-sm);
+}
+
+.plots-owner {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.plot-detail__title {
+  margin: 0 0 4px;
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.plot-detail__resident {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 8px;
+  border: var(--stroke-thin) solid var(--ink);
+  background: var(--paper);
+  font-size: var(--text-md);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.plot-detail__resident-icon {
+  display: flex;
+  flex: none;
+}

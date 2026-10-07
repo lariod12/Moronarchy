@@ -63,7 +63,7 @@ Welcome ──Create/Join──► Lobby ──Start (chủ phòng) + đếm ng�
 
 Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrade Card, nâng cấp, tuyển, cửa hàng), các popup trên Map, Fight, End of turn.
 
-Bước 5A: route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/station`, `/manage/<plotId>`. Ô **Dice Status** mở Map (các ô khác ở Home còn khóa đến bước 6). Nhấn giữ Crown đang rung nhận lượt và tự mở Map. Nút Back = về trang trước, khóa ở Home và khi bị buộc ở Upgrade Card / Start Station. Khi qua Start, người chơi bị đưa tới Upgrade Card rồi Start Station và chỉ rời khi bấm "Continue moving".
+Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/station`, `/manage/<plotId>`, `/fight` (bước 5) và các trang thông tin của bước 6: `/stats/<playerId>`, `/plots`, `/plots/<plotId>`, `/residents`, `/residents/<warrior|farmer>`, `/residents/<kind>/<residentId>`, `/items`, `/items/<itemId>`, `/events`. Cả 6 ô ở Home đều mở được; Dice Status mở Map. Nhấn giữ Crown đang rung nhận lượt và tự mở Map. Nút Back = về trang trước, khóa ở Home và khi bị buộc ở Upgrade Card / Start Station. Khi qua Start, người chơi bị đưa tới Upgrade Card rồi Start Station và chỉ rời khi bấm "Continue moving".
 
 ## 4. Welcome & Lobby
 
@@ -94,6 +94,7 @@ Bước 5A: route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `
 
 - TopBar: tên trang "Home".
 - Lưới 2 × 3 ô vuông, mỗi ô có tiêu đề và icon: **Stats**, **Plots**, **Dice Status**, **Residents**, **Items**, **Events**.
+- Cả 6 ô đều bật (bước 6): Stats mở `/stats/<mình>`, Plots, Dice Status mở Map, Residents, Items, Events. Chạm avatar ở HUD cũng mở trang Stats của mình.
 - [14](ui/14-home-hub-old-with-map.png) là phiên bản cũ có ô **Map** thay cho Stats và "Steps Status" thay cho Dice Status (xem câu hỏi mở).
 
 ## 6. Map — [61](ui/61-map.png)
@@ -116,44 +117,58 @@ Bước 5A: route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `
   - Dừng trên đất của mình (hoặc vừa mua xong): popup "Your plot (Plot 12)" với **Manage** (mở `/manage/12`, màn kiểu Start Station chỉ có đất đó, không có Shop) hoặc **Done**.
   - Nhặt được item / gặp event cá nhân / nhận phí / bị hạ gục / mất đất / bị loại: popup thông báo, nút Done. Popup của một lần đã xem được nhớ trong `sessionStorage` nên tải lại trang không hiện lại.
   - Trả phí: người trả chỉ thấy dòng trong activity line; chủ đất nhận popup "Fee received".
-- Vào Map: ô **Dice Status** ở Home mở Map, và nhận lượt cũng mở Map. Steps (mục 13) sẽ là một tab trong Map ở bước 6.
+- Vào Map: ô **Dice Status** ở Home mở Map, và nhận lượt cũng mở Map. Map có hai tab **Board** / **Positions**; Positions là màn Steps (mục 13).
 
 ## 7. Stats / Players Info — [20](ui/20-player-stats.png)
 
-- TopBar "Players Info".
-- Khung lớn: tên, avatar, danh sách chỉ số: Level, Coin, Health, Max Health, Attack, Defense, Lucky.
-- Mở từ ô Stats ở Home hoặc chạm avatar ở BottomHud ("tap me to go info").
-- Xem chỉ số của người chơi khác: TBD (đề xuất: vuốt hoặc mũi tên chuyển người).
+Route `/room/<MÃ>/stats/<playerId>`, TopBar "Players Info". Đã làm ở bước 6 (`screens/stats`).
+
+- Khung lớn: tên, avatar (gạch chéo đỏ khi người đó đã bị loại) và các thẻ chỉ số: Level, Coin, Health, Max Health, Attack, Defense, Lucky, Laps, Plots (số đất đang sở hữu). Số lấy từ `getKingInfo` của core, là **giá trị hiệu lực**; phần cộng từ trang bị hiện kèm trong ngoặc, vd `Attack: 7 (+2)`.
+- Mở từ ô Stats ở Home (trang của mình) hoặc chạm avatar ở BottomHud.
+- **Xem người khác:** hai nút `‹` / `›` ở hai bên tên đi vòng qua mọi vua theo thứ tự lượt (kể cả người đã bị loại). Mỗi lần chuyển thay thế mục lịch sử hiện tại nên Back rời hẳn trang. Người xem mặc định là chính mình ("This is your king"). ID lạ chuyển về trang của mình.
+- Khán giả và người đã bị loại xem được mọi trang.
 
 ## 8. Plots — [40](ui/40-plots-table.png), [41](ui/41-plots-grid.png), [42](ui/42-plot-detail.png), [43](ui/43-plot-upgrade-confirm.png)
 
-- **Bảng** (40): cột Plots | Level | Income | Price, dòng xen màu, cuộn được, nút "details" trên dòng đang chọn, nút **View All** chuyển sang dạng lưới.
-- **Lưới** (41): thẻ Plot (tên "Plot N", icon lâu đài-nhà, nhãn "Level: X").
-- **Chi tiết** (42): tên Plot, icon lớn, nhãn Level, Price, Income, Health, Max Health, Defense, Max Resident; nút **Upgrade**.
-- **Xác nhận nâng cấp** (43): "Upgrade — Spend X coin for next level" No / Yes.
-- Nút Upgrade chỉ bật khi đang ở Start Station, đủ coin và level vua cho phép. Ngoài lúc đó: ẩn hoặc khóa (TBD).
-- Phạm vi bảng: chỉ đất của mình, hay mọi ô kèm chủ: TBD (đề xuất: đất của mình, có bộ lọc "tất cả").
+Route `/room/<MÃ>/plots` (TopBar "Plots") và `/plots/<plotId>` (TopBar "Plot N"). Đã làm ở bước 6 (`screens/plots`).
+
+- **Phạm vi:** tab `Mine | All`. Mine là đất của mình; All là cả 39 ô đất (ô Start không phải đất), có thêm cột **Owner** (ô chưa có chủ ghi `–`). Lựa chọn Mine/All và Table/Grid nằm trong URL (`?scope=all&view=grid`) nên Back từ chi tiết về đúng danh sách đang xem.
+- **Bảng** (40): cột Plots | Level | Income | Price. Số lấy từ `getPlotInfo` (Price là giá mua từ ngân hàng). Dòng đầu được chọn sẵn; chạm dòng để chọn, nút `details` hiện ngay dưới dòng đang chọn (không đè lên ô để không che số ở màn 320 px) và mở chi tiết. Nút **View All** chuyển sang lưới. Không có đất nào của mình: "You own no plots yet".
+- **Lưới** (41): thẻ "Plot N", icon lâu đài, nhãn `Level: X` (Mine) hoặc kèm tên chủ đất (All). Nút **View Table** quay lại bảng.
+- **Chi tiết** (42): icon lớn, nhãn Level, Price, Income, Fee, Health (`hiện tại/tối đa`), Defense, Max Resident, Owner (đất trống ghi `None`, các số còn lại `–`), cùng danh sách resident đang ở đó (chạm để mở chi tiết resident).
+- **Upgrade** (chỉ chủ đất thấy, nhãn kèm giá, vd `Upgrade 45`): bật đúng khi `canRun("upgradePlot", [id])`, tức là khi người chơi ở Start Station hoặc đang đứng đúng đất đó, đủ coin và level vua cho phép. Khi khóa, một dòng gợi ý hiện bên dưới: `Upgrade at the Start station or while standing on this plot` (sai bước/lượt), hoặc lý do engine ("Not enough coin", "Highest level reached", "Your king level is too low for the next plot level"). Bấm Upgrade mở hộp **Upgrade** (43) "Spend X coin for next level of Plot N?" **No** / **Yes**; Yes mới gửi lệnh. Dùng chung hộp thoại xác nhận với Start Station.
 
 ## 9. Residents — [50](ui/50-residents-overview.png) → [56](ui/56-resident-upgrade-confirm.png)
 
-- **Tổng quan** (50): hai thẻ lớn Warrior (icon đen, ×20) và Farmer (icon viền, ×12) kèm số lượng.
-- **Bảng theo loại** (51 Farmer, 52 Warrior): Name | Level | Plots | Plots LV, cuộn, "details", View All.
-- **Lưới theo loại** (53 Warrior, 54 Farmer): thẻ có loại, icon, "Plot N", "Name: 01".
-- **Chi tiết** (55): Name, Level, Attack, Defense, Plot; icon lớn kèm bong bóng; nút **Upgrade**.
-- **Xác nhận nâng cấp** (56): "Spend X coin for next level" No / Yes.
-- Tuyển resident và đặt lên Plot diễn ra trong Start Station. Màn này thiết kế chưa vẽ (mục 12).
+Route `/room/<MÃ>/residents` ("Residents"), `/residents/<warrior|farmer>` ("Warrior" / "Farmer") và `/residents/<kind>/<residentId>` ("Residents"). Đã làm ở bước 6 (`screens/residents`).
+
+- **Tổng quan** (50): hai thẻ lớn Warrior (mặt nạ đặc) và Farmer (mặt nạ viền) kèm số lượng của mình (`x3`). Chạm thẻ mở danh sách loại đó.
+- **Bảng theo loại** (51, 52): Name | Level | Plots | Plots LV (số đất và level đất mà resident đang đứng), dòng đầu chọn sẵn, `details` dưới dòng chọn, **View All** chuyển sang lưới. Không có resident loại đó: "You have no Warriors yet".
+- **Lưới** (53, 54): thẻ có tên loại, icon, nhãn `Plot N` và `Name: 01`. **View Table** quay lại bảng.
+- **Chi tiết** (55): nhãn Name, Level, Attack, Defense, Health (`hiện tại/tối đa`), Plot; nút **Upgrade** (kèm giá) và **Heal** (kèm giá) chỉ hiện cho chủ, bật theo `canRun("upgradeResident" | "healResident", [id])`. Khi khóa có cùng dòng gợi ý như Plot; riêng "Upgrade the plot first: a resident cannot outrank its plot" khi resident đã bằng level đất. Upgrade hỏi trước (56) "Spend X coin for next level of Warrior 01?" No / Yes; Heal làm ngay.
+- Tuyển resident và đặt lên Plot diễn ra trong Start Station (mục 12).
 
 ## 10. Items — [30](ui/30-items-grid.png), [31](ui/31-item-detail.png), [32](ui/32-item-description.png)
 
-- **Lưới** (30): thẻ item gồm tên, icon, số lượng "xN". Chạm giữ hiện tooltip.
-- **Chi tiết** (31): tên, icon lớn, "xN", mô tả ngắn, nút **View Details**.
-- **Mô tả** (32): popup "Description" có mô tả đầy đủ và nút Close.
-- Nút **Use** cho item dùng được: thiết kế chưa có. Đề xuất đặt ở màn chi tiết, chỉ bật trong lượt mình.
+Route `/room/<MÃ>/items` ("Items") và `/items/<itemId>` (TopBar là tên item). Đã làm ở bước 6 (`screens/items`).
+
+- **Lưới** (30): thẻ item gồm tên, icon và `xN`; trang bị ghi `Equipped`. Túi trống: "You have no items yet".
+- **Chi tiết** (31): tag `xN`, tên, icon lớn, hộp mô tả ngắn (`ITEMS[id].summary` của core), nút **View Details**. Item đã dùng hết thì trang chuyển về danh sách.
+- **Mô tả** (32): hộp **Description** với mô tả đầy đủ (`ITEMS[id].description`) và nút **Close**.
+- **Dùng item:** tùy `ITEMS[id].use` của core.
+  - `now` (Meat): nút **Use** ngay, bật theo `canRun("useItem", [id])` (lượt của mình hoặc trong trận).
+  - `plot` (Sickle, Hammer): **Use** mở hộp **Choose a plot** liệt kê đất của mình, mỗi dòng có nút `Use` bật theo `canRun("useItem", [id, { plotId }])` (Hammer chỉ bật ở đất bị hao máu). Không có đất, hoặc không đất nào dùng được, thì Use khóa kèm lý do ("You own no plots yet", "All your plots are in full health", "Not now: …").
+  - `map` (Horse, Lucky Die): không có nút Use, chỉ ghi "Used on the Map when you roll the dice." (dùng ở Map).
+  - `fight` (War Horn, Wood Shield): ghi "Used in a fight, before you roll." (dùng ở màn Fight).
+  - `passive` (trang bị): "Equipment: its bonus is already part of your stats."; phần cộng hiện ở Stats.
 
 ## 11. Events — [70](ui/70-events.png)
 
-- Tab "History Events", danh sách cuộn. Mỗi thẻ có tên sự kiện, mô tả trong ngoặc kép và nhãn thời hạn ("1 Turn").
-- Phân biệt event toàn bàn và cá nhân: TBD về hiển thị (đề xuất: nhãn "All" / "You").
+Route `/room/<MÃ>/events`, TopBar "Events". Đã làm ở bước 6 (`screens/events`).
+
+- Tab **History Events**, danh sách cuộn, mới nhất ở trên (`getEventHistoryView`). Mỗi thẻ có icon và tên sự kiện, mô tả trong ngoặc kép (`GLOBAL_EVENTS` / `PERSONAL_EVENTS` của core) và các nhãn: phạm vi `All` (toàn bàn) / `You` / tên người chơi, thời hạn `Instant`, `1 Round`, `2 Rounds`.
+- Sự kiện toàn bàn đang chạy được ghim lên đầu với nhãn `Active · N rounds left`.
+- Chưa có sự kiện nào: "No events yet". Xem được cả khi đã bị loại.
 
 ## 12. Start Station (bật lên khi đi qua ô 01)
 
@@ -165,8 +180,10 @@ Bước 5A: route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `
 
 ## 13. Steps / Dice Status — [60](ui/60-steps.png)
 
-- Bảng 2 cột (thiết kế: Turn | Position). Theo phỏng vấn, màn này hiển thị **vị trí hiện tại** của mọi vua.
-- Đề xuất: cột "Player | Position", sắp xếp theo thứ tự lượt.
+Map có hai tab **Board** / **Positions** (TopBar vẫn là "Map"). Tab Positions là màn Steps (`screens/map/PositionsView`), mặc định mở Board mỗi lần vào Map.
+
+- Bảng **Turn | Player | Position | Laps** theo thứ tự lượt (`getPositionsView`), mọi vua đều có dòng. Position viết hai chữ số như trên bản đồ (`04`).
+- Vua đang tới lượt có dấu `▸` và chữ đậm; vua đã bị loại bị làm xám và gạch ngang. Tên của mình có thêm "(you)".
 
 ## 14. Fight — [90](ui/90-fight.png), [91](ui/91-fight-empty.png), [92](ui/92-fight-status.png)
 
@@ -206,5 +223,5 @@ Luật: [game-design.md mục 10](game-design.md#10-fight). Đã làm ở bướ
 2. Hiển thị đất và vị trí của người chơi khác trên Map (màu theo người chơi?).
 3. Các màn Start Station chưa có thiết kế: tổng kết vòng, nâng cấp, tuyển resident, cửa hàng.
 4. Popup mua đất, trả phí, nút Use item; popup kết quả Fight; màn Start Station hồi máu Plot/Resident.
-5. Xem chỉ số người chơi khác.
+5. ~~Xem chỉ số người chơi khác.~~ Đã giải ở bước 6: nút `‹` / `›` trên trang Players Info.
 6. Phong cách hình ảnh cuối cùng.

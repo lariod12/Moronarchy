@@ -4,7 +4,7 @@ import { createTestGame } from "@moronarchy/core/testing";
 import { GameHomeView } from "./GameHomeView";
 
 describe("GameHomeView", () => {
-  it("shows the round, room code, Home title and the six hub tiles", () => {
+  it("shows the round, room code, Home title and the six hub tiles, inert without a router", () => {
     render(<GameHomeView game={createTestGame(3)} viewerId="0" roomCode="RABCD" />);
     expect(screen.getByText("Round 1")).toBeInTheDocument();
     expect(screen.getByText("RABCD")).toBeInTheDocument();
@@ -14,14 +14,16 @@ describe("GameHomeView", () => {
     }
   });
 
-  it("opens the Map from Dice Status and keeps the other tiles disabled", () => {
-    const onOpenMap = vi.fn();
-    render(<GameHomeView game={createTestGame(3)} viewerId="0" roomCode="RABCD" onOpenMap={onOpenMap} />);
-    fireEvent.click(screen.getByRole("button", { name: "Dice Status" }));
-    expect(onOpenMap).toHaveBeenCalledTimes(1);
-    for (const title of ["Stats", "Plots", "Residents", "Items", "Events"]) {
-      expect(screen.getByRole("button", { name: title })).toBeDisabled();
+  it("opens the page behind every enabled tile", () => {
+    const onOpen = vi.fn();
+    render(<GameHomeView game={createTestGame(3)} viewerId="0" roomCode="RABCD" onOpen={onOpen} />);
+    const pages = { Stats: "stats", Plots: "plots", "Dice Status": "map", Residents: "residents", Items: "items", Events: "events" };
+    for (const [title, page] of Object.entries(pages)) {
+      expect(screen.getByRole("button", { name: title })).toBeEnabled();
+      fireEvent.click(screen.getByRole("button", { name: title }));
+      expect(onOpen).toHaveBeenLastCalledWith(page);
     }
+    expect(onOpen).toHaveBeenCalledTimes(6);
   });
 
   it("shows the viewer's own stats and the activity line", () => {

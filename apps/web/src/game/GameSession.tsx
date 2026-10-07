@@ -1,8 +1,8 @@
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import type { GameState, PlayerId } from "@moronarchy/core/engine";
-import { createCanRun, createGameActions } from "./game-actions";
-import type { CanRun, GameActions, SendMove } from "./game-actions";
+import { createCanRun, createGameActions, createRunCheck } from "./game-actions";
+import type { CanRun, GameActions, RunCheck, SendMove } from "./game-actions";
 import { MovementProvider } from "./MovementContext";
 
 export interface GameSessionValue {
@@ -13,6 +13,8 @@ export interface GameSessionValue {
   gameId: string;
   actions: GameActions;
   canRun: CanRun;
+  // Like canRun, but says why the engine would refuse (for hints on disabled buttons).
+  check: RunCheck;
 }
 
 const GameSessionContext = createContext<GameSessionValue | null>(null);
@@ -30,9 +32,10 @@ export interface GameSessionProviderProps {
 export const GameSessionProvider = ({ game, viewerId, roomCode, gameId, send, moveStepMs, children }: GameSessionProviderProps) => {
   const actions = useMemo(() => createGameActions(send), [send]);
   const canRun = useMemo(() => createCanRun(game, viewerId), [game, viewerId]);
+  const check = useMemo(() => createRunCheck(game, viewerId), [game, viewerId]);
   const value = useMemo<GameSessionValue>(
-    () => ({ game, viewerId, roomCode, gameId: gameId ?? roomCode, actions, canRun }),
-    [game, viewerId, roomCode, gameId, actions, canRun]
+    () => ({ game, viewerId, roomCode, gameId: gameId ?? roomCode, actions, canRun, check }),
+    [game, viewerId, roomCode, gameId, actions, canRun, check]
   );
   return (
     <GameSessionContext.Provider value={value}>

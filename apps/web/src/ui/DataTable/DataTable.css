@@ -32,7 +32,11 @@
   font-size: var(--text-lg);
 }
 
-.ui-data-table__table tbody tr:nth-child(even) {
+.ui-data-table__table td {
+  overflow-wrap: anywhere;
+}
+
+.ui-data-table__table tbody tr.ui-data-table__row--alt {
   background: var(--wash);
 }
 
@@ -52,6 +56,16 @@
   font-size: var(--text-sm);
   cursor: pointer;
   transform: translateY(-50%);
+}
+
+.ui-data-table__table .ui-data-table__action-row td {
+  padding: 2px 8px 6px;
+  text-align: right;
+}
+
+.ui-data-table__action--below {
+  position: static;
+  transform: none;
 }
 
 .ui-data-table__footer {

@@ -5,6 +5,8 @@ import { useNavigate } from "react-router";
 import { roomPath } from "../../game/labels";
 import { useGameSession } from "../../game/GameSession";
 import { useMovement } from "../../game/MovementContext";
+import { MapPageView } from "./MapPageView";
+import type { MapTab } from "./MapPageView";
 import { MapView } from "./MapView";
 
 const ROLL_FEEDBACK_MAX_MS = 3000;
@@ -14,6 +16,7 @@ export const MapScreen = () => {
   const navigate = useNavigate();
   const { animatedPosition, isAnimating } = useMovement();
   const [rolling, setRolling] = useState(false);
+  const [tab, setTab] = useState<MapTab>("board");
 
   // The die shakes from the tap until the server answers with the roll (or a short while, if it never does).
   useEffect(() => {
@@ -36,20 +39,28 @@ export const MapScreen = () => {
   }
 
   return (
-    <MapView
+    <MapPageView
       game={game}
       viewerId={viewerId}
-      positions={positions}
-      canRoll={canRun("rollDice")}
-      canUseHorse={canRun("useItem", "horse")}
-      rolling={rolling}
-      animating={isAnimating}
-      onRoll={() => {
-        setRolling(true);
-        actions.rollDice();
-      }}
-      onUseHorse={() => actions.useItem("horse")}
-      onWatchFight={game.fight && getFightViewerRole(game, viewerId) === "spectator" ? () => navigate(roomPath(roomCode, "fight")) : undefined}
+      tab={tab}
+      onTab={setTab}
+      board={
+        <MapView
+          game={game}
+          viewerId={viewerId}
+          positions={positions}
+          canRoll={canRun("rollDice")}
+          canUseHorse={canRun("useItem", "horse")}
+          rolling={rolling}
+          animating={isAnimating}
+          onRoll={() => {
+            setRolling(true);
+            actions.rollDice();
+          }}
+          onUseHorse={() => actions.useItem("horse")}
+          onWatchFight={game.fight && getFightViewerRole(game, viewerId) === "spectator" ? () => navigate(roomPath(roomCode, "fight")) : undefined}
+        />
+      }
     />
   );
 };

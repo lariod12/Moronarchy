@@ -33,7 +33,7 @@ import { ROOM_CODE } from "./fixtures";
 import type { GalleryEntry } from "./types";
 import "./gallery.css";
 
-type Log = (action: string) => void;
+export type Log = (action: string) => void;
 
 const positionsOf = (game: GameState): Record<PlayerId, TileId> =>
   Object.fromEntries(game.turnOrder.map((id) => [id, game.kings[id]?.position ?? 1]));
@@ -52,7 +52,7 @@ const feeOf = (game: GameState, plotId: TileId): number => {
   return plot ? getPlotFee(game, plot) : 0;
 };
 
-const frame = ({ game, viewerId }: GameScenario, title: string, content: ReactNode, log: Log, overlay?: ReactNode): ReactNode => (
+export const frame = ({ game, viewerId }: GameScenario, title: string, content: ReactNode, log: Log, overlay?: ReactNode): ReactNode => (
   <GameFrame
     game={game}
     viewerId={viewerId}

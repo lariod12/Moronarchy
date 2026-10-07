@@ -1,4 +1,4 @@
-import { attack, claimTurn, fightRoll, payFee, pickCard, retreat, rollDice, useItem } from "@moronarchy/core/engine";
+import { attack, claimTurn, endTurn, fightRoll, payFee, pickCard, retreat, rollDice, skipPlot, useItem } from "@moronarchy/core/engine";
 import type { GameState, PlayerId } from "@moronarchy/core/engine";
 import { addResident, createScriptedRng, createTestGame, giveItem, givePlot, placeKing, setTurnStep } from "@moronarchy/core/testing";
 
@@ -345,5 +345,93 @@ export const fightDestroyed = (): GameScenario => {
 export const fightRetreated = (): GameScenario => {
   const { game, rng } = siege([], { residents: ["warrior"] });
   retreat(game, "0", rng);
+  return { game, viewerId: "0" };
+};
+
+// ---- Info pages (Stats, Plots, Residents, Items, Events, Positions). Viewer is Alice ("0"), mid-game, before her roll. ----
+
+// Four kings, plots of several levels and owners, residents of both kinds, a bag with consumables and one equipment.
+export const infoGame = (): GameScenario => {
+  const game = named(4);
+  givePlot(game, "0", 5, 1);
+  givePlot(game, "0", 12, 2);
+  givePlot(game, "0", 27);
+  givePlot(game, "1", 8);
+  givePlot(game, "1", 15, 1);
+  givePlot(game, "2", 33);
+  givePlot(game, "2", 39, 2);
+  givePlot(game, "3", 22);
+  addResident(game, 5, "warrior", 1);
+  addResident(game, 5, "farmer", 1);
+  addResident(game, 12, "warrior", 2);
+  addResident(game, 12, "farmer", 1);
+  addResident(game, 12, "warrior", 1);
+  addResident(game, 15, "farmer", 1);
+  addResident(game, 39, "warrior", 2);
+  // Wear and tear: one damaged plot and one hurt warrior, so Heal and Hammer have something to do.
+  const hurtPlot = game.plots[10];
+  if (hurtPlot) {
+    hurtPlot.health -= 10;
+  }
+  const hurtResident = Object.values(game.residents).find((resident) => resident.ownerId === "0" && resident.kind === "warrior");
+  if (hurtResident) {
+    hurtResident.health -= 6;
+  }
+  giveItem(game, "0", "horse");
+  giveItem(game, "0", "meat", 2);
+  giveItem(game, "0", "luckyDie", 4);
+  giveItem(game, "0", "sickle");
+  giveItem(game, "0", "hammer");
+  giveItem(game, "0", "ironSword");
+  const alice = game.kings["0"];
+  if (alice) {
+    alice.laps = 2;
+    alice.level = 2;
+    alice.maxHealth += 10;
+    alice.health = alice.maxHealth - 12;
+  }
+  const bob = game.kings["1"];
+  if (bob) {
+    bob.laps = 1;
+    bob.coin = 220;
+  }
+  giveItem(game, "1", "ironSword");
+  giveItem(game, "1", "cloverCharm");
+  giveItem(game, "1", "ironArmor");
+  placeKing(game, "0", 4);
+  placeKing(game, "1", 15);
+  placeKing(game, "2", 15);
+  placeKing(game, "3", 31);
+  return { game: claimed(game), viewerId: "0" };
+};
+
+// Cara has been knocked out of the match.
+export const infoEliminated = (): GameScenario => {
+  const scenario = infoGame();
+  const cara = scenario.game.kings["2"];
+  if (cara) {
+    cara.eliminated = true;
+    cara.eliminatedRound = 1;
+    cara.coin = 0;
+    scenario.game.eliminationOrder.push("2");
+  }
+  return scenario;
+};
+
+// One king takes a turn on tiles that nobody owns: skip the plot, then end the turn.
+const emptyTurn = (game: GameState, playerId: PlayerId, d6: number, landingNext: number[] = [], endNext: number[] = []): void => {
+  claimTurn(game, playerId, rngFor([]));
+  rollDice(game, playerId, rngFor([d6], landingNext));
+  skipPlot(game, playerId, rngFor([]));
+  endTurn(game, playerId, rngFor([], endNext));
+};
+
+// Round 3 ends: Alice finds a treasure chest, Bob is pickpocketed, and a global Bountiful Year starts round 4. Seen by Alice.
+export const eventsGame = (): GameScenario => {
+  const game = named(3);
+  game.round = 3;
+  emptyTurn(game, "0", 4, [0.05, 0.4, 0]);
+  emptyTurn(game, "1", 3, [0.05, 0.9, 0]);
+  emptyTurn(game, "2", 2, [], [0.1, 0.99]);
   return { game, viewerId: "0" };
 };

@@ -6,22 +6,28 @@ import "./Tile.css";
 export interface TileProps {
   title: string;
   icon: ReactNode;
-  badge?: string;
+  // One tag, or several stacked in the bottom-right corner.
+  badge?: string | string[];
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
 }
 
-export const Tile = ({ title, icon, badge, onClick, disabled, className }: TileProps) => (
-  <button type="button" className={cx("ui-tile", className)} onClick={onClick} disabled={disabled}>
-    <span className="ui-tile__title">{title}</span>
-    <span className="ui-tile__icon" aria-hidden="true">
-      {icon}
-    </span>
-    {badge ? (
-      <span className="ui-tile__badge">
-        <Tag>{badge}</Tag>
+export const Tile = ({ title, icon, badge, onClick, disabled, className }: TileProps) => {
+  const badges = badge === undefined ? [] : typeof badge === "string" ? [badge] : badge;
+  return (
+    <button type="button" className={cx("ui-tile", className)} onClick={onClick} disabled={disabled}>
+      <span className="ui-tile__title">{title}</span>
+      <span className="ui-tile__icon" aria-hidden="true">
+        {icon}
       </span>
-    ) : null}
-  </button>
-);
+      {badges.length > 0 ? (
+        <span className="ui-tile__badge">
+          {badges.map((text) => (
+            <Tag key={text}>{text}</Tag>
+          ))}
+        </span>
+      ) : null}
+    </button>
+  );
+};

@@ -1,0 +1,38 @@
+.residents-overview {
+  padding-bottom: 20px;
+}
+
+.residents-overview .residents-overview__card {
+  width: 100%;
+  min-height: 190px;
+  aspect-ratio: auto;
+}
+
+.residents-overview .residents-overview__card .ui-tile__icon svg {
+  width: 120px;
+  height: 120px;
+}
+
+.residents-list {
+  padding-bottom: 20px;
+}
+
+.residents-list .ui-data-table {
+  flex: 1;
+  min-height: 0;
+}
+
+.residents-list .ui-data-table__scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+.residents-list .ui-data-table__table th,
+.residents-list .ui-data-table__table td {
+  padding: 4px 6px;
+  font-size: var(--text-md);
+}
+
+.resident-actions-hint {
+  margin: 0;
+}

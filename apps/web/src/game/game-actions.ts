@@ -30,6 +30,14 @@ export const createGameActions = (send: SendMove) => ({
 
 export type GameActions = ReturnType<typeof createGameActions>;
 
+// "What would the engine answer to this right now?" for the viewer: ok, or the reason it would refuse.
+export type RunCheck = (name: GameCommandName, ...args: unknown[]) => ReturnType<typeof previewCommand>;
+
+export const createRunCheck =
+  (game: GameState, viewerId: PlayerId): RunCheck =>
+  (name, ...args) =>
+    previewCommand(game, viewerId, name, args);
+
 // "Would the engine accept this right now?" for the viewer, answered by the engine itself.
 export type CanRun = (name: GameCommandName, ...args: unknown[]) => boolean;
 

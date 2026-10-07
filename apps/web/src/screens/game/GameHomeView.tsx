@@ -1,6 +1,7 @@
 import type { GameState, PlayerId } from "@moronarchy/core/engine";
 import { GameFrame } from "./GameFrame";
 import { HomeHub } from "./HomeHub";
+import type { HubPage } from "./HomeHub";
 
 export interface GameHomeViewProps {
   game: GameState;
@@ -10,11 +11,11 @@ export interface GameHomeViewProps {
   onBack?: () => void;
   onCrownPress?: () => void;
   onCrownLongPress?: () => void;
-  onOpenMap?: () => void;
+  onOpen?: (page: HubPage) => void;
 }
 
-export const GameHomeView = ({ game, viewerId, roomCode, onOpenMap, ...handlers }: GameHomeViewProps) => (
+export const GameHomeView = ({ game, viewerId, roomCode, onOpen, ...handlers }: GameHomeViewProps) => (
   <GameFrame game={game} viewerId={viewerId} roomCode={roomCode} title="Home" backDisabled {...handlers}>
-    <HomeHub onOpenMap={onOpenMap} />
+    <HomeHub onOpen={onOpen} />
   </GameFrame>
 );

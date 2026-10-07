@@ -1,0 +1,39 @@
+.item-card .info-card__body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.item-card .info-card__stats:empty {
+  display: none;
+}
+
+.item-card .info-card__icon {
+  min-height: 150px;
+}
+
+.item-plots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  font-size: var(--text-md);
+  text-align: left;
+}
+
+.item-plots__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.item-plots__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}

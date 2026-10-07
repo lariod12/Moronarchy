@@ -17,24 +17,19 @@ import {
   getResidentUpgradeCost,
   getResidentsOnPlot
 } from "@moronarchy/core/engine";
-import type { GameState, ItemId, PlayerId, Plot, Resident, ResidentId, ResidentKind, TileId } from "@moronarchy/core/engine";
+import type { GameState, PlayerId, Plot, ResidentKind, TileId } from "@moronarchy/core/engine";
 import type { CanRun } from "../../game/game-actions";
 import { ITEM_LABELS, RESIDENT_LABELS, plotLabel } from "../../game/labels";
 import { Button } from "../../ui/Button/Button";
-import { Dialog } from "../../ui/Dialog/Dialog";
 import { Tabs } from "../../ui/Tabs/Tabs";
 import { Tag } from "../../ui/Tag/Tag";
+import { StationConfirmDialog, costLabel, describeConfirm, residentName } from "./station-confirm";
+import type { Confirm, StationAction } from "./station-confirm";
 import "./StationView.css";
 
-export type StationScope = { kind: "station" } | { kind: "plot"; plotId: TileId };
+export type { StationAction } from "./station-confirm";
 
-export type StationAction =
-  | { name: "upgradePlot"; plotId: TileId }
-  | { name: "healPlot"; plotId: TileId }
-  | { name: "recruitResident"; plotId: TileId; kind: ResidentKind }
-  | { name: "upgradeResident"; residentId: ResidentId }
-  | { name: "healResident"; residentId: ResidentId }
-  | { name: "buyItem"; itemId: ItemId };
+export type StationScope = { kind: "station" } | { kind: "plot"; plotId: TileId };
 
 type StationTab = "plots" | "residents" | "shop";
 
@@ -49,16 +44,6 @@ export interface StationViewProps {
   // Gallery hook: open with an "Are you sure?" already showing.
   initialConfirm?: StationAction;
 }
-
-interface Confirm {
-  title: string;
-  text: string;
-  action: StationAction;
-}
-
-const costLabel = (label: string, cost: number | null): string => (cost !== null && cost > 0 ? `${label} ${cost}` : label);
-
-const residentName = (resident: Resident): string => `${RESIDENT_LABELS[resident.kind]} ${resident.name}`;
 
 const getSummary = (game: GameState, viewerId: PlayerId, scope: StationScope): string => {
   if (scope.kind === "plot") {
@@ -102,62 +87,18 @@ export const StationView = ({ game, viewerId, scope, canRun, onAction, onDone, i
         {doneLabel}
       </Button>
       {confirm ? (
-        <Dialog
-          title={confirm.title}
-          actions={[
-            { label: "No", onSelect: () => setConfirm(null) },
-            {
-              label: "Yes",
-              tone: "strong",
-              onSelect: () => {
-                setConfirm(null);
-                onAction(confirm.action);
-              }
-            }
-          ]}
-          onDismiss={() => setConfirm(null)}
-        >
-          {confirm.text}
-        </Dialog>
+        <StationConfirmDialog
+          confirm={confirm}
+          onNo={() => setConfirm(null)}
+          onYes={() => {
+            setConfirm(null);
+            onAction(confirm.action);
+          }}
+        />
       ) : null}
     </div>
   );
 };
-
-function describeConfirm(game: GameState, action: StationAction): Confirm {
-  switch (action.name) {
-    case "upgradePlot": {
-      const plot = getPlot(game, action.plotId);
-      const cost = plot ? getPlotUpgradeCost(plot) : null;
-      return { title: "Upgrade", text: `Spend ${cost ?? 0} coin for next level of ${plotLabel(action.plotId)}?`, action };
-    }
-    case "healPlot": {
-      const plot = getPlot(game, action.plotId);
-      return { title: "Heal", text: `Spend ${plot ? getPlotHealCost(plot) : 0} coin to heal ${plotLabel(action.plotId)}?`, action };
-    }
-    case "recruitResident":
-      return {
-        title: "Recruit",
-        text: `Spend ${getResidentRecruitCost(action.kind)} coin to recruit a ${RESIDENT_LABELS[action.kind]} on ${plotLabel(action.plotId)}?`,
-        action
-      };
-    case "upgradeResident": {
-      const resident = game.residents[action.residentId];
-      const cost = resident ? getResidentUpgradeCost(resident) : null;
-      return { title: "Upgrade", text: `Spend ${cost ?? 0} coin for next level of ${resident ? residentName(resident) : "this resident"}?`, action };
-    }
-    case "healResident": {
-      const resident = game.residents[action.residentId];
-      return {
-        title: "Heal",
-        text: `Spend ${resident ? getResidentHealCost(resident) : 0} coin to heal ${resident ? residentName(resident) : "this resident"}?`,
-        action
-      };
-    }
-    case "buyItem":
-      return { title: "Buy", text: `Spend ${ITEMS[action.itemId].price} coin to buy ${ITEM_LABELS[action.itemId]}?`, action };
-  }
-}
 
 interface RowsProps {
   game: GameState;
