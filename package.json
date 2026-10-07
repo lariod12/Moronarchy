@@ -6,6 +6,7 @@
   "packageManager": "pnpm@11.7.0",
   "scripts": {
     "dev": "pnpm --filter @moronarchy/core build && pnpm --parallel --filter @moronarchy/server --filter @moronarchy/web dev",
+    "build:solo": "pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/web build:solo",
     "dev:web": "pnpm --filter @moronarchy/web dev",
     "dev:server": "pnpm --filter @moronarchy/server dev",
     "build": "pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/server build && pnpm --filter @moronarchy/web build",

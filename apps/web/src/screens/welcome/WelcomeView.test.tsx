@@ -74,4 +74,13 @@ describe("WelcomeView", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
+
+  it("offers Play vs bots only when it can open the solo setup, even without a name", () => {
+    const onPlaySolo = vi.fn();
+    const { rerender } = render(<WelcomeView name="" roomCode="" />);
+    expect(screen.queryByRole("button", { name: "Play vs bots" })).not.toBeInTheDocument();
+    rerender(<WelcomeView name="" roomCode="" onPlaySolo={onPlaySolo} />);
+    fireEvent.click(screen.getByRole("button", { name: "Play vs bots" }));
+    expect(onPlaySolo).toHaveBeenCalledTimes(1);
+  });
 });

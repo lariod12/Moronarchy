@@ -5,6 +5,7 @@ import { GameFrame } from "../screens/game/GameFrame";
 import { AbsentBanner, ConnectionBanner } from "../shell/ConnectionBanners/ConnectionBanners";
 import { FightRevealProvider } from "./FightRevealContext";
 import { getForcedPage, getPageName } from "./forced-route";
+import { useGameExtras } from "./GameExtras";
 import { useGameSession } from "./GameSession";
 import { roomPath } from "./labels";
 import { getPageTitle } from "./page-title";
@@ -20,6 +21,7 @@ export const GameLayout = () => {
   const location = useLocation();
   const [endTurnOpen, setEndTurnOpen] = useState(false);
   const absent = useAbsentCountdown(game, offlineIds);
+  const extras = useGameExtras();
 
   const pageName = getPageName(location.pathname);
   const crownState = getCrownState(game, viewerId);
@@ -73,7 +75,12 @@ export const GameLayout = () => {
             <AbsentBanner status={absent} name={absent ? (game.kings[absent.playerId]?.name ?? "Someone") : ""} />
           </>
         }
-        overlay={<ModalHost endTurnOpen={endTurnOpen} onEndTurnClose={() => setEndTurnOpen(false)} />}
+        overlay={
+          <>
+            <ModalHost endTurnOpen={endTurnOpen} onEndTurnClose={() => setEndTurnOpen(false)} />
+            {extras}
+          </>
+        }
       >
         <Outlet />
       </GameFrame>

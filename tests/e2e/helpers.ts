@@ -41,6 +41,12 @@ export const openPlayer = async (
   return { name, context, page };
 };
 
+// The app path of a page URL: the hash route in the single-file build (it runs from file://), the path otherwise.
+export const routePath = (url: string): string => {
+  const parsed = new URL(url);
+  return parsed.hash.startsWith("#/") ? parsed.hash.slice(1) : parsed.pathname;
+};
+
 export const hasHorizontalOverflow = (page: Page): Promise<boolean> =>
   page.evaluate(() => {
     const element = document.scrollingElement ?? document.documentElement;
@@ -161,7 +167,7 @@ export const answerPage = async (page: Page): Promise<boolean> => {
   if ((await page.getByRole("dialog").count()) > 0) {
     return false;
   }
-  const path = new URL(page.url()).pathname;
+  const path = routePath(page.url());
   if (path.endsWith("/cards")) {
     // E7: three cards; tap one, then the "Are you sure?" and "Congratulation!" popups follow.
     await expect(page.getByTestId("upgrade-card")).toHaveCount(3);
@@ -188,7 +194,7 @@ export const answerPage = async (page: Page): Promise<boolean> => {
 
 export const isSettled = async (active: Page): Promise<boolean> =>
   (await active.getByText("end turn!").isVisible()) &&
-  new URL(active.url()).pathname.endsWith("/map") &&
+  routePath(active.url()).endsWith("/map") &&
   (await active.locator('.map[data-animating="false"]').count()) === 1 &&
   (await active.getByRole("dialog").count()) === 0;
 

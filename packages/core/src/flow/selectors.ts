@@ -1,6 +1,6 @@
 import type { EliminationReason, GameState, LogEntry, PlayerId, Plot, TileId } from "../model/types";
 import { getPlot } from "../rules/board";
-import { getFightHumanIds } from "../rules/combat";
+import { getUnrolledFighterIds } from "../rules/combat";
 import { getAliveKingIds, getFinalRanking } from "../rules/elimination";
 import { getActiveGlobalEvent, getGarrisonStats, getResidentsOnPlot } from "../rules/stats";
 
@@ -58,7 +58,7 @@ export const getBlockingPlayerIds = (state: GameState): PlayerId[] => {
   }
   const fight = state.fight;
   if (fight) {
-    ids.push(...getFightHumanIds(fight).filter((id) => fight.pendingRolls[id] === undefined));
+    ids.push(...getUnrolledFighterIds(fight));
   }
   return [...new Set(ids)].filter((id) => state.kings[id] !== undefined && !state.kings[id].eliminated);
 };

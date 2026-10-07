@@ -41,6 +41,10 @@ export const getFightHumanIds = (fight: FightState): PlayerId[] => {
   return ids;
 };
 
+// Fighters who still have to roll this round.
+export const getUnrolledFighterIds = (fight: FightState): PlayerId[] =>
+  getFightHumanIds(fight).filter((id) => fight.pendingRolls[id] === undefined);
+
 export const startFight = (
   state: GameState,
   pending: Extract<PendingDecision, { kind: "visitorChoice" | "ownerChoice" }>

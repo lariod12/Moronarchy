@@ -83,6 +83,15 @@ Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/s
 - Mã phòng ngắn, dạng `R` + 4 ký tự từ `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (bỏ I, O, 0, 1 cho dễ đọc); khi nhập không phân biệt hoa thường. Khi tạo/vào xong, URL là `/room/<MÃ>`.
 - Link chia sẻ `/?room=<MÃ>` mở Welcome với ô Join room điền sẵn. Mở `/room/<MÃ>` mà máy chưa có chỗ ngồi (không có session trong localStorage) cũng chuyển về `/?room=<MÃ>`. Có session thì tải lại trang vẫn giữ chỗ.
 
+- Dưới nút chính có nút phụ **Play vs bots** (mọi bản build) mở `/solo`, bật được cả khi chưa nhập tên.
+
+### 4.1b Solo setup (Play vs bots) — wireframe style, chưa có ảnh thiết kế
+
+- Tiêu đề "Play vs bots". Hàng **Name** (điền sẵn tên lần trước), **Bots** 1–5 (mặc định 3), **Bot style** Careful / Aggressive / Mixed (mặc định Mixed: bot lẻ chơi careful, bot chẵn aggressive), **Bot speed** Slow / Normal / Fast (mặc định Normal; giữa hai hành động của bot: 1200 / 600 / 150 ms). Nút **Start** bị khóa khi tên trống; **Back** (về Welcome) chỉ có ở app thường, không có ở bản một file.
+- Start → đếm ngược "Game Starting 3 → 2 → 1" → Game Shell với mã phòng `SOLO`. Người chơi là seat 0 (host), bot tên `Bot 1…N`, thứ tự lượt ngẫu nhiên như ván thật. Mọi màn / popup trong ván giữ nguyên. Ranking: **Play Again** bắt đầu ván solo mới cùng cài đặt (đếm ngược lại, không hiện lại mặt cũ); **Quit** về setup.
+- **Bots control** (chỉ trong solo): chip nổi ở góc trái ngay trên HUD (không che Crown / Back). Thu gọn chỉ ghi `Bots` (`Bots paused` khi đang tạm dừng); mở ra có ba nút tốc độ Slow / Normal / Fast, **Pause** / **Resume** và **New game** (hỏi `New game?` No / Yes; Yes xóa ván đang lưu và về setup).
+- Tải lại trang giữa ván solo vẫn giữ ván (lưu trong `localStorage`); dữ liệu hỏng hoặc không có thì về setup.
+
 ### 4.2 Lobby — [03](ui/03-lobby-chat.png), [04](ui/04-lobby-typing.png), [05](ui/05-lobby-ready.png), [06](ui/06-lobby-game-starting.png)
 
 - TopBar chỉ có mã phòng. Chạm vào mã để copy, hiện bong bóng `copied!` 1,5 giây.

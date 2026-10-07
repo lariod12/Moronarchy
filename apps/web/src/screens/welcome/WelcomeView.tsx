@@ -19,6 +19,8 @@ export interface WelcomeViewProps {
   onNameChange?: (name: string) => void;
   onRoomCodeChange?: (roomCode: string) => void;
   onSubmit?: () => void;
+  // Opens the solo setup (play against bots). The button is hidden when this is absent.
+  onPlaySolo?: () => void;
 }
 
 const BUSY_TITLES: Record<Exclude<WelcomeBusy, null>, string> = {
@@ -33,7 +35,8 @@ export const WelcomeView = ({
   error = null,
   onNameChange,
   onRoomCodeChange,
-  onSubmit
+  onSubmit,
+  onPlaySolo
 }: WelcomeViewProps) => {
   const nameId = useId();
   const roomId = useId();
@@ -99,6 +102,11 @@ export const WelcomeView = ({
         <Button type="submit" className="welcome__submit" disabled={!hasName || busy !== null}>
           {joining ? "Join" : "Create"}
         </Button>
+        {onPlaySolo ? (
+          <Button className="welcome__solo" size="sm" disabled={busy !== null} onClick={onPlaySolo}>
+            Play vs bots
+          </Button>
+        ) : null}
       </form>
 
       {busy ? <BlockingOverlay title={BUSY_TITLES[busy]} /> : null}

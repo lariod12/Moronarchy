@@ -74,6 +74,18 @@ Remove-NetFirewallRule -DisplayName "Moronarchy-Dev-TCP-8000"
 
 Do the same for 5173 if the page itself does not load.
 
+## Play vs bots (solo)
+
+You can review the whole game alone: **Play vs bots** on the Welcome screen (or `/solo`) opens a setup (your name, 1-5 bots, bot style Careful / Aggressive / Mixed, bot speed Slow / Normal / Fast) and starts a game against computer kings. It runs the real engine and the real screens in your browser, with no server: bots act through the same engine commands as players, paced by the chosen speed, and they wait while a token is walking. A small **Bots** chip above the HUD changes the speed, pauses / resumes the bots and starts a new game. A reload keeps the game (saved in `localStorage`); the room code in the top bar is `SOLO`.
+
+### Single HTML file
+
+`pnpm build:solo` builds `apps/web/dist-solo/moronarchy-solo.html`: ONE self-contained file (JS, CSS and fonts inlined, no service worker, no network requests) that opens straight into the solo setup.
+
+- On a PC double-click the file (it opens from `file://`).
+- To play on a phone, send the file (Zalo, AirDrop, a cable, a cloud drive) and open it in the phone browser. Some in-app browsers (for example the one inside Zalo) block local files: open it in Safari or Chrome instead.
+- `tests/e2e/solo-file.spec.ts` opens this file; run `pnpm build:solo` before `pnpm e2e` so the spec does not skip.
+
 ## Environment
 
 ```text
@@ -97,6 +109,7 @@ pnpm dev          # Build core, then run web + server together
 pnpm dev:web      # Run only the web app
 pnpm dev:server   # Run only the multiplayer server
 pnpm build        # Build core, server, and web
+pnpm build:solo   # Build the single-file solo game: apps/web/dist-solo/moronarchy-solo.html
 pnpm test         # Run all tests
 pnpm typecheck    # Typecheck all packages
 pnpm lint         # Lint all packages

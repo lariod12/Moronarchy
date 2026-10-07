@@ -43,6 +43,7 @@ export const WelcomeScreen = () => {
           setError(null);
         }}
         onSubmit={() => void handleSubmit()}
+        onPlaySolo={() => navigate("/solo")}
       />
     </div>
   );

@@ -27,6 +27,7 @@ import { END_ENTRIES } from "./end-entries";
 import { GAME_ENTRIES } from "./game-entries";
 import { INFO_ENTRIES } from "./info-entries";
 import { ROBUSTNESS_ENTRIES } from "./robustness-entries";
+import { SOLO_ENTRIES } from "./solo-entries";
 import { HomeHub, renderShell, ROOM_CODE } from "./fixtures";
 import { createLobbyState, lobbyGuestReady, lobbyHostCanStart, lobbyHostWaiting, toLobbyViewProps } from "./lobby-fixtures";
 import type { GalleryEntry } from "./types";
@@ -464,5 +465,6 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
   ...GAME_ENTRIES,
   ...INFO_ENTRIES,
   ...END_ENTRIES,
-  ...ROBUSTNESS_ENTRIES
+  ...ROBUSTNESS_ENTRIES,
+  ...SOLO_ENTRIES
 ];

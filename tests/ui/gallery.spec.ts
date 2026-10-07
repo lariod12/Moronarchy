@@ -136,6 +136,9 @@ const ROBUSTNESS_ENTRY_IDS = [
   "lose-left"
 ];
 
+// The gallery group "Solo": the setup screen of the play-vs-bots mode and its floating bot control.
+const SOLO_ENTRY_IDS = ["solo-setup", "solo-bot-control", "solo-bot-control-paused"];
+
 const holdCrown = async (page: Page, name: RegExp, ms: number): Promise<void> => {
   const box = await page.getByRole("button", { name }).boundingBox();
   if (!box) {
@@ -222,7 +225,8 @@ test.describe("gallery", () => {
       "lobby-starting",
       "game-home",
       ...GAME_ENTRY_IDS,
-      ...ROBUSTNESS_ENTRY_IDS
+      ...ROBUSTNESS_ENTRY_IDS,
+      ...SOLO_ENTRY_IDS
     ]) {
       visited += 1;
       if (visited % FRESH_PAGE_EVERY === 0) {
@@ -819,13 +823,64 @@ test.describe("gallery", () => {
       "events-list",
       "map-positions",
       ...END_ENTRY_IDS,
-      ...ROBUSTNESS_ENTRY_IDS
+      ...ROBUSTNESS_ENTRY_IDS,
+      ...SOLO_ENTRY_IDS
     ]) {
       await page.goto(`/dev/gallery/${id}`);
       await expect(page.locator("[data-gallery-entry]")).toBeVisible();
       await page.screenshot({ path: `test-results/ui/screens/${id}.png` });
     }
   });
+  test("every Solo entry is listed in the gallery", async ({ page }) => {
+    const hrefs = await getEntryHrefs(page);
+    for (const id of SOLO_ENTRY_IDS) {
+      expect(hrefs, id).toContain(`/dev/gallery/${id}`);
+    }
+  });
+
+  test("solo setup edits the settings and starts with them", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/solo-setup");
+    await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Aria");
+    const bots = page.getByRole("group", { name: "Bots", exact: true });
+    await expect(bots.getByRole("button")).toHaveCount(5);
+    await expect(bots.getByRole("button", { name: "3" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("group", { name: "Bot style" }).getByRole("button", { name: "Mixed" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("group", { name: "Bot speed" }).getByRole("button", { name: "Normal" })).toHaveAttribute("aria-pressed", "true");
+    await bots.getByRole("button", { name: "5" }).click();
+    await page.getByRole("group", { name: "Bot style" }).getByRole("button", { name: "Aggressive" }).click();
+    await page.getByRole("group", { name: "Bot speed" }).getByRole("button", { name: "Fast" }).click();
+    await page.getByRole("button", { name: "Start" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("start:5:aggressive:fast");
+    await page.getByLabel("Name", { exact: true }).fill("");
+    await expect(page.getByRole("button", { name: "Start" })).toBeDisabled();
+    expect(errors).toEqual([]);
+  });
+
+  test("bots control opens, pauses and asks for a new game", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/dev/gallery/solo-bot-control-paused");
+    await expect(page.getByRole("button", { name: "Bots paused" })).toBeVisible();
+    await page.goto("/dev/gallery/solo-bot-control");
+    const hud = await page.locator(".shell-hud").boundingBox();
+    const control = await page.getByTestId("bot-control").boundingBox();
+    if (!hud || !control) {
+      throw new Error("HUD or bot control has no bounding box");
+    }
+    expect(control.y + control.height).toBeLessThanOrEqual(hud.y);
+    await page.getByRole("button", { name: "Fast" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("speed:fast");
+    await page.getByRole("button", { name: "Pause" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("pause");
+    await expect(page.getByRole("button", { name: "Bots paused" })).toBeVisible();
+    await page.getByRole("button", { name: "Resume" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("resume");
+    await page.getByRole("button", { name: "New game" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("newGame");
+    expect(errors).toEqual([]);
+  });
+
   test("crown speech bubble is not clipped at 320px", async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 320, height: 640 });

@@ -25,6 +25,8 @@ export interface MatchContextValue {
   // True once this viewer had a seat and lost it (host kicked them).
   kicked: boolean;
   send: (move: string, ...args: unknown[]) => void;
+  // Where Quit goes. Online it is Welcome ("/"); the solo mode sends the player back to its setup screen.
+  leaveTo?: string;
 }
 
 interface Snapshot {
@@ -35,7 +37,7 @@ interface Snapshot {
 
 const EMPTY_SNAPSHOT: Snapshot = { state: null, players: [], selfConnected: false };
 
-const MatchContext = createContext<MatchContextValue | null>(null);
+export const MatchContext = createContext<MatchContextValue | null>(null);
 
 type MatchClient = ReturnType<typeof createMatchClient>;
 
