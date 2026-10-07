@@ -107,3 +107,4 @@ Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là inpu
 - Đất mất (level 0, hết máu): người phá được mua ngay trong lượt đó.
 - Được dùng item trước mỗi hiệp.
 - Hồi máu: vua hồi đầy miễn phí ở Start. Resident và đất: ở Start, trong vòng nâng cấp, trả coin để hồi; chi phí tăng theo level.
+- Duyệt đề xuất: công thức số resident còn sống, cách đất thắng hiệp, thắng đất mà chưa phá được thì miễn phí, vua về 0 máu thì hồi 50%. Resident chết trước: level thấp nhất, cùng level thì chỉ số yếu nhất.
