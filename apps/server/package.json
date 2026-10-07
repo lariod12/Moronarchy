@@ -13,12 +13,10 @@
   },
   "dependencies": {
     "@moronarchy/core": "workspace:*",
-    "boardgame.io": "^0.50.2",
-    "ws": "^8.21.0"
+    "boardgame.io": "^0.50.2"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "@types/ws": "^8.18.1",
     "tsx": "^4.21.0",
     "vitest": "^4.0.15"
   }

@@ -1,4 +1,8 @@
-const MAX_PLAYER_NAME_LENGTH = 18;
+import { sanitizePlayerName } from "@moronarchy/core/match";
+
+export { sanitizePlayerName };
+
+const JOIN_PATH = /^\/games\/moronarchy\/([^/]+)\/join\/?$/;
 const MAX_LOBBY_BODY_BYTES = 4096;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
@@ -7,6 +11,7 @@ type Next = () => Promise<void>;
 
 interface MiddlewareContext {
   ip?: string;
+  method?: string;
   path: string;
   length?: number;
   throw: (status: number, message: string) => never;
@@ -34,31 +39,27 @@ interface MatchRecord {
   metadata?: MatchMetadata;
 }
 
+interface MatchStateRecord {
+  G?: { stage?: unknown };
+}
+
 interface LobbyDatabase {
+  fetch?: (matchID: string, opts: { state: true }) => unknown;
   createMatch?: (matchID: string, match: MatchRecord) => unknown;
   setMetadata?: (matchID: string, metadata: MatchMetadata) => unknown;
 }
 
+const getJoinMatchId = (path: string): string | null => {
+  const raw = JOIN_PATH.exec(path)?.[1];
+  if (!raw) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+};
+
 const buckets = new Map<string, RateBucket>();
-
-const stripControlCharacters = (value: string): string => {
-  return Array.from(value)
-    .filter((character) => {
-      const code = character.charCodeAt(0);
-      return code >= 32 && code !== 127;
-    })
-    .join("");
-};
-
-export const sanitizePlayerName = (value: unknown): string => {
-  if (typeof value !== "string") return "";
-
-  return stripControlCharacters(value)
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, MAX_PLAYER_NAME_LENGTH)
-    .trim();
-};
 
 const sanitizeMetadata = (metadata: MatchMetadata): MatchMetadata => {
   metadata.unlisted = true;
@@ -76,6 +77,14 @@ export const applyLobbySecurity = (app: KoaLikeApp, db: LobbyDatabase): void => 
   app.use(async (ctx, next) => {
     if (ctx.path.startsWith("/games") && ctx.length && ctx.length > MAX_LOBBY_BODY_BYTES) {
       ctx.throw(413, "Lobby request is too large.");
+    }
+
+    const matchID = ctx.method === "POST" ? getJoinMatchId(ctx.path) : null;
+    if (matchID && db.fetch) {
+      const { state } = (await db.fetch(matchID, { state: true })) as { state?: MatchStateRecord };
+      if (state && state.G?.stage !== "lobby") {
+        ctx.throw(409, "Match already started.");
+      }
     }
 
     const now = Date.now();

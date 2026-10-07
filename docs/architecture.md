@@ -75,28 +75,29 @@ interface GameState {
 
 ### 3.2 Flow của lượt
 
-Dùng các phase của boardgame.io, cộng thêm một state machine nhỏ trong `turn.step`:
+Trạng thái match của boardgame.io là `MatchState { stage: lobby | playing | finished, seats, chat, game }`; `game` là `GameState` của engine (`null` khi ở lobby). Chỉ có **một turn** boardgame.io với `activePlayers: ALL`: mọi người chơi đang kết nối đều được gửi move, và lobby/engine tự kiểm tra actor. Engine tự giữ thứ tự lượt (`G.game.turnOrder`), không bao giờ gọi `events.endTurn`. Mọi move đều `client: false` (server-authoritative, không có random lạc quan ở client). Trong `turn.step` của engine:
 
 ```text
-phase "lobby"   → join/leave seat, ready, start (host)       → phase "playing"
-phase "playing" → turn.step:
+stage "lobby"   → sit/leaveSeat, setReady, sendChat, kickSeat, startGame (host)  → stage "playing"
+stage "playing" → turn.step:
     awaitClaim → active (dùng item) → rolling → moving
       → startStation (card → nâng cấp/tuyển/mua → done) → moving
       → resolvingTile (mua | phí | quyết định | fight)
       → active → endTurn
-phase "finished" → ranking; Play Again quay về "lobby" với cùng seats
+stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng seats (Play Again)
 ```
 
-- **PendingDecision** là cách chung để hỏi một người chơi bất kỳ, kể cả người ngoài lượt: chủ đất thu phí hay tấn công, attack or pay, fight back, chọn card. boardgame.io cho phép người đó gọi move ngoài lượt qua `setActivePlayers` / stages.
+- **PendingDecision** là cách chung để hỏi một người chơi bất kỳ, kể cả người ngoài lượt: chủ đất thu phí hay tấn công, attack or pay, fight back, chọn card. Vì `activePlayers: ALL` nên người đó gọi được move ngoài lượt, engine kiểm tra `pending.playerId`.
 - Trạng thái của Crown (rung, đổi màu, end turn) được suy ra từ `turn.step` và `pending`, không lưu riêng ở client.
 
 ## 4. Multiplayer & Lobby
 
-- Gộp **chat, ready, start** vào phase `lobby` của boardgame.io và dùng chat built-in của boardgame.io (`sendChatMessage` / `chatMessages`; cần xác minh với 0.50.x khi implement). Như vậy bỏ được:
-  - WebSocket chat riêng ở `port+1` (`apps/server/src/lobby-chat.ts`).
+- Chat là một lobby move, lưu trong `MatchState.chat` (đã sanitize, giữ 50 tin cuối). **Không** dùng chat built-in của boardgame.io vì nó không được lưu bền và không được sanitize. Nhờ vậy bỏ được:
+  - WebSocket chat riêng ở `port+1` (đã xóa `apps/server/src/lobby-chat.ts`).
   - Mẹo `sessionStorage` chọn người đi đầu (`apps/web/src/api/game-start.ts`) và move `chooseStartingPlayer` cắt mảng players.
-- Phòng tạo với `numPlayers = 6`. Seat chưa có người bị loại khỏi `turnOrder` khi Start.
-- Turn order do `G.turnOrder` quyết định thông qua `turn.order` tùy biến.
+- Phòng tạo với 6 seat (`validateSetupData` từ chối `numPlayers` khác 6). Seat chưa có người không vào `turnOrder` khi Start (`startGame` chỉ tạo game cho các seat đã ngồi).
+- Join bị server từ chối bằng HTTP 409 khi match đã rời lobby (`applyLobbySecurity`). Host có thể kick một seat (`kickSeat`); `returnToLobby` hiện thực Play Again.
+- Engine giữ thứ tự lượt (`G.game.turnOrder`), không dùng `turn.order` của boardgame.io.
 - Phòng vẫn lưu trong RAM ở giai đoạn này.
 
 ## 5. Web
@@ -134,7 +135,7 @@ phase "finished" → ranking; Play Again quay về "lobby" với cùng seats
 Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 
 1. ✅ **Core engine** (đã xong): model, content, rules (gồm Fight), flow lượt, PendingDecision, selectors, factory test state, bot + mô phỏng (`pnpm --filter @moronarchy/core sim`). Export tại `@moronarchy/core/engine` và `@moronarchy/core/testing`. API cũ tạm nằm ở `packages/core/src/legacy/` (vẫn export ở `@moronarchy/core`) cho đến khi server/web chuyển xong ở bước 2–5, sau đó xóa.
-2. **Server + lobby phase**: game config mới, chat/ready/start trong boardgame.io, bỏ server chat riêng.
+2. ✅ **Server + lobby** (đã xong): `MatchState`/lobby/chat/start/Play Again + game boardgame.io trong `@moronarchy/core/match` (`packages/core/src/match`), `apps/server` chuyển sang đó, bỏ server chat riêng. `apps/web` và `tests/e2e` được phép hỏng lúc chạy cho đến bước 3–5.
 3. **Web nền**: router, GameShell, UI kit, tokens, gallery.
 4. **Màn Welcome + Lobby** theo screen spec.
 5. **Home hub + Map + đổ xúc xắc + di chuyển + Start Station + mua/phí**: vòng chơi tối thiểu chạy được.
