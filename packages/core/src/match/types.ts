@@ -39,3 +39,13 @@ export type MatchError =
   | "EMPTY_TEXT";
 
 export type MatchResult = { ok: true } | { ok: false; error: MatchError | CommandError };
+
+export type StartBlockedReason = "NOT_HOST" | "TOO_FEW_PLAYERS" | "NOT_READY";
+
+export interface LobbyView {
+  isSeated: boolean;
+  isHost: boolean;
+  isReady: boolean;
+  canStart: boolean; // host, >= 2 seats, every non-host seat ready
+  startBlockedReason: StartBlockedReason | null;
+}

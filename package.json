@@ -16,11 +16,12 @@
     "ui:check": "playwright test --config playwright.ui.config.ts",
     "ui:check:headed": "playwright test --config playwright.ui.config.ts --headed",
     "typecheck:ui": "tsc -p tsconfig.ui.json",
-    "lint:ui": "eslint playwright.ui.config.ts tests/ui"
+    "lint:ui": "eslint playwright.config.ts playwright.ui.config.ts tests/ui tests/e2e"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.61.1",
+    "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
     "@typescript-eslint/parser": "^8.48.0",
     "eslint": "^9.39.1",

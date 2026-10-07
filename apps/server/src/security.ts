@@ -14,7 +14,8 @@ interface MiddlewareContext {
   method?: string;
   path: string;
   length?: number;
-  throw: (status: number, message: string) => never;
+  get?: (field: string) => string;
+  throw: (status: number, message: string, props?: { headers: Record<string, string> }) => never;
 }
 
 interface KoaLikeApp {
@@ -73,17 +74,32 @@ const sanitizeMetadata = (metadata: MatchMetadata): MatchMetadata => {
   return metadata;
 };
 
-export const applyLobbySecurity = (app: KoaLikeApp, db: LobbyDatabase): void => {
+export interface LobbySecurityOptions {
+  // Origins that may read error responses; see reject().
+  origins?: string[];
+}
+
+export const applyLobbySecurity = (app: KoaLikeApp, db: LobbyDatabase, { origins = [] }: LobbySecurityOptions = {}): void => {
+  // This middleware runs before boardgame.io registers its CORS middleware, so the browser would see our errors as
+  // opaque network failures. Attach the CORS header to the error itself so the web app can read the status.
+  const reject = (ctx: MiddlewareContext, status: number, message: string): never => {
+    const origin = ctx.get?.("Origin");
+    if (origin && origins.includes(origin)) {
+      return ctx.throw(status, message, { headers: { "Access-Control-Allow-Origin": origin, Vary: "Origin" } });
+    }
+    return ctx.throw(status, message);
+  };
+
   app.use(async (ctx, next) => {
     if (ctx.path.startsWith("/games") && ctx.length && ctx.length > MAX_LOBBY_BODY_BYTES) {
-      ctx.throw(413, "Lobby request is too large.");
+      reject(ctx, 413, "Lobby request is too large.");
     }
 
     const matchID = ctx.method === "POST" ? getJoinMatchId(ctx.path) : null;
     if (matchID && db.fetch) {
       const { state } = (await db.fetch(matchID, { state: true })) as { state?: MatchStateRecord };
       if (state && state.G?.stage !== "lobby") {
-        ctx.throw(409, "Match already started.");
+        reject(ctx, 409, "Match already started.");
       }
     }
 
@@ -99,7 +115,7 @@ export const applyLobbySecurity = (app: KoaLikeApp, db: LobbyDatabase): void => 
 
     bucket.count += 1;
     if (bucket.count > RATE_LIMIT_MAX_REQUESTS) {
-      ctx.throw(429, "Too many lobby requests.");
+      reject(ctx, 429, "Too many lobby requests.");
     }
 
     await next();

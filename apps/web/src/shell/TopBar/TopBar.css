@@ -26,3 +26,23 @@
 .shell-top-bar .shell-top-bar__room {
   font-size: var(--text-md);
 }
+
+.shell-top-bar__room-wrap {
+  position: relative;
+}
+
+.shell-top-bar .shell-top-bar__room-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.shell-top-bar .shell-top-bar__bubble {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  white-space: nowrap;
+}

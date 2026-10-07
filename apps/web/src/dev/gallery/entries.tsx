@@ -6,6 +6,7 @@ import { CrownButton } from "../../shell/CrownButton/CrownButton";
 import type { CrownButtonState } from "../../shell/CrownButton/CrownButton";
 import { DataTable } from "../../ui/DataTable/DataTable";
 import { Dialog } from "../../ui/Dialog/Dialog";
+import { createTestGame } from "@moronarchy/core/testing";
 import { Dice } from "../../ui/Dice/Dice";
 import { HealthBar } from "../../ui/HealthBar/HealthBar";
 import { IconButton } from "../../ui/IconButton/IconButton";
@@ -18,7 +19,11 @@ import { Tag } from "../../ui/Tag/Tag";
 import { Tile } from "../../ui/Tile/Tile";
 import { TileGrid } from "../../ui/TileGrid/TileGrid";
 import { TopBar } from "../../shell/TopBar/TopBar";
+import { GameHomeView } from "../../screens/game/GameHomeView";
+import { LobbyView } from "../../screens/lobby/LobbyView";
+import { WelcomeView } from "../../screens/welcome/WelcomeView";
 import { HomeHub, renderShell, ROOM_CODE } from "./fixtures";
+import { createLobbyState, lobbyGuestReady, lobbyHostCanStart, lobbyHostWaiting, toLobbyViewProps } from "./lobby-fixtures";
 import type { GalleryEntry } from "./types";
 import "./gallery.css";
 
@@ -327,5 +332,129 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
           {END_TURN_TEXT}
         </Dialog>
       )
+  },
+  {
+    id: "welcome-empty",
+    group: "Screens",
+    title: "Welcome: empty",
+    render: (log) => <WelcomeView name="" roomCode="" onSubmit={() => log("submit")} />
+  },
+  {
+    id: "welcome-create",
+    group: "Screens",
+    title: "Welcome: create",
+    render: (log) => <WelcomeView name="Alice" roomCode="" onSubmit={() => log("create")} />
+  },
+  {
+    id: "welcome-join",
+    group: "Screens",
+    title: "Welcome: join",
+    render: (log) => <WelcomeView name="Bob" roomCode="RABCD" onSubmit={() => log("join")} />
+  },
+  {
+    id: "welcome-error",
+    group: "Screens",
+    title: "Welcome: error",
+    render: () => <WelcomeView name="Bob" roomCode="RZZZZ" error="Room not found" />
+  },
+  {
+    id: "welcome-busy",
+    group: "Screens",
+    title: "Welcome: waiting for room",
+    render: () => <WelcomeView name="Alice" roomCode="" busy="creating" />
+  },
+  {
+    id: "lobby-host-waiting",
+    group: "Screens",
+    title: "Lobby: host waiting",
+    render: (log) => (
+      <LobbyView
+        {...toLobbyViewProps(lobbyHostWaiting(), "0", ROOM_CODE)}
+        onCopyCode={() => log("copy")}
+        onStart={() => log("start")}
+        onSendChat={(text) => log(`chat:${text}`)}
+        onKick={(id) => log(`kick:${id}`)}
+      />
+    )
+  },
+  {
+    id: "lobby-host-can-start",
+    group: "Screens",
+    title: "Lobby: host can start",
+    render: (log) => (
+      <LobbyView {...toLobbyViewProps(lobbyHostCanStart(), "0", ROOM_CODE)} onStart={() => log("start")} onKick={(id) => log(`kick:${id}`)} />
+    )
+  },
+  {
+    id: "lobby-guest-ready",
+    group: "Screens",
+    title: "Lobby: guest ready, bubble, offline seat",
+    render: (log) => (
+      <LobbyView
+        {...toLobbyViewProps(lobbyGuestReady(), "1", ROOM_CODE, {
+          players: [{ id: "3", isConnected: false }],
+          bubbles: { "0": "Do something ...", "2": "don't leave me..." }
+        })}
+        onReadyChange={(ready) => log(`ready:${ready}`)}
+      />
+    )
+  },
+  {
+    id: "lobby-chat-open",
+    group: "Screens",
+    title: "Lobby: chat input open",
+    render: (log) => (
+      <LobbyView
+        {...toLobbyViewProps(lobbyHostWaiting(), "1", ROOM_CODE)}
+        initialChatOpen
+        onReadyChange={(ready) => log(`ready:${ready}`)}
+        onSendChat={(text) => log(`chat:${text}`)}
+      />
+    )
+  },
+  {
+    id: "lobby-kick-dialog",
+    group: "Screens",
+    title: "Lobby: kick dialog",
+    render: (log) => (
+      <LobbyView {...toLobbyViewProps(lobbyHostWaiting(), "0", ROOM_CODE)} initialKickTargetId="1" onKick={(id) => log(`kick:${id}`)} />
+    )
+  },
+  {
+    id: "lobby-starting",
+    group: "Screens",
+    title: "Lobby: game starting",
+    render: () => (
+      <LobbyView
+        {...toLobbyViewProps(
+          createLobbyState({
+            seats: [
+              { id: "0", name: "Alice", ready: true },
+              { id: "1", name: "Bob", ready: true },
+              { id: "2", name: "Cara", ready: true }
+            ]
+          }),
+          "1",
+          ROOM_CODE
+        )}
+        overlay={<BlockingOverlay title="Game Starting" subtitle="2" />}
+      />
+    )
+  },
+  {
+    id: "game-home",
+    group: "Screens",
+    title: "Game: Home hub (your turn to claim)",
+    render: (log) => (
+      <GameHomeView
+        game={createTestGame(3)}
+        viewerId="0"
+        roomCode={ROOM_CODE}
+        onAvatarPress={() => log("avatar")}
+        onBack={() => log("back")}
+        onCrownPress={() => log("press")}
+        onCrownLongPress={() => log("longPress")}
+      />
+    )
   }
 ];

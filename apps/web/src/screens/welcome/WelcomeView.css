@@ -1,0 +1,87 @@
+.welcome {
+  gap: var(--gap);
+  padding: var(--gap);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.welcome__title {
+  margin: 0;
+  text-align: center;
+}
+
+.welcome .welcome__title-tag {
+  padding: 4px 14px;
+  font-size: var(--text-xl);
+  font-weight: 400;
+  white-space: normal;
+}
+
+.welcome__panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  min-height: 180px;
+  padding: var(--gap);
+  border: var(--stroke) solid var(--ink);
+  background: var(--paper);
+}
+
+.welcome__preview {
+  width: 100%;
+  margin: 0;
+  padding: 18px 10px;
+  overflow: hidden;
+  border: var(--stroke) solid var(--ink);
+  background: var(--paper);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-lg);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.welcome__preview--empty {
+  color: var(--muted);
+}
+
+.welcome__avatar {
+  flex: 1;
+  width: 55%;
+  max-height: 220px;
+  min-height: 0;
+  color: var(--ink);
+}
+
+.welcome__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.welcome__row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.welcome__label {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.welcome__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-md);
+  text-align: center;
+}
+
+.welcome .welcome__submit {
+  align-self: center;
+  min-width: 55%;
+}

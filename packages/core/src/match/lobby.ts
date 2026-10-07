@@ -3,7 +3,7 @@ import type { PlayerId } from "../model/types";
 import type { Rng } from "../rules/rng";
 import { sanitizeChatText, sanitizePlayerName } from "./sanitize";
 import { MAX_CHAT_MESSAGES } from "./types";
-import type { LobbySeat, MatchError, MatchResult, MatchState } from "./types";
+import type { LobbySeat, LobbyView, MatchError, MatchResult, MatchState, StartBlockedReason } from "./types";
 
 const OK: MatchResult = { ok: true };
 const fail = (error: MatchError): MatchResult => ({ ok: false, error });
@@ -111,18 +111,39 @@ export const kickSeat = (state: MatchState, actorId: PlayerId, targetId: unknown
   return OK;
 };
 
+// Single source of truth for who may start and why not; startGame and getLobbyView both use it.
+const getStartBlockedReason = (state: MatchState, actorId: PlayerId): StartBlockedReason | null => {
+  if (state.hostId !== actorId || !findSeat(state, actorId)) {
+    return "NOT_HOST";
+  }
+  if (state.seats.length < 2) {
+    return "TOO_FEW_PLAYERS";
+  }
+  if (state.seats.some((seat) => seat.playerId !== state.hostId && !seat.ready)) {
+    return "NOT_READY";
+  }
+  return null;
+};
+
+export const getLobbyView = (state: MatchState, viewerId: PlayerId): LobbyView => {
+  const seat = findSeat(state, viewerId);
+  const startBlockedReason = getStartBlockedReason(state, viewerId);
+  return {
+    isSeated: seat !== undefined,
+    isHost: seat !== undefined && state.hostId === viewerId,
+    isReady: seat?.ready ?? false,
+    canStart: state.stage === "lobby" && startBlockedReason === null,
+    startBlockedReason
+  };
+};
+
 export const startGame = (state: MatchState, actorId: PlayerId, rng: Rng): MatchResult => {
   if (state.stage !== "lobby") {
     return fail("WRONG_STAGE");
   }
-  if (state.hostId !== actorId || !findSeat(state, actorId)) {
-    return fail("NOT_HOST");
-  }
-  if (state.seats.length < 2) {
-    return fail("TOO_FEW_PLAYERS");
-  }
-  if (state.seats.some((seat) => seat.playerId !== state.hostId && !seat.ready)) {
-    return fail("NOT_READY");
+  const blockedReason = getStartBlockedReason(state, actorId);
+  if (blockedReason) {
+    return fail(blockedReason);
   }
   state.game = createGame(
     state.seats.map(({ playerId, name }) => ({ id: playerId, name })),

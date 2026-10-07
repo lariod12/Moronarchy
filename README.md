@@ -35,7 +35,7 @@ packages/
 docs/         Design source, GDD, screen spec, architecture
 tests/
   ui/         Playwright checks for the dev gallery (pnpm ui:check)
-  e2e/        Playwright multiplayer tests (rewritten in a later step)
+  e2e/        Playwright multiplayer tests (pnpm e2e): create/join/chat/ready/start across several browsers
 ```
 
 ## Prerequisites
@@ -55,6 +55,16 @@ pnpm dev
 - UI gallery (dev only): http://localhost:5173/dev/gallery — every UI kit component and shell state with fake engine state. On a phone use `http://<LAN-IP>:5173/dev/gallery`.
 - Multiplayer server: http://localhost:8000
 
+## How to play locally
+
+1. `pnpm install && pnpm dev`, then open http://localhost:5173 and enter a name.
+2. Leave **Join room** empty and press **Create**. You land in the lobby; the room code (for example `R7K2M`) is in the top bar. Tap it to copy.
+3. On other phones or browsers on the same Wi-Fi open `http://<LAN-IP>:5173` (find the IP with `ipconfig`), enter a name, type the code (case does not matter) and press **Join**. A link `http://<LAN-IP>:5173/?room=R7K2M` prefills the code.
+4. Chat, tap **Ready**. The host gets a **Start** button that unlocks with at least 2 players once everyone else is ready; the host can also tap another seat to kick them.
+5. Start shows a 3-2-1 countdown on every device, then the in-game Home hub. Reloading a room page keeps your seat.
+
+Rooms live in server memory, so restarting the server closes them.
+
 ## Environment
 
 ```text
@@ -62,6 +72,8 @@ PORT=8000
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 VITE_GAME_SERVER_URL=http://localhost:8000
 ```
+
+`pnpm e2e` also reads `E2E_WEB_PORT` (default 5173) and `E2E_SERVER_PORT` (default 8000), for when another dev server already uses those ports.
 
 For public deployment, put the server behind a real reverse proxy or platform rate limit. The in-memory lobby guard is not a substitute for edge protection.
 
@@ -75,7 +87,7 @@ pnpm build        # Build core, server, and web
 pnpm test         # Run all tests
 pnpm typecheck    # Typecheck all packages
 pnpm lint         # Lint all packages
-pnpm e2e          # Run Playwright multiplayer tests (none until step 4)
+pnpm e2e          # Run Playwright multiplayer tests (starts server + web if needed)
 pnpm ui:check     # Playwright check of the dev gallery (console errors, overflow, long-press)
 pnpm ui:check:headed # Same, with a visible browser
 ```

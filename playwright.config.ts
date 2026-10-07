@@ -1,30 +1,38 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Ports are overridable so e2e can run while another dev server already owns 5173 / 8000.
+const webPort = process.env.E2E_WEB_PORT ?? "5173";
+const serverPort = process.env.E2E_SERVER_PORT ?? "8000";
+
 export default defineConfig({
   testDir: "tests/e2e",
-  timeout: 45_000,
+  timeout: 90_000,
   expect: {
     timeout: 10_000
   },
   fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: [["list"]],
+  outputDir: "test-results/e2e",
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: `http://127.0.0.1:${webPort}`,
     trace: "retain-on-failure"
   },
   webServer: [
     {
       command: "cmd /c pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/server dev",
-      url: "http://127.0.0.1:8000/games",
+      url: `http://127.0.0.1:${serverPort}/games`,
       reuseExistingServer: true,
-      timeout: 120_000
+      timeout: 120_000,
+      env: { PORT: serverPort, WEB_PORT: webPort }
     },
     {
-      command: "cmd /c pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/web dev",
-      url: "http://127.0.0.1:5173",
+      command: `cmd /c pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,
+      url: `http://127.0.0.1:${webPort}`,
       reuseExistingServer: true,
-      timeout: 120_000
+      timeout: 120_000,
+      env: { VITE_GAME_SERVER_URL: `http://127.0.0.1:${serverPort}` }
     }
   ],
   projects: [

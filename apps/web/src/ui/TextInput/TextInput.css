@@ -1,0 +1,20 @@
+.ui-text-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-lg);
+}
+
+.ui-text-input::placeholder {
+  color: var(--muted);
+}
+
+.ui-text-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}

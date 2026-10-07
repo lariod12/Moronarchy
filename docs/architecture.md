@@ -19,9 +19,11 @@ apps/
   server/                 boardgame.io server, CORS, lobby security
   web/
     src/
-      app/                App (routes), HomePlaceholder
+      app/                App (routes)
+      match/              MatchProvider/useMatch: kết nối boardgame.io, state lobby/ván
+      screens/            welcome/ lobby/ room/ game/: mỗi màn gồm View thuần + container
       shell/              GameShell, TopBar, BottomHud, CrownButton (ModalHost sau)
-      screens/            (từ bước 4) welcome/ lobby/ home/ map/ stats/ plots/ residents/ ...
+      screens/            (thêm dần ở bước 5+) map/ stats/ plots/ residents/ ...
       ui/                 UI kit, mỗi component một thư mục: Tag, SketchBox, Tile, TileGrid,
                           DataTable, Dialog, BlockingOverlay, SpeechBubble, StatTag,
                           IconButton, LongPressButton, Dice, HealthBar, Avatar
@@ -48,7 +50,7 @@ packages/
       testing/            factory tạo state giả (dùng cho test + gallery)
 tests/
   ui/                     Playwright kiểm tra gallery (pnpm ui:check)
-  e2e/                    Playwright multiplayer (viết lại ở bước 4)
+  e2e/                    Playwright multiplayer (lobby.spec.ts)
 docs/
 ```
 
@@ -98,6 +100,8 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 - Phòng tạo với 6 seat (`validateSetupData` từ chối `numPlayers` khác 6). Seat chưa có người không vào `turnOrder` khi Start (`startGame` chỉ tạo game cho các seat đã ngồi).
 - Join bị server từ chối bằng HTTP 409 khi match đã rời lobby (`applyLobbySecurity`). Host có thể kick một seat (`kickSeat`); `returnToLobby` hiện thực Play Again.
 - Engine giữ thứ tự lượt (`G.game.turnOrder`), không dùng `turn.order` của boardgame.io.
+- Mã phòng = `matchID` do server cấp qua tùy chọn `uuid` (`R` + 4 ký tự dễ đọc, xem `apps/server/src/room-code.ts`). `generateCredentials` được đặt riêng (`randomUUID`) vì boardgame.io mặc định dùng lại `uuid` cho credentials.
+- Lỗi do `applyLobbySecurity` ném ra (409/413/429) chạy trước middleware CORS của boardgame.io nên được gắn sẵn header `Access-Control-Allow-Origin` cho origin hợp lệ; nếu không trình duyệt chỉ thấy lỗi mạng chứ không đọc được 409 "Match already started".
 - Phòng vẫn lưu trong RAM ở giai đoạn này.
 
 ## 5. Web
@@ -107,6 +111,9 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 - **UI kit** dựng một lần, các màn chỉ ghép lại. Style là CSS thuần dùng design tokens (`styles/tokens.css`), font Balsamiq Sans, không dùng Tailwind; đổi từ wireframe sang art cuối cùng chỉ cần sửa token.
 - **Gallery** (`/dev/gallery`, chỉ bật ở dev) render mọi màn và trạng thái với state từ `core/testing`. Đây là chỗ thay prototype HTML và là chỗ Playwright chụp/kiểm tra.
 
+- **Kết nối ván**: `MatchProvider` (`apps/web/src/match`) tạo một client boardgame.io (`SocketIO`) từ session trong localStorage (`api/lobby.ts`), tự `sit` ở lần sync đầu và cung cấp `useMatch()` = `{ state, playerID, roomCode, players, isConnected, send }`. Mã phòng chính là `matchID`; server cấp mã ngắn qua tùy chọn `uuid` của boardgame.io (`apps/server/src/room-code.ts`).
+- **View / container**: mỗi màn tách thành View thuần (chỉ nhận props; dùng cho gallery và unit test) và container mỏng nối `useMatch` với View. Luật lobby không viết lại ở web: dùng `getLobbyView` của core. `RoomScreen` chọn lobby / đếm ngược `Game Starting` / game theo `stage`.
+
 ## 6. Kiểm thử
 
 | Tầng | Công cụ | Nội dung |
@@ -115,7 +122,7 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 | server | Vitest | Game config qua boardgame.io test client: move hợp lệ/không hợp lệ, ngoài lượt |
 | web | Vitest + Testing Library | Component UI kit, selectors |
 | gallery | Playwright (`pnpm ui:check`) | Mỗi entry render không lỗi console, không tràn ngang, long-press và dialog hoạt động |
-| e2e | Playwright | 2–3 trình duyệt: tạo phòng → ready → start → một vòng lượt |
+| e2e | Playwright (`pnpm e2e`) | 3–4 trình duyệt: tạo phòng → join bằng mã → chat → ready → start → Home hub (vòng lượt sẽ thêm ở bước 5+) |
 
 ## 7. Giữ / bỏ / làm lại
 
@@ -138,7 +145,7 @@ Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 1. ✅ **Core engine** (đã xong): model, content, rules (gồm Fight), flow lượt, PendingDecision, selectors, factory test state, bot + mô phỏng (`pnpm --filter @moronarchy/core sim`). Export tại `@moronarchy/core/engine` và `@moronarchy/core/testing`. API cũ (`legacy/`) đã xóa ở bước 3; `@moronarchy/core` giờ trỏ vào engine.
 2. ✅ **Server + lobby** (đã xong): `MatchState`/lobby/chat/start/Play Again + game boardgame.io trong `@moronarchy/core/match` (`packages/core/src/match`), `apps/server` chuyển sang đó, bỏ server chat riêng. `apps/web` và `tests/e2e` được phép hỏng lúc chạy cho đến bước 3–5.
 3. ✅ **Web nền** (đã xong): router, GameShell (TopBar, BottomHud, Crown long-press), UI kit, tokens, gallery `/dev/gallery`, `pnpm ui:check`; đã xóa `design/`, `legacy/`, Tailwind.
-4. **Màn Welcome + Lobby** theo screen spec.
+4. ✅ **Màn Welcome + Lobby** (đã xong): Welcome/Lobby/Home hub (placeholder) nối server thật, mã phòng ngắn, kick, chat bong bóng, đếm ngược, e2e nhiều trình duyệt (`pnpm e2e`).
 5. **Home hub + Map + đổ xúc xắc + di chuyển + Start Station + mua/phí**: vòng chơi tối thiểu chạy được.
 6. **Plots, Residents, Items, Events, Stats, Steps.**
 7. **Kết thúc ván**: khán giả, Win/Lose, Ranking, Play Again.
@@ -155,7 +162,7 @@ pnpm test
 pnpm typecheck
 pnpm lint
 pnpm build
-pnpm e2e        # chưa có test cho tới bước 4
+pnpm e2e        # Playwright nhiều trình duyệt: tạo phòng → chat → ready → start
 pnpm ui:check   # Playwright kiểm tra gallery
 ```
 

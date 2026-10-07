@@ -1,4 +1,3 @@
-import { Atom, Boxes, Castle, Dices, SlidersHorizontal, UserRound } from "lucide-react";
 import { claimTurn } from "@moronarchy/core/engine";
 import type { GameState } from "@moronarchy/core/engine";
 import { createSeededRng, createTestGame, setTurnStep } from "@moronarchy/core/testing";
@@ -6,22 +5,12 @@ import { toHudModel, toTopBarModel } from "../../game/hud-model";
 import { BottomHud } from "../../shell/BottomHud/BottomHud";
 import { GameShell } from "../../shell/GameShell/GameShell";
 import { TopBar } from "../../shell/TopBar/TopBar";
-import { Tile } from "../../ui/Tile/Tile";
-import { TileGrid } from "../../ui/TileGrid/TileGrid";
+import { HomeHub } from "../../screens/game/HomeHub";
 import type { ReactNode } from "react";
 
 export const ROOM_CODE = "R001";
 
-export const HomeHub = () => (
-  <TileGrid>
-    <Tile title="Stats" icon={<SlidersHorizontal size={56} />} />
-    <Tile title="Plots" icon={<Castle size={56} />} />
-    <Tile title="Dice Status" icon={<Dices size={56} />} />
-    <Tile title="Residents" icon={<UserRound size={56} />} />
-    <Tile title="Items" icon={<Boxes size={56} />} />
-    <Tile title="Events" icon={<Atom size={56} />} />
-  </TileGrid>
-);
+export { HomeHub };
 
 export type ShellScenario = "idle" | "shaking" | "active" | "canEnd" | "eliminated";
 

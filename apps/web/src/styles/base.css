@@ -44,11 +44,26 @@ button {
   }
 }
 
-.placeholder {
+/* Root of every screen View, so the same markup works inside the router frame and the gallery frame. */
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--paper);
+}
+
+.screen--centered {
   align-items: center;
   justify-content: center;
   padding: var(--gap);
   text-align: center;
+}
+
+.screen__message {
+  margin: var(--gap);
 }
 
 .sr-only {

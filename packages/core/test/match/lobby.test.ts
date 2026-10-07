@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_CHAT_MESSAGES,
   createMatchState,
+  getLobbyView,
   kickSeat,
   leaveSeat,
   returnToLobby,
@@ -178,5 +179,67 @@ describe("returnToLobby", () => {
     expect(state.gamesPlayed).toBe(1);
     expect(state.seats.every((seat) => !seat.ready)).toBe(true);
     expect(state.seats).toHaveLength(2);
+  });
+});
+
+describe("getLobbyView", () => {
+  it("describes an unseated viewer", () => {
+    const state = seated(["0", "1"]);
+    expect(getLobbyView(state, "5")).toEqual({
+      isSeated: false,
+      isHost: false,
+      isReady: false,
+      canStart: false,
+      startBlockedReason: "NOT_HOST"
+    });
+  });
+
+  it("reports host, ready and start gating for each situation", () => {
+    const solo = seated(["0"]);
+    expect(getLobbyView(solo, "0")).toMatchObject({ isSeated: true, isHost: true, canStart: false, startBlockedReason: "TOO_FEW_PLAYERS" });
+
+    const state = seated(["0", "1", "2"]);
+    expect(getLobbyView(state, "0")).toMatchObject({ isHost: true, isReady: false, canStart: false, startBlockedReason: "NOT_READY" });
+    expect(getLobbyView(state, "1")).toMatchObject({ isHost: false, canStart: false, startBlockedReason: "NOT_HOST" });
+
+    ok(setReady(state, "1", true));
+    expect(getLobbyView(state, "1")).toMatchObject({ isSeated: true, isReady: true });
+    expect(getLobbyView(state, "0").canStart).toBe(false);
+    ok(setReady(state, "2", true));
+    expect(getLobbyView(state, "0")).toMatchObject({ canStart: true, startBlockedReason: null });
+  });
+
+  it("is never startable outside the lobby stage", () => {
+    const state = seated(["0", "1"]);
+    ok(setReady(state, "1", true));
+    ok(startGame(state, "0", createSeededRng(4)));
+    expect(getLobbyView(state, "0").canStart).toBe(false);
+  });
+
+  it("agrees with startGame validation on every fixture", () => {
+    const fixtures: Array<{ state: MatchState; viewers: string[] }> = [];
+    const solo = seated(["0"]);
+    fixtures.push({ state: solo, viewers: ["0", "3"] });
+
+    const unready = seated(["0", "1", "2"]);
+    ok(setReady(unready, "1", true));
+    fixtures.push({ state: unready, viewers: ["0", "1", "2", "4"] });
+
+    const ready = seated(["2", "3", "5"]);
+    ok(setReady(ready, "3", true));
+    ok(setReady(ready, "5", true));
+    fixtures.push({ state: ready, viewers: ["2", "3", "5", "0"] });
+
+    for (const { state, viewers } of fixtures) {
+      for (const viewer of viewers) {
+        const view = getLobbyView(state, viewer);
+        const attempt = structuredClone(state);
+        const result = startGame(attempt, viewer, createSeededRng(9));
+        expect(view.canStart, `viewer ${viewer}`).toBe(result.ok);
+        if (!result.ok) {
+          expect(view.startBlockedReason, `viewer ${viewer}`).toBe(result.error);
+        }
+      }
+    }
   });
 });

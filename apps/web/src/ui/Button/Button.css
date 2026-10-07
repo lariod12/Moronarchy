@@ -1,0 +1,26 @@
+.ui-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: var(--stroke) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ui-button--strong {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.ui-button:disabled {
+  background: var(--wash);
+  color: var(--muted);
+  cursor: not-allowed;
+}

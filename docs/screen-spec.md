@@ -72,17 +72,19 @@ Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrad
   - Ô Join room còn trống: nút chính là **Create**.
   - Ô Join room có giá trị: nút tự đổi thành **Join**.
 - Khi đang tạo/vào phòng: phủ xám + "Waiting for creating room".
-- Lỗi (sai mã, phòng đầy, đã bắt đầu): TBD về cách hiển thị (đề xuất: tooltip dưới ô Join room).
+- Lỗi hiển thị dạng chữ đỏ ngay dưới ô Join room: `Room not found` (sai mã), `Room is full`, `Game already started`, `Cannot reach the server`. Gõ lại mã thì lỗi biến mất.
+- Mã phòng ngắn, dạng `R` + 4 ký tự từ `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (bỏ I, O, 0, 1 cho dễ đọc); khi nhập không phân biệt hoa thường. Khi tạo/vào xong, URL là `/room/<MÃ>`.
+- Link chia sẻ `/?room=<MÃ>` mở Welcome với ô Join room điền sẵn. Mở `/room/<MÃ>` mà máy chưa có chỗ ngồi (không có session trong localStorage) cũng chuyển về `/?room=<MÃ>`. Có session thì tải lại trang vẫn giữ chỗ.
 
 ### 4.2 Lobby — [03](ui/03-lobby-chat.png), [04](ui/04-lobby-typing.png), [05](ui/05-lobby-ready.png), [06](ui/06-lobby-game-starting.png)
 
-- TopBar chỉ có mã phòng.
-- Lưới 6 ô Player (2 cột × 3 hàng). Mỗi ô có tên, avatar, bong bóng chat vài giây và nhãn dọc "ready" bên trái khi người đó đã Ready. Ô chưa có người: TBD (đề xuất: ô trống mờ).
+- TopBar chỉ có mã phòng. Chạm vào mã để copy, hiện bong bóng `copied!` 1,5 giây.
+- Lưới 6 ô Player (2 cột × 3 hàng). Mỗi ô có tên, avatar, bong bóng chat vài giây và nhãn dọc "ready" bên trái khi người đó đã Ready. Ô chưa có người: ô viền nét đứt, mờ, ghi `Empty`. Chỗ ngồi cố định theo playerID nên người rời đi để lại ô trống thay vì dồn chỗ. Chủ phòng có tag nhỏ `host`; người mất kết nối bị làm mờ. Chủ phòng chạm vào ô của người khác thì hiện hộp thoại `Kick <tên>?` No / Yes; người bị kick quay về Welcome.
 - Dưới cùng: khung log chat cuộn được, "Player 1 (you): …" | nút **Chat** | nút **Ready**.
-  - Chat: mở ô nhập và bàn phím hệ thống (màn 04), gửi thì hiện bong bóng trên avatar mình và thêm vào log.
+  - Chat: mở một hàng nhập (`Say something…` + `Send`, tối đa 120 ký tự, Enter gửi, Esc đóng) và bàn phím hệ thống (màn 04). Gửi xong hàng nhập vẫn mở và được xóa. Tin hiện bong bóng 3 giây trên ô của người gửi ở mọi máy và thêm vào log (`Tên (you): …` cho tin của mình, `Tên: …` cho người khác). Tin cũ có sẵn khi vào phòng không tạo bong bóng.
   - Ready: bật/tắt. Khi bật, nút tô đậm.
   - Với chủ phòng, nút Ready hiển thị thành **Start**: bị khóa đến khi có ít nhất 2 người và mọi người khác đã Ready.
-- Bấm Start: phủ xám + "Game Starting 3 → 2 → 1" trên mọi máy, rồi vào Game Shell (Home hub).
+- Bấm Start: phủ xám + "Game Starting 3 → 2 → 1" trên mọi máy đang ở lobby, rồi vào Game Shell (Home hub). Máy tải lại hoặc vào phòng khi ván đã chạy thì vào thẳng Game Shell, không đếm ngược.
 - Chat chỉ có ở Lobby.
 
 ## 5. Home hub — [10](ui/10-home-hub.png), [11](ui/11-home-your-turn.png), [12](ui/12-home-end-turn-confirm.png), [13](ui/13-home-end-turn-hint.png)

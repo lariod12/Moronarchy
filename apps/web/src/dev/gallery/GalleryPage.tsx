@@ -33,7 +33,7 @@ const GalleryIndex = () => {
 const GalleryEntryView = ({ entryId }: { entryId: string }) => {
   const [lastAction, setLastAction] = useState("");
   const entry = GALLERY_ENTRIES.find((candidate) => candidate.id === entryId);
-  const isShell = entry?.id.startsWith("shell-") ?? false;
+  const isBare = Boolean(entry?.id.startsWith("shell-") || entry?.group === "Screens");
 
   return (
     <div className="gallery">
@@ -43,7 +43,7 @@ const GalleryEntryView = ({ entryId }: { entryId: string }) => {
       </div>
       <div className="phone-frame gallery__frame" data-gallery-entry={entry ? entry.id : undefined}>
         {entry ? (
-          <div className={isShell ? "gallery__body gallery__body--bare" : "gallery__body"}>{entry.render(setLastAction)}</div>
+          <div className={isBare ? "gallery__body gallery__body--bare" : "gallery__body"}>{entry.render(setLastAction)}</div>
         ) : (
           <p className="gallery__body">Unknown entry</p>
         )}

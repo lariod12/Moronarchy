@@ -48,6 +48,41 @@ describe("server lobby security", () => {
       expect(next).toHaveBeenCalledOnce();
     });
 
+    describe("CORS on rejections", () => {
+      const reject = async (origin: string | undefined) => {
+        let middleware: Middleware | undefined;
+        applyLobbySecurity(
+          { use: (fn) => (middleware = fn) },
+          { fetch: vi.fn(async () => ({ state: { G: { stage: "playing" } } })) },
+          { origins: ["http://localhost:5173"] }
+        );
+        const thrown = vi.fn((status: number, message: string): never => {
+          throw new Error(`${status} ${message}`);
+        });
+        const ctx = {
+          ip: `cors-${origin ?? "none"}`,
+          method: "POST",
+          path: "/games/moronarchy/abc123/join",
+          get: (field: string) => (field === "Origin" ? (origin ?? "") : ""),
+          throw: thrown
+        };
+        await middleware?.(ctx, vi.fn(async () => undefined)).catch(() => undefined);
+        return thrown;
+      };
+
+      it("lets the browser read the 409 from an allowed origin", async () => {
+        const thrown = await reject("http://localhost:5173");
+        expect(thrown).toHaveBeenCalledWith(409, "Match already started.", {
+          headers: { "Access-Control-Allow-Origin": "http://localhost:5173", Vary: "Origin" }
+        });
+      });
+
+      it("adds no CORS header for unknown or missing origins", async () => {
+        expect(await reject("http://evil.example")).toHaveBeenCalledWith(409, "Match already started.");
+        expect(await reject(undefined)).toHaveBeenCalledWith(409, "Match already started.");
+      });
+    });
+
     it("leaves other requests untouched", async () => {
       const run = await setup("playing");
       for (const [method, path] of [
