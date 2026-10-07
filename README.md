@@ -12,6 +12,7 @@ Moronarchy is a mobile-first multiplayer web board game. 2–6 kings roll dice a
 | [docs/Tutorial button.png](docs/Tutorial%20button.png) | Crown / Back button behavior |
 | [docs/ui/](docs/ui/) | Each design frame cropped from `All UI.png` |
 | [docs/game-design.md](docs/game-design.md) | Game rules (GDD) |
+| [docs/balance.md](docs/balance.md) | Proposed balance numbers + simulation results |
 | [docs/screen-spec.md](docs/screen-spec.md) | Screens, navigation, visible states |
 | [docs/architecture.md](docs/architecture.md) | Target architecture and refactor roadmap |
 | [docs/interview-notes.md](docs/interview-notes.md) | Raw product-owner interview record |

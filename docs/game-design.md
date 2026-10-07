@@ -232,7 +232,9 @@ Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ.
   - Quit: về màn Welcome.
 - Vua hết Health không bị loại (mục 10.2).
 
-## 15. Bảng tham số cân bằng (TBD)
+## 15. Bảng tham số cân bằng
+
+Bảng số đề xuất chi tiết và kết quả mô phỏng: [balance.md](balance.md) (chờ duyệt).
 
 Mọi con số sẽ nằm trong file config của `packages/core`, không hardcode trong luật.
 
