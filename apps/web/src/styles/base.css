@@ -1,0 +1,70 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--text-md);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+.phone-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--frame-max);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+@media (min-width: 480px) {
+  .phone-frame {
+    border: var(--stroke) solid var(--ink);
+  }
+}
+
+.placeholder {
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
+  text-align: center;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keyboard focus in the wireframe palette instead of the browser default. */
+:focus-visible {
+  outline: 3px dashed var(--ink);
+  outline-offset: -6px;
+}

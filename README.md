@@ -20,7 +20,7 @@ Moronarchy is a mobile-first multiplayer web board game. 2–6 kings roll dice a
 ## Tech Stack
 
 - pnpm workspace, TypeScript
-- React + Vite (PWA), Tailwind CSS, Motion
+- React + Vite (PWA), plain CSS with design tokens (`apps/web/src/styles/tokens.css`), Balsamiq Sans font, Motion
 - Node.js + boardgame.io (server-authoritative multiplayer)
 - Vitest, Testing Library, Playwright
 
@@ -32,9 +32,10 @@ apps/
   server/     boardgame.io multiplayer server
 packages/
   core/       Shared pure TypeScript game rules
-design/       Legacy HTML prototype (to be replaced by an in-app gallery)
 docs/         Design source, GDD, screen spec, architecture
-tests/        Playwright e2e and legacy design checks
+tests/
+  ui/         Playwright checks for the dev gallery (pnpm ui:check)
+  e2e/        Playwright multiplayer tests (rewritten in a later step)
 ```
 
 ## Prerequisites
@@ -51,6 +52,7 @@ pnpm dev
 ```
 
 - Web app: http://localhost:5173
+- UI gallery (dev only): http://localhost:5173/dev/gallery — every UI kit component and shell state with fake engine state. On a phone use `http://<LAN-IP>:5173/dev/gallery`.
 - Multiplayer server: http://localhost:8000
 
 ## Environment
@@ -73,6 +75,7 @@ pnpm build        # Build core, server, and web
 pnpm test         # Run all tests
 pnpm typecheck    # Typecheck all packages
 pnpm lint         # Lint all packages
-pnpm e2e          # Run Playwright multiplayer smoke test
-pnpm design:check # Legacy design prototype checks (to be removed)
+pnpm e2e          # Run Playwright multiplayer tests (none until step 4)
+pnpm ui:check     # Playwright check of the dev gallery (console errors, overflow, long-press)
+pnpm ui:check:headed # Same, with a visible browser
 ```

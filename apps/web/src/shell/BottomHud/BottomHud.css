@@ -1,0 +1,36 @@
+.shell-hud {
+  position: relative;
+  display: grid;
+  grid-template-columns: 88px 88px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  height: calc(var(--hud-height) + var(--safe-bottom));
+  padding: 6px 8px calc(6px + var(--safe-bottom));
+  border-top: var(--stroke) solid var(--ink);
+  background: var(--paper);
+}
+
+.shell-hud__avatar {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.shell-hud__back {
+  min-width: 0;
+  margin-bottom: 4px;
+}
+
+.shell-hud__game-over {
+  grid-column: 3 / span 2;
+  align-self: center;
+  margin: 0;
+  font-size: var(--text-xl);
+  text-align: center;
+}
+
+.shell-hud .shell-crown {
+  margin-bottom: 4px;
+}

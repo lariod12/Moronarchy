@@ -1,0 +1,52 @@
+.ui-dice {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 14%;
+  border-radius: 20%;
+  background: var(--ink);
+}
+
+.ui-dice__cell {
+  display: block;
+  align-self: center;
+  justify-self: center;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+}
+
+.ui-dice__cell--pip {
+  background: var(--paper);
+}
+
+.ui-dice--rolling {
+  animation: ui-dice-shake 0.4s linear infinite;
+}
+
+@keyframes ui-dice-shake {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(-3px, 2px) rotate(-8deg);
+  }
+
+  50% {
+    transform: translate(3px, -2px) rotate(8deg);
+  }
+
+  75% {
+    transform: translate(-2px, -2px) rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-dice--rolling {
+    animation: none;
+    outline: var(--stroke-thin) dashed var(--ink);
+    outline-offset: 3px;
+  }
+}

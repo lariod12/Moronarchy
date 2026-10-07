@@ -1,0 +1,77 @@
+.shell-crown {
+  position: relative;
+  min-width: 0;
+}
+
+.shell-crown .shell-crown__button {
+  width: 100%;
+  height: 100%;
+}
+
+.shell-crown .shell-crown__icon {
+  width: 100%;
+  max-width: 56px;
+  height: auto;
+}
+
+.shell-crown .shell-crown__button--inverted {
+  background: var(--shade);
+  color: var(--paper);
+}
+
+.shell-crown .shell-crown__bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.shell-crown .shell-crown__button--shaking {
+  animation: shell-crown-wiggle 0.9s ease-in-out infinite;
+}
+
+@keyframes shell-crown-wiggle {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  10% {
+    transform: rotate(-7deg);
+  }
+
+  20% {
+    transform: rotate(7deg);
+  }
+
+  30% {
+    transform: rotate(-6deg);
+  }
+
+  40% {
+    transform: rotate(6deg);
+  }
+
+  50% {
+    transform: rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-crown .shell-crown__button--shaking {
+    animation: shell-crown-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes shell-crown-pulse {
+    0%,
+    100% {
+      outline: var(--stroke) solid transparent;
+    }
+
+    50% {
+      outline: var(--stroke) solid var(--ink);
+    }
+  }
+}

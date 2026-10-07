@@ -1,6 +1,8 @@
 import { LobbyClient } from "boardgame.io/client";
+import { sanitizePlayerName as sanitizeCoreName } from "@moronarchy/core/match";
 
 export const GAME_NAME = "moronarchy";
+const ROOM_PLAYER_COUNT = 6;
 const getDefaultGameServerUrl = (): string => {
   const { protocol, hostname } = window.location;
   return `${protocol}//${hostname}:8000`;
@@ -19,22 +21,7 @@ export interface PlayerSession {
 
 const sessionKey = (matchID: string): string => `moronarchy:session:${matchID}`;
 
-export const sanitizePlayerName = (value: string): string => {
-  const withoutControlCharacters = Array.from(value)
-    .filter((character) => {
-      const code = character.charCodeAt(0);
-      return code >= 32 && code !== 127;
-    })
-    .join("");
-
-  const name = withoutControlCharacters
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 18)
-    .trim();
-
-  return name || "King";
-};
+export const sanitizePlayerName = (value: string): string => sanitizeCoreName(value) || "King";
 
 export const savePlayerSession = (session: PlayerSession): void => {
   localStorage.setItem(sessionKey(session.matchID), JSON.stringify(session));
@@ -52,10 +39,10 @@ export const getPlayerSession = (matchID: string): PlayerSession | null => {
   }
 };
 
-export const createRoom = async (playerName: string, numPlayers: number): Promise<PlayerSession> => {
+export const createRoom = async (playerName: string): Promise<PlayerSession> => {
   const safePlayerName = sanitizePlayerName(playerName);
   const { matchID } = await lobbyClient.createMatch(GAME_NAME, {
-    numPlayers,
+    numPlayers: ROOM_PLAYER_COUNT,
     unlisted: true
   });
 

@@ -1,0 +1,30 @@
+.ui-blocking-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
+  background: var(--overlay);
+}
+
+.ui-blocking-overlay__box {
+  width: 100%;
+  padding: 18px 12px;
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-dialog);
+  background: var(--paper);
+  text-align: center;
+}
+
+.ui-blocking-overlay__title,
+.ui-blocking-overlay__subtitle {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.ui-blocking-overlay__subtitle {
+  margin-top: 8px;
+  font-size: 40px;
+}

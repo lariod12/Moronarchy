@@ -1,0 +1,28 @@
+.shell-top-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+  min-height: var(--topbar-height);
+  padding: calc(var(--safe-top) + 4px) 8px 4px;
+  border-bottom: var(--stroke) solid var(--ink);
+  background: var(--paper);
+}
+
+.shell-top-bar__side {
+  display: flex;
+  min-width: 0;
+}
+
+.shell-top-bar__side--end {
+  justify-content: flex-end;
+}
+
+.shell-top-bar__side .ui-tag {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shell-top-bar .shell-top-bar__room {
+  font-size: var(--text-md);
+}

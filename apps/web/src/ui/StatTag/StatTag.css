@@ -1,0 +1,17 @@
+.ui-stat-tag {
+  font-size: var(--text-xs);
+}
+
+.ui-stat-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ui-stat-list .ui-stat-tag {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

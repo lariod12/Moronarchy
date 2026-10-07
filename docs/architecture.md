@@ -19,16 +19,15 @@ apps/
   server/                 boardgame.io server, CORS, lobby security
   web/
     src/
-      app/                router, providers, session
-      shell/              GameShell: TopBar, BottomHud, CrownButton, ModalHost
-      screens/
-        welcome/  lobby/  home/  map/  stats/  plots/  residents/
-        items/  events/  steps/  fight/  start-station/  result/
-      ui/                 UI kit: SketchFrame, Tile, DataTable, ConfirmDialog,
-                          SpeechBubble, StatBadge, LongPressButton, Dice
-      game/               boardgame.io client, hooks chọn dữ liệu (selectors)
-      dev/gallery/        route /dev/gallery: mọi màn với state giả (chỉ dev)
-      styles/             tokens.css + CSS theo component
+      app/                App (routes), HomePlaceholder
+      shell/              GameShell, TopBar, BottomHud, CrownButton (ModalHost sau)
+      screens/            (từ bước 4) welcome/ lobby/ home/ map/ stats/ plots/ residents/ ...
+      ui/                 UI kit, mỗi component một thư mục: Tag, SketchBox, Tile, TileGrid,
+                          DataTable, Dialog, BlockingOverlay, SpeechBubble, StatTag,
+                          IconButton, LongPressButton, Dice, HealthBar, Avatar
+      game/               hud-model (engine state → props HUD), sau này boardgame.io client
+      dev/gallery/        route /dev/gallery: mọi component/shell với state giả (chỉ dev)
+      styles/             tokens.css, base.css, index.css (CSS thuần, không Tailwind)
 packages/
   core/
     src/
@@ -48,7 +47,8 @@ packages/
       game.ts             boardgame.io Game config (phases, turn order, moves)
       testing/            factory tạo state giả (dùng cho test + gallery)
 tests/
-  e2e/                    Playwright multiplayer
+  ui/                     Playwright kiểm tra gallery (pnpm ui:check)
+  e2e/                    Playwright multiplayer (viết lại ở bước 4)
 docs/
 ```
 
@@ -104,7 +104,7 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 
 - **GameShell** bọc mọi màn trong ván. Màn con là route lồng nhau (`/game/:matchId/home`, `/map`, `/plots/:id`…), nên nút Back dùng được lịch sử router.
 - **ModalHost** hiển thị modal theo `pending` và sự kiện game, tách khỏi màn đang xem: popup hiện đúng dù người chơi đang ở màn nào.
-- **UI kit** dựng một lần, các màn chỉ ghép lại. Style dùng design tokens để đổi từ wireframe sang art cuối cùng mà không sửa component.
+- **UI kit** dựng một lần, các màn chỉ ghép lại. Style là CSS thuần dùng design tokens (`styles/tokens.css`), font Balsamiq Sans, không dùng Tailwind; đổi từ wireframe sang art cuối cùng chỉ cần sửa token.
 - **Gallery** (`/dev/gallery`, chỉ bật ở dev) render mọi màn và trạng thái với state từ `core/testing`. Đây là chỗ thay prototype HTML và là chỗ Playwright chụp/kiểm tra.
 
 ## 6. Kiểm thử
@@ -114,7 +114,7 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 | core | Vitest | Từng rule, flow lượt, PendingDecision, content hợp lệ |
 | server | Vitest | Game config qua boardgame.io test client: move hợp lệ/không hợp lệ, ngoài lượt |
 | web | Vitest + Testing Library | Component UI kit, selectors |
-| gallery | Playwright | Mỗi màn render không lỗi console, các trạng thái chính |
+| gallery | Playwright (`pnpm ui:check`) | Mỗi entry render không lỗi console, không tràn ngang, long-press và dialog hoạt động |
 | e2e | Playwright | 2–3 trình duyệt: tạo phòng → ready → start → một vòng lượt |
 
 ## 7. Giữ / bỏ / làm lại
@@ -123,26 +123,28 @@ stage "finished" → ranking; returnToLobby (host) quay về "lobby" với cùng
 | --- | --- |
 | Monorepo pnpm, TS, React + Vite, boardgame.io, Vitest, Playwright | **Giữ** |
 | `apps/server/src/security.ts` (guard lobby, sanitize tên) | **Giữ**, chỉnh theo seats mới |
-| `apps/server/src/lobby-chat.ts` + `apps/web/src/api/lobby-chat.ts`, `game-start.ts` | **Bỏ** sau khi phase lobby chạy |
+| `apps/server/src/lobby-chat.ts` + `apps/web/src/api/lobby-chat.ts`, `game-start.ts` | **Đã bỏ** |
 | `packages/core/src/*` (luật kiểu Monopoly MVP) | **Làm lại** theo cấu trúc mục 2; dùng lại `movePosition` và ý tưởng economy |
-| `apps/web/src/components/*`, `pages/*`, `styles/index.css` | **Làm lại** theo GameShell + screens + UI kit |
-| `design/*.html`, `tests/design/`, `playwright.design.config.ts`, script `design:*`, `start-design-mobile.bat` | **Bỏ**, thay bằng gallery |
-| `AGENTS.md` (design completion gate) | **Cập nhật** theo quy trình gallery |
+| `apps/web/src/components/*`, `pages/*`, `styles/index.css` | **Đã bỏ**, thay bằng `shell/`, `ui/`, `styles/tokens.css` |
+| `design/*.html`, `tests/design/`, `playwright.design.config.ts`, script `design:*`, `start-design-mobile.bat` | **Đã bỏ**, thay bằng gallery |
+| `packages/core/src/legacy/` | **Đã bỏ** (root `@moronarchy/core` = engine) |
+| `AGENTS.md` (design completion gate) | **Đã cập nhật** thành UI Completion Gate (gallery + `ui:check`) |
 | Docs cũ (`game-rules`, `system-architecture`, `tech-stack`, `development-guide`, `design-task-validation-workflow`) | **Đã thay** bằng bộ docs này |
 
 ## 8. Lộ trình
 
 Mỗi bước là một nhánh/PR riêng, chạy được và có test:
 
-1. ✅ **Core engine** (đã xong): model, content, rules (gồm Fight), flow lượt, PendingDecision, selectors, factory test state, bot + mô phỏng (`pnpm --filter @moronarchy/core sim`). Export tại `@moronarchy/core/engine` và `@moronarchy/core/testing`. API cũ tạm nằm ở `packages/core/src/legacy/` (vẫn export ở `@moronarchy/core`) cho đến khi server/web chuyển xong ở bước 2–5, sau đó xóa.
+1. ✅ **Core engine** (đã xong): model, content, rules (gồm Fight), flow lượt, PendingDecision, selectors, factory test state, bot + mô phỏng (`pnpm --filter @moronarchy/core sim`). Export tại `@moronarchy/core/engine` và `@moronarchy/core/testing`. API cũ (`legacy/`) đã xóa ở bước 3; `@moronarchy/core` giờ trỏ vào engine.
 2. ✅ **Server + lobby** (đã xong): `MatchState`/lobby/chat/start/Play Again + game boardgame.io trong `@moronarchy/core/match` (`packages/core/src/match`), `apps/server` chuyển sang đó, bỏ server chat riêng. `apps/web` và `tests/e2e` được phép hỏng lúc chạy cho đến bước 3–5.
-3. **Web nền**: router, GameShell, UI kit, tokens, gallery.
+3. ✅ **Web nền** (đã xong): router, GameShell (TopBar, BottomHud, Crown long-press), UI kit, tokens, gallery `/dev/gallery`, `pnpm ui:check`; đã xóa `design/`, `legacy/`, Tailwind.
 4. **Màn Welcome + Lobby** theo screen spec.
 5. **Home hub + Map + đổ xúc xắc + di chuyển + Start Station + mua/phí**: vòng chơi tối thiểu chạy được.
 6. **Plots, Residents, Items, Events, Stats, Steps.**
 7. **Kết thúc ván**: khán giả, Win/Lose, Ranking, Play Again.
-8. **Fight** sau khi phỏng vấn xong.
-9. Dọn `design/`, cập nhật `AGENTS.md`, README.
+8. **Màn Fight** (luật đã có trong engine).
+9. ✅ Dọn `design/`, cập nhật `AGENTS.md`, README (làm cùng bước 3).
+10. **E2E multiplayer mới** (`tests/e2e`) và xử lý người chơi mất kết nối giữa ván.
 
 ## 9. Lệnh
 
@@ -153,7 +155,8 @@ pnpm test
 pnpm typecheck
 pnpm lint
 pnpm build
-pnpm e2e
+pnpm e2e        # chưa có test cho tới bước 4
+pnpm ui:check   # Playwright kiểm tra gallery
 ```
 
 Biến môi trường: `PORT` (mặc định 8000), `ALLOWED_ORIGINS`, `VITE_GAME_SERVER_URL`.

@@ -8,16 +8,15 @@
     "dev": "pnpm --filter @moronarchy/core build && pnpm --parallel --filter @moronarchy/server --filter @moronarchy/web dev",
     "dev:web": "pnpm --filter @moronarchy/web dev",
     "dev:server": "pnpm --filter @moronarchy/server dev",
-    "design:mobile": "cmd /c start-design-mobile.bat",
-    "design:check": "playwright test --config playwright.design.config.ts",
-    "design:check:headed": "playwright test --config playwright.design.config.ts --headed",
     "build": "pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/server build && pnpm --filter @moronarchy/web build",
     "test": "pnpm --filter @moronarchy/core build && pnpm --recursive test",
-    "e2e": "playwright test",
-    "typecheck": "pnpm --filter @moronarchy/core build && pnpm --recursive typecheck && pnpm typecheck:design",
-    "typecheck:design": "tsc -p tsconfig.design.json",
-    "lint": "pnpm --recursive lint && pnpm lint:design",
-    "lint:design": "eslint playwright.design.config.ts tests/design"
+    "e2e": "playwright test --pass-with-no-tests",
+    "typecheck": "pnpm --filter @moronarchy/core build && pnpm --recursive typecheck && pnpm typecheck:ui",
+    "lint": "pnpm --recursive lint && pnpm lint:ui",
+    "ui:check": "playwright test --config playwright.ui.config.ts",
+    "ui:check:headed": "playwright test --config playwright.ui.config.ts --headed",
+    "typecheck:ui": "tsc -p tsconfig.ui.json",
+    "lint:ui": "eslint playwright.ui.config.ts tests/ui"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

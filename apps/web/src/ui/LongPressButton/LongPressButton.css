@@ -1,0 +1,64 @@
+.ui-long-press {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  overflow: hidden;
+  border: var(--stroke) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.ui-long-press:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.ui-long-press__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--shade);
+  opacity: 0.55;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  pointer-events: none;
+}
+
+.ui-long-press[data-holding="true"] .ui-long-press__fill {
+  animation: ui-long-press-fill var(--hold-ms, 600ms) linear forwards;
+}
+
+.ui-long-press__content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+@keyframes ui-long-press-fill {
+  from {
+    transform: scaleY(0);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-long-press[data-holding="true"] .ui-long-press__fill {
+    animation: none;
+    transform: scaleY(1);
+  }
+}
