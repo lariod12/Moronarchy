@@ -1,18 +1,25 @@
 import type { ReactNode } from "react";
-import { getFinalRanking, getPlot, getPlotFee } from "@moronarchy/core/engine";
+import { getFightView, getFinalFightView, getFinalRanking, getItemCount, getPlot, getPlotFee } from "@moronarchy/core/engine";
 import type { GameState, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
 import {
   BuyPlotDialog,
   EndTurnDialog,
+  FightNoticeDialog,
+  FightResultDialog,
   LuckyDieDialog,
   NoticeDialog,
   OwnPlotDialog,
   OwnerChoiceDialog,
+  RetreatConfirmDialog,
   VisitorChoiceDialog,
   WaitingDialog
 } from "../../game/dialogs/dialogs";
+import { describeFightResult, fightNoticeText } from "../../game/fight-result";
+import { FIGHT_ITEM_IDS } from "../../game/labels";
 import { createCanRun } from "../../game/game-actions";
 import { getActivityText, getNotification } from "../../game/log-format";
+import { FightView } from "../../screens/fight/FightView";
+import { ItemSheet } from "../../screens/fight/ItemSheet";
 import { CardPickView } from "../../screens/cards/CardPickView";
 import { GameFrame } from "../../screens/game/GameFrame";
 import { MapView } from "../../screens/map/MapView";
@@ -159,6 +166,127 @@ const activityTexts = (): string[] => {
   return texts.filter((text) => text !== "");
 };
 
+const fightContent = (scenario: GameScenario, log: Log): ReactNode => {
+  const { game, viewerId } = scenario;
+  const view = getFightView(game, viewerId);
+  if (!view) {
+    throw new Error("Scenario has no running fight");
+  }
+  const names = Object.fromEntries(Object.values(game.kings).map((king) => [king.id, king.name]));
+  const canRun = createCanRun(game, viewerId);
+  const viewer = game.kings[viewerId];
+  const canUseItem = viewer ? FIGHT_ITEM_IDS.some((itemId) => getItemCount(viewer, itemId) > 0 && canRun("useItem", itemId)) : false;
+  return (
+    <FightView
+      view={view}
+      names={names}
+      canUseItem={canUseItem}
+      onRoll={() => log("roll")}
+      onUseItem={() => log("useItem")}
+      onRetreat={() => log("retreat")}
+    />
+  );
+};
+
+// The fight page right after the deciding round: built from the stored result, no buttons.
+const finalFightContent = ({ game, viewerId }: GameScenario): ReactNode => {
+  const view = getFinalFightView(game, viewerId);
+  if (!view) {
+    throw new Error("Scenario has no finished fight");
+  }
+  const names = Object.fromEntries(Object.values(game.kings).map((king) => [king.id, king.name]));
+  return <FightView view={view} names={names} />;
+};
+
+const fightEntry = (id: string, title: string, make: () => GameScenario, overlay?: (scenario: GameScenario, log: Log) => ReactNode): GalleryEntry => ({
+  id,
+  group: "Fight",
+  title,
+  render: (log) => {
+    const scenario = make();
+    return frame(scenario, "Fight", fightContent(scenario, log), log, overlay ? overlay(scenario, log) : undefined);
+  }
+});
+
+// Popups of the fight flow sit on the Map, like every other decision popup.
+const fightDialogEntry = (id: string, title: string, make: () => GameScenario, dialog: (scenario: GameScenario, log: Log) => ReactNode): GalleryEntry => ({
+  id,
+  group: "Fight",
+  title,
+  render: (log) => {
+    const scenario = make();
+    return frame(scenario, "Map", mapContent(scenario, log), log, dialog(scenario, log));
+  }
+});
+
+const resultDialog = (scenario: GameScenario, log: Log): ReactNode => {
+  const model = describeFightResult(scenario.game, scenario.viewerId);
+  return model ? <FightResultDialog title={model.title} lines={model.lines} onDone={() => log("Done")} /> : null;
+};
+
+const itemSheetEntries = (scenario: GameScenario) => {
+  const canRun = createCanRun(scenario.game, scenario.viewerId);
+  const viewer = scenario.game.kings[scenario.viewerId];
+  return FIGHT_ITEM_IDS.flatMap((itemId) => {
+    const count = viewer ? getItemCount(viewer, itemId) : 0;
+    return count > 0 ? [{ itemId, count, enabled: canRun("useItem", itemId) }] : [];
+  });
+};
+
+const FIGHT_ENTRIES: GalleryEntry[] = [
+  fightEntry("fight-king-start", "Fight: duel about to start (attacker)", scenarios.fightKingStart),
+  fightEntry("fight-king-mid", "Fight: duel at 1-1 with damage shown", scenarios.fightKingMid),
+  fightEntry("fight-waiting", "Fight: waiting for the other king to roll", scenarios.fightWaiting),
+  fightEntry("fight-garrison", "Fight: against a garrison, residents killed", scenarios.fightGarrison),
+  fightEntry("fight-plot", "Fight: against a passive plot, a Blocked round", scenarios.fightPlot),
+  fightEntry("fight-buffs", "Fight: War Horn and Wood Shield active", scenarios.fightBuffs),
+  fightEntry("fight-item-sheet", "Fight: item sheet", scenarios.fightKingStart, (scenario, log) => (
+    <ItemSheet items={itemSheetEntries(scenario)} onUse={(itemId) => log(`use:${itemId}`)} onClose={() => log("Close")} />
+  )),
+  fightEntry("fight-retreat-confirm", "Fight: retreat confirmation", () => scenarios.fightGarrison(), (scenario, log) => (
+    <RetreatConfirmDialog fee={getFightView(scenario.game, scenario.viewerId)?.retreatFee ?? 0} onNo={() => log("No")} onYes={() => log("Yes")} />
+  )),
+  {
+    id: "fight-final-round",
+    group: "Fight",
+    title: "Fight: deciding round shown, fight over",
+    render: (log) => {
+      const scenario = scenarios.fightWon();
+      return frame(scenario, "Fight", finalFightContent(scenario), log);
+    }
+  },
+  fightEntry("fight-spectator", "Fight: spectator, no buttons", scenarios.fightSpectator),
+  fightDialogEntry("fight-result-victory", "Fight result: Victory", scenarios.fightWon, resultDialog),
+  fightDialogEntry("fight-result-defeat", "Fight result: Defeat", scenarios.fightLost, resultDialog),
+  fightDialogEntry("fight-result-destroyed", "Fight result: plot destroyed", scenarios.fightDestroyed, resultDialog),
+  fightDialogEntry("fight-result-retreat", "Fight result: retreat", scenarios.fightRetreated, resultDialog),
+  fightDialogEntry("dialog-fight-notice", "Dialog: a fight you can watch", () => scenarios.fightStartedElsewhere("2"), (scenario, log) => {
+    const fight = scenario.game.fight;
+    return fight && fight.attacker.type === "king" ? (
+      <FightNoticeDialog
+        text={fightNoticeText(scenario.game, scenario.viewerId, fight.attacker.playerId, fight.plotId, getPlot(scenario.game, fight.plotId)?.ownerId ?? null)}
+        onWatch={() => log("Watch")}
+        onLater={() => log("Later")}
+      />
+    ) : null;
+  }),
+  fightDialogEntry("dialog-fight-notice-owner", "Dialog: your plot is attacked", () => scenarios.fightStartedElsewhere("1"), (scenario, log) => {
+    const fight = scenario.game.fight;
+    return fight && fight.attacker.type === "king" ? (
+      <FightNoticeDialog
+        text={fightNoticeText(scenario.game, scenario.viewerId, fight.attacker.playerId, fight.plotId, getPlot(scenario.game, fight.plotId)?.ownerId ?? null)}
+        onWatch={() => log("Watch")}
+        onLater={() => log("Later")}
+      />
+    ) : null;
+  }),
+  dialogEntry("dialog-visitor-attack", "Dialog: visitor with Attack enabled", scenarios.visitorDecision, (scenario, log) => {
+    const { plotId, canAttack } = pendingOf(scenario, "visitorChoice");
+    const attackEnabled = canAttack && createCanRun(scenario.game, scenario.viewerId)("attack");
+    return <VisitorChoiceDialog ownerName="Bob" plotId={plotId} fee={feeOf(scenario.game, plotId)} canAttack={canAttack} attackEnabled={attackEnabled} onPay={() => log("Pay")} onAttack={() => log("Attack")} />;
+  })
+];
+
 export const GAME_ENTRIES: GalleryEntry[] = [
   mapEntry("map-start", "Map: four kings on Start, ready to roll", scenarios.mapStart),
   mapEntry("map-midgame", "Map: mid-game ownership and tokens", scenarios.mapMidgame),
@@ -174,15 +302,15 @@ export const GAME_ENTRIES: GalleryEntry[] = [
     }),
   dialogEntry("dialog-visitor", "Dialog: visitor pays or attacks", scenarios.visitorDecision, (scenario, log) => {
     const { plotId, canAttack } = pendingOf(scenario, "visitorChoice");
-    return <VisitorChoiceDialog ownerName="Bob" plotId={plotId} fee={feeOf(scenario.game, plotId)} canAttack={canAttack} onPay={() => log("Pay")} />;
+    return <VisitorChoiceDialog ownerName="Bob" plotId={plotId} fee={feeOf(scenario.game, plotId)} canAttack={canAttack} attackEnabled={canAttack && createCanRun(scenario.game, scenario.viewerId)("attack")} onPay={() => log("Pay")} onAttack={() => log("Attack")} />;
   }),
   dialogEntry("dialog-visitor-peace", "Dialog: visitor under Peace Treaty", () => scenarios.visitorDecision({ peace: true }), (scenario, log) => {
       const { plotId, canAttack } = pendingOf(scenario, "visitorChoice");
-      return <VisitorChoiceDialog ownerName="Bob" plotId={plotId} fee={feeOf(scenario.game, plotId)} canAttack={canAttack} onPay={() => log("Pay")} />;
+      return <VisitorChoiceDialog ownerName="Bob" plotId={plotId} fee={feeOf(scenario.game, plotId)} canAttack={canAttack} attackEnabled={canAttack && createCanRun(scenario.game, scenario.viewerId)("attack")} onPay={() => log("Pay")} onAttack={() => log("Attack")} />;
     }),
   dialogEntry("dialog-owner", "Dialog: owner collects or attacks", () => scenarios.ownerDecision("1"), (scenario, log) => {
       const { plotId, canAttack } = pendingOf(scenario, "ownerChoice");
-      return <OwnerChoiceDialog visitorName="Alice" plotId={plotId} fee={feeOf(scenario.game, plotId)} canAttack={canAttack} onCollect={() => log("Collect")} />;
+      return <OwnerChoiceDialog visitorName="Alice" plotId={plotId} fee={feeOf(scenario.game, plotId)} canAttack={canAttack} attackEnabled={canAttack && createCanRun(scenario.game, scenario.viewerId)("attack")} onCollect={() => log("Collect")} onAttack={() => log("Attack")} />;
     }),
   dialogEntry("dialog-waiting", "Dialog: waiting for the owner", () => scenarios.ownerDecision("0"), () => <WaitingDialog ownerName="Bob" />),
   dialogEntry("dialog-lucky-die", "Dialog: Lucky Die", scenarios.luckyDieChoice, (scenario, log) => (
@@ -245,6 +373,7 @@ export const GAME_ENTRIES: GalleryEntry[] = [
       );
     }
   },
+  ...FIGHT_ENTRIES,
   {
     id: "shell-spectator",
     group: "Shell",

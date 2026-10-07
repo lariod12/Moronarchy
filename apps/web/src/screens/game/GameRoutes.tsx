@@ -5,6 +5,7 @@ import { roomPath } from "../../game/labels";
 import { useMatch } from "../../match/MatchProvider";
 import { SketchBox } from "../../ui/SketchBox/SketchBox";
 import { CardPickScreen } from "../cards/CardPickScreen";
+import { FightScreen } from "../fight/FightScreen";
 import { MapScreen } from "../map/MapScreen";
 import { ManageScreen, StationScreen } from "../station/StationScreen";
 import { HomeHub } from "./HomeHub";
@@ -20,13 +21,14 @@ const RoomHomeRedirect = () => {
   return <Navigate to={roomPath(roomCode, "home")} replace />;
 };
 
-// The in-game pages under /room/:code: home, map, cards, station and manage/:plotId. Needs a GameSessionProvider.
+// The in-game pages under /room/:code: home, map, fight, cards, station and manage/:plotId. Needs a GameSessionProvider.
 export const GameRouteTree = () => (
   <Routes>
     <Route element={<GameLayout />}>
       <Route index element={<RoomHomeRedirect />} />
       <Route path="home" element={<HomePage />} />
       <Route path="map" element={<MapScreen />} />
+      <Route path="fight" element={<FightScreen />} />
       <Route path="cards" element={<CardPickScreen />} />
       <Route path="station" element={<StationScreen />} />
       <Route path="manage/:plotId" element={<ManageScreen />} />

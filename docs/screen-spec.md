@@ -104,11 +104,12 @@ Bước 5A: route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `
 - Giữa bản đồ: xúc xắc, bong bóng hiện kết quả (số xúc xắc + bonus), nút **Tap to Roll** (thiết kế ghi "Tap to Scroll"). Nút chỉ bật trong lượt mình khi đã nhận lượt và chưa đổ. Trước khi đổ, nếu có Horse thì có thêm nút **Use Horse (+3)**. Dòng chữ nhỏ bên dưới cho biết đang là lượt ai / cần làm gì.
 - Sau khi đổ: xúc xắc hiện số, vua của người đang đi di chuyển từng ô theo `turn.path` (khoảng 220 ms mỗi ô, tắt animation khi người dùng chọn giảm chuyển động) trên **mọi máy**; popup chỉ hiện sau khi vua đi xong. Tải lại trang giữa lượt không chạy lại animation. Đi qua Start thì mở Upgrade Card rồi Start Station, xong thì đi tiếp.
 - Có Lucky Die: sau khi đổ hiện popup "You rolled N" với **Reroll (Lucky Die)** / **Move**.
-- Nút **Attack** trong mọi popup quyết định đang bị khóa kèm gợi ý "Fights arrive in the next update" cho đến bước 5B (màn Fight); khi có Peace Treaty gợi ý là "Peace Treaty: no attacks".
+- Nút **Attack** trong popup quyết định bật khi luật cho phép (`pending.canAttack`) và engine nhận lệnh (`canRun("attack")`); bấm là vào trận ở màn Fight (mục 14). Khi có Peace Treaty nút bị khóa kèm gợi ý "Peace Treaty: no attacks".
+- Khi có trận đang diễn ra, người không đánh thấy nút nhỏ **Watch the fight** giữa Map để vào xem.
 - Popup trên Map:
   - [62](ui/62-map-waiting-decision.png) "You stand on <Tên>'s plot, waiting for decision…": A chờ B quyết định, không có nút và không đóng được.
   - ~~[63](ui/63-map-fight-back-prompt.png) "fight back?"~~: **bỏ**. Thay bằng popup cho B khi B đứng trên đất: "Player A stopped on your plot" với **Collect fee** / **Attack** (dùng style của 63).
-  - B vắng mặt khi đất bị tấn công: thông báo "Player A is attacking your plot", có nút xem trận.
+  - B vắng mặt khi đất bị tấn công: popup "Alice is attacking your Plot 12!" với **Watch** / **Later** (mục 14).
   - [64](ui/64-map-attack-prompt.png) "You get in other players plot. Do you want to attack on it?" Yes / No: hiện cho A khi B không ở đó.
   - Mua đất trống (đã làm ở 5A): tiêu đề "Plot 12", nội dung "Buy this plot for 80 coin?" với **Skip** / **Buy** (Buy khóa khi không đủ coin). Đất vừa bị phá: "You broke Plot 12. Buy it now for 80 coin?".
   - Đứng trên đất người khác (B vắng): "You get in Bob's plot (Plot 12). Pay 40 coin or attack?" với **Pay 40** / **Attack**. Khi B có mặt, B nhận "Alice stopped on your Plot 12. Collect 40 coin or attack?" với **Collect** / **Attack**.
@@ -169,20 +170,23 @@ Bước 5A: route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `
 
 ## 14. Fight — [90](ui/90-fight.png), [91](ui/91-fight-empty.png), [92](ui/92-fight-status.png)
 
-Luật: [game-design.md mục 10](game-design.md#10-fight).
+Luật: [game-design.md mục 10](game-design.md#10-fight). Đã làm ở bước 5B: trang `/room/:code/fight`, TopBar "Fight". Mọi số (máu, Attack/Defense, buff, phí rút lui) lấy từ selector `getFightView` của core, UI không tự tính luật.
 
-- TopBar "Fight". Hai khung đấu, bên trái là mình, bên phải là đối thủ. Mỗi khung có:
-  - thanh máu "hiện tại/tối đa" ở trên (vd 50/100);
-  - tên ("You", "Player 2", "Residents ×5", "Plot 12");
-  - hình đại diện: avatar vua, icon đội resident kèm số còn sống, hoặc icon Plot kèm level.
-- Kiếm chéo ở giữa hai khung.
-- Hàng icon dưới thanh máu (màn 92): **vương miện = hiệp thắng, ✕ = hiệp thua**. Thắng 2 hiệp là thắng trận.
-- Xúc xắc và nút **Roll** (thiết kế ghi "Scroll") ở dưới. Mỗi người tự bấm Roll trên máy mình. Bên hệ thống (residents, Plot) tự đổ.
-- Sau mỗi hiệp hiện điểm đánh hai bên và số máu mất (bong bóng số trên khung bị đánh).
-- Trước mỗi hiệp: nút **Use item** (mở kho đồ dạng popup). Người tấn công có thêm nút **Retreat**, kèm xác nhận "Retreat counts as a loss — you will pay X coin".
-- Màn 91 (khung trống): trạng thái chờ khi đang nạp đối thủ hoặc chờ bên kia Roll (Đề xuất).
-- Kết thúc trận: popup kết quả (thắng/thua, coin cướp được hoặc phí phải trả, resident chết, Plot tụt level). Nếu Plot bị phá mất: popup "Buy this plot now? Price X".
-- Người không tham gia trận vẫn xem được (chế độ khán giả, không có nút).
+- **Bố cục:** hai khung đấu cạnh nhau, kiếm chéo ở giữa. Người đang đánh luôn ở bên trái ("You"); khán giả thấy bên tấn công ở trái. Mỗi khung có:
+  - thanh máu "hiện tại/tối đa" (vua: máu/Max Health; đội resident: máu đội/tổng máu đội ban đầu; Plot: máu/máu tối đa của level);
+  - hàng dấu hiệp dưới thanh máu: **vương miện = thắng hiệp, ✕ = thua hiệp**, hiệp hòa không có dấu;
+  - tên: "You" / tên vua / "Residents ×N" (N còn sống) / "Plot 12 · Lv 2";
+  - hình: avatar vua, icon đội resident, icon Plot; dòng nhỏ "ATK n · DEF n" và thẻ buff "ATK +3" / "DEF +3" khi đã dùng War Horn / Wood Shield.
+- **Xúc xắc:** hai viên (một viên mỗi bên) dưới hai khung. Khi một hiệp xong, cả hai lắc khoảng 600 ms (tắt khi giảm chuyển động; tải lại trang không lắc lại), rồi hiện từng bên "xúc xắc + Attack = điểm" (vd "4 + 5 = 9"), viên thắng có viền, dòng "<tên> wins the round" hoặc "Tie — roll again", và nhãn nổi trên khung bị đánh: "-7", hoặc "Blocked" khi Plot thụ động thắng hiệp.
+- **Dòng trạng thái:** "Round N: roll the dice" khi tới lượt mình đổ; sau khi đổ "Waiting for Bob to roll…" cho tới khi hiệp kết thúc. Bên hệ thống (residents, Plot) tự đổ nên không có dòng chờ cho họ.
+- **Nút (chỉ người đang đánh):** **Roll** (ẩn sau khi đã đổ trong hiệp); **Use item** mở bảng chọn (bên dưới); **Retreat** chỉ cho bên tấn công, khóa sau khi đã đổ trong hiệp. Khán giả không có nút nào.
+- **Use item:** popup liệt kê item dùng được trong trận mà túi đang có (Meat, War Horn, Wood Shield) kèm số lượng và tác dụng ("Heal 30 health", "+3 attack for this fight", "+3 defense for this fight"); mỗi dòng có nút **Use**, bật theo `canRun("useItem", id)` (khóa khi đã đổ trong hiệp). Túi trống: "You have no items for this fight."
+- **Retreat:** hỏi "Retreat counts as a loss. You will pay X coin." với **No** / **Yes**. Đấu vua đấu vua không mất phí nên câu chỉ còn "Retreat counts as a loss."
+- **Bị ép vào trang:** hai bên đang đánh bị đưa về trang Fight ngay khi trận bắt đầu và nút Back bị khóa cho tới khi trận kết thúc; tải lại trang giữa trận vẫn về đúng trang với đúng số hiệp, không chạy lại animation.
+- **Thông báo:** người không đánh nhận popup "Alice is attacking Plot 12 (Bob)" (chủ đất vắng: "Alice is attacking your Plot 12!") với **Watch** (vào xem) / **Later**, mỗi trận một lần. Ai cũng vào được trang Fight khi đang có trận (nút **Watch the fight** trên Map).
+- **Kết thúc trận:** popup kết quả (một lần mỗi trận) cho hai bên đánh và chủ đất. Tiêu đề **Victory!** / **Defeat** cho người đánh, **Fight over** cho chủ đất vắng mặt. Các dòng: "Winner: …", phí trả ("You paid 30 coin to Bob" / "Alice paid you 30 coin") hoặc coin cướp được, số resident chết, kết quả Plot ("Plot 12 dropped to Lv 1" / "Plot 12 was destroyed"), ghi chú rút lui, ghi chú bị hạ gục. **Done** đưa hai bên về Map. Nếu Plot bị phá, popup "You broke Plot 12. Buy it now…" hiện ngay sau popup kết quả.
+- Màn 91 (khung trống) không dùng: dữ liệu trận luôn có sẵn nên không có trạng thái "đang nạp".
+- Giới hạn đã biết: engine xóa `game.fight` ngay khi hiệp cuối kết thúc trận, nên xúc xắc của hiệp cuối không được hiện; popup kết quả thay thế.
 
 ## 15. Kết thúc — [95](ui/95-map-before-game-over.png), [96](ui/96-game-over-spectator.png), [97](ui/97-result-win.png), [98](ui/98-result-lose.png), [99](ui/99-result-ranking.png)
 

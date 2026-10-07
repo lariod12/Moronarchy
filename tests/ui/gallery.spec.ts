@@ -25,6 +25,26 @@ const hasHorizontalOverflow = (page: Page): Promise<boolean> =>
     return element.scrollWidth > element.clientWidth;
   });
 
+// The gallery group "Fight": pages of the fight and its popups.
+const FIGHT_ENTRY_IDS = [
+  "fight-king-start",
+  "fight-king-mid",
+  "fight-waiting",
+  "fight-garrison",
+  "fight-plot",
+  "fight-buffs",
+  "fight-item-sheet",
+  "fight-retreat-confirm",
+  "fight-spectator",
+  "fight-final-round",
+  "fight-result-victory",
+  "fight-result-defeat",
+  "fight-result-destroyed",
+  "fight-result-retreat",
+  "dialog-fight-notice",
+  "dialog-fight-notice-owner"
+];
+
 // Every entry of the gallery group "Game" (plus the spectator shell), checked at phone width.
 const GAME_ENTRY_IDS = [
   "map-start",
@@ -51,7 +71,9 @@ const GAME_ENTRY_IDS = [
   "manage-plot",
   "activity-line",
   "result-placeholder",
-  "shell-spectator"
+  "shell-spectator",
+  "dialog-visitor-attack",
+  ...FIGHT_ENTRY_IDS
 ];
 
 const holdCrown = async (page: Page, name: RegExp, ms: number): Promise<void> => {
@@ -252,10 +274,15 @@ test.describe("gallery", () => {
     await expect(page.getByRole("button", { name: "Buy" })).toBeDisabled();
     await page.goto("/dev/gallery/dialog-visitor");
     await expect(page.getByRole("dialog")).toContainText("Pay 30 coin or attack?");
-    await expect(page.getByRole("button", { name: "Attack" })).toBeDisabled();
-    await expect(page.getByText("Fights arrive in the next update")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Attack" })).toBeEnabled();
+    await expect(page.getByText("Fights arrive in the next update")).toHaveCount(0);
+    await page.getByRole("button", { name: "Attack" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("Attack");
+    await page.goto("/dev/gallery/dialog-visitor-attack");
+    await expect(page.getByRole("button", { name: "Attack" })).toBeEnabled();
     await page.goto("/dev/gallery/dialog-visitor-peace");
     await expect(page.getByText("Peace Treaty: no attacks")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Attack" })).toBeDisabled();
     await page.goto("/dev/gallery/dialog-owner");
     await expect(page.getByRole("dialog")).toContainText("Alice stopped on your Plot 5. Collect 30 coin or attack?");
     await page.goto("/dev/gallery/dialog-waiting");
@@ -299,6 +326,86 @@ test.describe("gallery", () => {
     expect(errors).toEqual([]);
   });
 
+  test("fight at 1-1 shows two health bars, round markers, dice scores and the damage", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/fight-king-mid");
+    await expect(page.getByText("Fight", { exact: true })).toBeVisible();
+    await expect(page.getByRole("meter")).toHaveCount(2);
+    await expect(page.getByTestId("fight-panel")).toHaveCount(2);
+    await expect(page.getByTestId("round-marker")).toHaveCount(4);
+    await expect(page.locator('[data-testid="round-marker"][data-result="won"]')).toHaveCount(2);
+    await expect(page.locator('[data-testid="round-marker"][data-result="lost"]')).toHaveCount(2);
+    await expect(page.getByTestId("fight-score")).toHaveText(["2 + 5 = 7", "6 + 5 = 11"]);
+    await expect(page.getByTestId("fight-damage")).toHaveText("-8");
+    await expect(page.getByRole("button", { name: "Roll" })).toBeEnabled();
+    await page.getByRole("button", { name: "Roll" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("roll");
+    expect(errors).toEqual([]);
+  });
+
+  test("fight states: waiting, garrison, plot, buffs and spectator", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/fight-waiting");
+    await expect(page.getByTestId("fight-status")).toHaveText("Waiting for Alice to roll…");
+    await expect(page.getByRole("button", { name: "Roll" })).toHaveCount(0);
+    await page.goto("/dev/gallery/fight-garrison");
+    await expect(page.getByText("Residents ×1", { exact: true })).toBeVisible();
+    await page.goto("/dev/gallery/fight-plot");
+    await expect(page.getByText("Plot 5 · Lv 2", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("fight-damage")).toHaveText("Blocked");
+    await page.goto("/dev/gallery/fight-buffs");
+    await expect(page.getByText("ATK +3")).toHaveCount(2);
+    await expect(page.getByText("DEF +3")).toHaveCount(1);
+    await page.goto("/dev/gallery/fight-final-round");
+    // The deciding round stays on screen: both score lines, the winner, no buttons, empty garrison pool.
+    await expect(page.getByTestId("fight-score")).toHaveText(["6 + 5 = 11", "1 + 4 = 5"]);
+    await expect(page.getByTestId("fight-status")).toHaveText("You win the fight");
+    await expect(page.locator('[data-testid="fight-panel"][data-winner="true"]')).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /^(Roll|Use item|Retreat)$/ })).toHaveCount(0);
+    await expect(page.getByTestId("round-marker")).toHaveCount(4);
+    await page.goto("/dev/gallery/fight-spectator");
+    await expect(page.getByRole("button", { name: /^(Roll|Use item|Retreat)$/ })).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test("fight popups: items, retreat, results and notices", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/fight-item-sheet");
+    await expect(page.getByRole("dialog", { name: "Use item" })).toBeVisible();
+    await expect(page.getByTestId("item-sheet-row")).toHaveCount(3);
+    await page.getByRole("button", { name: "Use War Horn" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("use:warHorn");
+    await page.goto("/dev/gallery/fight-retreat-confirm");
+    await expect(page.getByRole("dialog", { name: "Retreat" })).toContainText(/Retreat counts as a loss\. You will pay \d+ coin\./);
+    await page.goto("/dev/gallery/fight-result-victory");
+    await expect(page.getByRole("dialog", { name: "Victory!" })).toContainText("Winner: You");
+    await page.goto("/dev/gallery/fight-result-defeat");
+    await expect(page.getByRole("dialog", { name: "Defeat" })).toContainText("You paid");
+    await page.goto("/dev/gallery/fight-result-destroyed");
+    await expect(page.getByRole("dialog", { name: "Victory!" })).toContainText("Plot 5 was destroyed");
+    await page.goto("/dev/gallery/fight-result-retreat");
+    await expect(page.getByRole("dialog", { name: "Defeat" })).toContainText("You retreated");
+    await page.goto("/dev/gallery/dialog-fight-notice");
+    await expect(page.getByRole("dialog")).toContainText("Alice is attacking Plot 5 (Bob)");
+    await page.getByRole("button", { name: "Watch" }).click();
+    await expect(page.getByTestId("gallery-last-action")).toHaveText("Watch");
+    await page.goto("/dev/gallery/dialog-fight-notice-owner");
+    await expect(page.getByRole("dialog")).toContainText("Alice is attacking your Plot 5!");
+    expect(errors).toEqual([]);
+  });
+
+  test("fight entries have no horizontal overflow at 320px", async ({ page }) => {
+    test.setTimeout(120_000);
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 320, height: 640 });
+    for (const id of FIGHT_ENTRY_IDS) {
+      await page.goto(`/dev/gallery/${id}`);
+      await expect(page.locator("[data-gallery-entry]")).toBeVisible();
+      expect(await hasHorizontalOverflow(page), `overflow on ${id} at 320px`).toBe(false);
+    }
+    expect(errors).toEqual([]);
+  });
+
   test("saves reference screenshots", async ({ page }) => {
     for (const id of [
       "shell-active",
@@ -312,7 +419,12 @@ test.describe("gallery", () => {
       "dialog-visitor",
       "cards-pick",
       "station-plots",
-      "result-placeholder"
+      "result-placeholder",
+      "fight-king-mid",
+      "fight-garrison",
+      "fight-final-round",
+      "fight-result-victory",
+      "dialog-fight-notice"
     ]) {
       await page.goto(`/dev/gallery/${id}`);
       await expect(page.locator("[data-gallery-entry]")).toBeVisible();

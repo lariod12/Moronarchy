@@ -10,6 +10,7 @@ export { getEquipmentBonus, getKingFightStats, getFighterStats } from "./rules/s
 export type { CombatStats, GarrisonStats, KingStats, ResidentStats } from "./rules/stats";
 export * from "./flow/commands";
 export * from "./flow/selectors";
+export * from "./flow/fight-view";
 export { createGame } from "./flow/setup";
 export * from "./flow/preview";
 export type { GameCommandName } from "./match/commands";

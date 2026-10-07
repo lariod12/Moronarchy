@@ -1,5 +1,7 @@
-import { getCrownState, getPlot } from "@moronarchy/core/engine";
+import { getCrownState, getFightViewerRole, getPlot } from "@moronarchy/core/engine";
 import type { GameState, LogEntry, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
+import { describeFightResult, fightNoticeKey } from "./fight-result";
+import type { FightResultModel } from "./fight-result";
 import { getNotification } from "./log-format";
 import type { Notification } from "./log-format";
 
@@ -12,6 +14,8 @@ export type ModalModel =
   | { kind: "luckyDie"; value: number; bonus: number }
   | { kind: "waiting"; pending: Pending<"ownerChoice"> }
   | { kind: "endTurn" }
+  | { kind: "fightNotice"; key: string; plotId: TileId; attackerId: PlayerId; ownerId: PlayerId | null }
+  | { kind: "fightResult"; model: FightResultModel }
   | { kind: "notice"; entry: LogEntry; notification: Notification }
   | { kind: "ownPlot"; plotId: TileId; key: string };
 
@@ -23,6 +27,10 @@ export interface ModalInput {
   // Log entries up to this seq were already shown (or predate this tab).
   seenSeq: number;
   dismissed: ReadonlySet<string>;
+  // The viewer is looking at the Fight page (so they get the result of the fight they watched).
+  onFightPage?: boolean;
+  // The result popup the Fight page already finished revealing (the popup waits for its last round).
+  revealedKey?: string | null;
 }
 
 export const ownPlotKey = (game: GameState, plotId: TileId): string => `ownPlot:${game.round}:${game.turn.playerId}:${plotId}`;
@@ -37,14 +45,58 @@ export const getPendingNotices = (game: GameState, viewerId: PlayerId, seenSeq: 
     return notification ? [{ kind: "notice" as const, entry, notification }] : [];
   });
 
-// Exactly one modal at a time. Priority: your decision, Lucky Die, waiting for someone else, End of turn,
-// notifications, own-plot shortcut. Nothing shows while the king is still walking.
-export const selectModal = ({ game, viewerId, isAnimating, endTurnOpen, seenSeq, dismissed }: ModalInput): ModalModel | null => {
+// The finished fight the viewer took part in (or owns the plot of), until they pressed Done.
+const getUnseenFightResult = (
+  game: GameState,
+  viewerId: PlayerId,
+  seenSeq: number,
+  dismissed: ReadonlySet<string>,
+  watching: boolean
+): Extract<ModalModel, { kind: "fightResult" }> | null => {
+  const model = describeFightResult(game, viewerId, watching);
+  return model && model.seq > seenSeq && !dismissed.has(model.key) ? { kind: "fightResult", model } : null;
+};
+
+// A fight the viewer does not fight in: watch it or not. The absent plot owner gets the same popup, worded for them.
+const getFightNotice = (game: GameState, viewerId: PlayerId, seenSeq: number, dismissed: ReadonlySet<string>): ModalModel | null => {
+  const { fight } = game;
+  if (!fight || fight.attacker.type !== "king" || getFightViewerRole(game, viewerId) !== "spectator") {
+    return null;
+  }
+  const started = [...game.log].reverse().find((entry) => entry.type === "fightStarted");
+  if (!started || started.seq <= seenSeq) {
+    return null;
+  }
+  const key = fightNoticeKey(started.seq);
+  if (dismissed.has(key)) {
+    return null;
+  }
+  return { kind: "fightNotice", key, plotId: fight.plotId, attackerId: fight.attacker.playerId, ownerId: getPlot(game, fight.plotId)?.ownerId ?? null };
+};
+
+// Exactly one modal at a time. Priority: your decision, the result of your fight, a fight you can watch, Lucky Die,
+// waiting for someone else, End of turn, notifications, own-plot shortcut. Nothing shows while the king is still
+// walking, and fighters see only their fight (the Fight page is forced on them).
+export const selectModal = ({ game, viewerId, isAnimating, endTurnOpen, seenSeq, dismissed, onFightPage = false, revealedKey = null }: ModalInput): ModalModel | null => {
   if (isAnimating) {
     return null;
   }
   const { pending, turn } = game;
   const isTurnPlayer = turn.playerId === viewerId;
+
+  if (game.fight && getFightViewerRole(game, viewerId) !== "spectator") {
+    return null;
+  }
+
+  const fightResult = getUnseenFightResult(game, viewerId, seenSeq, dismissed, onFightPage);
+  // On the Fight page the popup waits until the last round has been shown.
+  if (fightResult && onFightPage && revealedKey !== fightResult.model.key) {
+    return null;
+  }
+  // The attacker who broke a plot hears how the fight went before being offered to buy it.
+  if (fightResult && pending?.kind === "buyPlot" && pending.playerId === viewerId && pending.reason === "destroyed") {
+    return fightResult;
+  }
 
   if (pending && pending.playerId === viewerId) {
     switch (pending.kind) {
@@ -58,6 +110,15 @@ export const selectModal = ({ game, viewerId, isAnimating, endTurnOpen, seenSeq,
         // The card pick is its own page, not a popup.
         break;
     }
+  }
+
+  if (fightResult) {
+    return fightResult;
+  }
+
+  const fightNotice = getFightNotice(game, viewerId, seenSeq, dismissed);
+  if (fightNotice) {
+    return fightNotice;
   }
 
   if (isTurnPlayer && !pending && turn.step === "rolled" && turn.dice) {

@@ -31,3 +31,23 @@ describe("getPageName", () => {
     expect(getPageName("/room/R001/")).toBe("home");
   });
 });
+
+describe("getForcedPage during a fight", () => {
+  it("forces both kings of a duel to the fight page, but not a bystander", () => {
+    const { game } = scenarios.fightKingMid();
+    expect(getForcedPage(game, "1", false)).toBe("fight");
+    expect(getForcedPage(game, "0", false)).toBe("fight");
+    expect(getForcedPage(game, "2", false)).toBeNull();
+  });
+
+  it("forces the visitor but not the absent owner of a siege", () => {
+    const { game } = scenarios.fightStartedElsewhere();
+    expect(getForcedPage(game, "0", false)).toBe("fight");
+    expect(getForcedPage(game, "1", false)).toBeNull();
+  });
+
+  it("waits for the walk to finish and lets go once the fight is over", () => {
+    expect(getForcedPage(scenarios.fightKingMid().game, "1", true)).toBeNull();
+    expect(getForcedPage(scenarios.fightWon().game, "0", false)).toBeNull();
+  });
+});

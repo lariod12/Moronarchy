@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { getFightViewerRole } from "@moronarchy/core/engine";
 import type { PlayerId, TileId } from "@moronarchy/core/engine";
+import { useNavigate } from "react-router";
+import { roomPath } from "../../game/labels";
 import { useGameSession } from "../../game/GameSession";
 import { useMovement } from "../../game/MovementContext";
 import { MapView } from "./MapView";
@@ -7,7 +10,8 @@ import { MapView } from "./MapView";
 const ROLL_FEEDBACK_MAX_MS = 3000;
 
 export const MapScreen = () => {
-  const { game, viewerId, actions, canRun } = useGameSession();
+  const { game, viewerId, roomCode, actions, canRun } = useGameSession();
+  const navigate = useNavigate();
   const { animatedPosition, isAnimating } = useMovement();
   const [rolling, setRolling] = useState(false);
 
@@ -45,6 +49,7 @@ export const MapScreen = () => {
         actions.rollDice();
       }}
       onUseHorse={() => actions.useItem("horse")}
+      onWatchFight={game.fight && getFightViewerRole(game, viewerId) === "spectator" ? () => navigate(roomPath(roomCode, "fight")) : undefined}
     />
   );
 };

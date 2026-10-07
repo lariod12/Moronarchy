@@ -65,3 +65,13 @@
   font-size: var(--text-sm);
   color: var(--muted);
 }
+
+.ui-dialog__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-md);
+}

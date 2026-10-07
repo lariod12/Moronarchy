@@ -17,6 +17,8 @@ export interface MapViewProps {
   animating?: boolean;
   onRoll?: () => void;
   onUseHorse?: () => void;
+  // A fight the viewer is not part of is running: open it as a spectator.
+  onWatchFight?: () => void;
 }
 
 const isDieValue = (value: number): value is 1 | 2 | 3 | 4 | 5 | 6 => Number.isInteger(value) && value >= 1 && value <= 6;
@@ -38,12 +40,14 @@ export const getMapHint = (game: GameState, viewerId: PlayerId): string => {
       return "Your turn: roll the dice";
     case "postMove":
       return "Hold the crown to end your turn";
+    case "fight":
+      return "Fight in progress";
     default:
       return "";
   }
 };
 
-export const MapView = ({ game, viewerId, positions, canRoll, canUseHorse = true, rolling = false, animating = false, onRoll, onUseHorse }: MapViewProps) => {
+export const MapView = ({ game, viewerId, positions, canRoll, canUseHorse = true, rolling = false, animating = false, onRoll, onUseHorse, onWatchFight }: MapViewProps) => {
   const { turn } = game;
   const viewer = game.kings[viewerId];
   const showHorse =
@@ -69,6 +73,11 @@ export const MapView = ({ game, viewerId, positions, canRoll, canUseHorse = true
           {showHorse ? (
             <Button size="sm" onClick={onUseHorse} disabled={!canUseHorse}>
               {`Use Horse (+${HORSE_MOVE_BONUS})`}
+            </Button>
+          ) : null}
+          {onWatchFight ? (
+            <Button size="sm" onClick={onWatchFight}>
+              Watch the fight
             </Button>
           ) : null}
           {hint ? <p className="map-center__hint">{hint}</p> : null}

@@ -1,11 +1,13 @@
 import { getPlot, getPlotFee } from "@moronarchy/core/engine";
 import type { GameState, PlayerId, TileId } from "@moronarchy/core/engine";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useMovement } from "./MovementContext";
 import { useGameSession } from "./GameSession";
 import {
   BuyPlotDialog,
   EndTurnDialog,
+  FightNoticeDialog,
+  FightResultDialog,
   LuckyDieDialog,
   NoticeDialog,
   OwnPlotDialog,
@@ -13,6 +15,9 @@ import {
   VisitorChoiceDialog,
   WaitingDialog
 } from "./dialogs/dialogs";
+import { fightNoticeText } from "./fight-result";
+import { useFightReveal } from "./FightRevealContext";
+import { getPageName } from "./forced-route";
 import { roomPath } from "./labels";
 import { selectModal } from "./modal-model";
 import { useSeenState } from "./useSeenState";
@@ -34,9 +39,20 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
   const { game, viewerId, roomCode, gameId, actions, canRun } = useGameSession();
   const { isAnimating } = useMovement();
   const navigate = useNavigate();
+  const onFightPage = getPageName(useLocation().pathname) === "fight";
+  const { revealedKey } = useFightReveal();
   const seen = useSeenState(gameId, viewerId, game);
 
-  const modal = selectModal({ game, viewerId, isAnimating, endTurnOpen, seenSeq: seen.seq, dismissed: seen.dismissed });
+  const modal = selectModal({
+    game,
+    viewerId,
+    isAnimating,
+    endTurnOpen,
+    seenSeq: seen.seq,
+    dismissed: seen.dismissed,
+    onFightPage,
+    revealedKey
+  });
   if (!modal) {
     return null;
   }
@@ -60,7 +76,9 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
           plotId={modal.pending.plotId}
           fee={feeOf(game, modal.pending.plotId)}
           canAttack={modal.pending.canAttack}
+          attackEnabled={modal.pending.canAttack && canRun("attack")}
           onPay={actions.payFee}
+          onAttack={actions.attack}
         />
       );
     case "ownerChoice":
@@ -70,7 +88,9 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
           plotId={modal.pending.plotId}
           fee={feeOf(game, modal.pending.plotId)}
           canAttack={modal.pending.canAttack}
+          attackEnabled={modal.pending.canAttack && canRun("attack")}
           onCollect={actions.collectFee}
+          onAttack={actions.attack}
         />
       );
     case "waiting":
@@ -91,6 +111,34 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
           onYes={() => {
             onEndTurnClose();
             actions.endTurn();
+          }}
+        />
+      );
+    case "fightNotice": {
+      const text = fightNoticeText(game, viewerId, modal.attackerId, modal.plotId, modal.ownerId);
+      return (
+        <FightNoticeDialog
+          key={modal.key}
+          text={text}
+          onWatch={() => {
+            seen.dismiss(modal.key);
+            navigate(roomPath(roomCode, "fight"));
+          }}
+          onLater={() => seen.dismiss(modal.key)}
+        />
+      );
+    }
+    case "fightResult":
+      return (
+        <FightResultDialog
+          key={modal.model.key}
+          title={modal.model.title}
+          lines={modal.model.lines}
+          onDone={() => {
+            seen.dismiss(modal.model.key);
+            if (modal.model.role === "attacker" || modal.model.role === "defender" || onFightPage) {
+              navigate(roomPath(roomCode, "map"), { replace: true });
+            }
           }}
         />
       );

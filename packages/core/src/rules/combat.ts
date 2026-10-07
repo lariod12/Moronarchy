@@ -13,6 +13,7 @@ import { getPlotBasePrice, getPlotFee } from "./economy";
 import { chargeFee } from "./elimination";
 import { pushLog } from "./log";
 import { damagePlot, releasePlot } from "./plots";
+import { snapshotFightSide } from "./fight-snapshot";
 import { damageGarrison } from "./residents";
 import type { Rng } from "./rng";
 import { getFighterStats, getKingStats, getResidentStats, getResidentsOnPlot } from "./stats";
@@ -209,6 +210,9 @@ export const endFight = (state: GameState, winner: "attacker" | "defender", retr
     return;
   }
   const attackerId = fight.attacker.playerId;
+  // Frozen before knock-outs, fees and plot damage change anything: this is what the last round looked like.
+  const attackerSide = snapshotFightSide(state, fight, "attacker");
+  const defenderSide = snapshotFightSide(state, fight, "defender");
   const residentsKilled = fight.garrison ? fight.garrison.startCount - getResidentsOnPlot(state, plot.id).length : 0;
 
   for (const id of [attackerId, fight.defender.type === "king" ? fight.defender.playerId : null]) {
@@ -228,7 +232,10 @@ export const endFight = (state: GameState, winner: "attacker" | "defender", retr
     feePaid: 0,
     loot: 0,
     residentsKilled,
-    plotOutcome: "none"
+    plotOutcome: "none",
+    rounds: fight.rounds.map((round) => ({ ...round })),
+    attackerSide,
+    defenderSide
   };
   state.fight = null;
 

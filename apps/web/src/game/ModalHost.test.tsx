@@ -1,9 +1,10 @@
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { payFee } from "@moronarchy/core/engine";
 import { createScriptedRng } from "@moronarchy/core/testing";
 import * as scenarios from "../dev/gallery/game-fixtures";
 import { renderGame } from "./test-utils";
+import type { GameState } from "@moronarchy/core/engine";
 
 const dialog = (name: string | RegExp) => screen.getByRole("dialog", { name });
 
@@ -41,17 +42,18 @@ describe("ModalHost", () => {
     expect(screen.getByText("You broke Plot 7. Buy it now for 60 coin?")).toBeInTheDocument();
   });
 
-  it("offers the visitor Pay, with Attack disabled for now", () => {
+  it("offers the visitor Pay or Attack", () => {
     const { game, viewerId } = scenarios.visitorDecision();
     const view = renderGame(game, viewerId, { page: "map" });
     expect(within(dialog("Message")).getByText(/You get in Bob's plot \(Plot 5\)\. Pay 30 coin or attack\?/)).toBeInTheDocument();
-    expect(screen.getByText("Fights arrive in the next update")).toBeInTheDocument();
+    expect(screen.queryByText("Fights arrive in the next update")).not.toBeInTheDocument();
+    expect(screen.queryByText("Peace Treaty: no attacks")).not.toBeInTheDocument();
     const attack = screen.getByRole("button", { name: "Attack" });
-    expect(attack).toBeDisabled();
+    expect(attack).toBeEnabled();
     fireEvent.click(attack);
-    expect(view.send).not.toHaveBeenCalled();
+    expect(view.send).toHaveBeenLastCalledWith("attack");
     fireEvent.click(screen.getByRole("button", { name: "Pay 30" }));
-    expect(view.send).toHaveBeenCalledWith("payFee");
+    expect(view.send).toHaveBeenLastCalledWith("payFee");
   });
 
   it("explains the Peace Treaty on the disabled Attack", () => {
@@ -65,7 +67,9 @@ describe("ModalHost", () => {
     const owner = scenarios.ownerDecision("1");
     const ownerView = renderGame(owner.game, owner.viewerId, { page: "home" });
     expect(screen.getByText("Alice stopped on your Plot 5. Collect 30 coin or attack?")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Attack" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Attack" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Attack" }));
+    expect(ownerView.send).toHaveBeenLastCalledWith("attack");
     fireEvent.click(screen.getByRole("button", { name: "Collect" }));
     expect(ownerView.send).toHaveBeenCalledWith("collectFee");
     cleanup();
@@ -143,5 +147,143 @@ describe("ModalHost", () => {
     const { game, viewerId } = scenarios.visitorDecision();
     renderGame(game, viewerId, { page: "home" });
     expect(dialog("Message")).toBeInTheDocument();
+  });
+
+  describe("fights", () => {
+    // Renders the page with the game as it was, then lets the match move on to `next` (the tab is "caught up" first).
+    const renderThen = (before: GameState, next: GameState, viewerId: string, page = "map") => {
+      const view = renderGame(before, viewerId, { page });
+      view.update(next);
+      return view;
+    };
+
+    it("sends fighters to the Fight page and keeps them there", () => {
+      const { game, viewerId } = scenarios.fightKingMid("1");
+      const view = renderGame(game, viewerId, { page: "home" });
+      expect(view.path()).toBe("/room/R001/fight");
+      expect(screen.getByText("Fight", { selector: ".ui-tag" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("lets a bystander choose between Watch and Later, once per fight", () => {
+      const before = scenarios.visitorDecision().game;
+      const { game } = scenarios.fightStartedElsewhere("2");
+      const view = renderThen(before, game, "2");
+      expect(dialog("Fight!")).toHaveTextContent("Alice is attacking Plot 5 (Bob)");
+      fireEvent.click(screen.getByRole("button", { name: "Later" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(view.path()).toBe("/room/R001/map");
+      expect(screen.getByRole("button", { name: "Watch the fight" })).toBeInTheDocument();
+      cleanup();
+      renderGame(game, "2", { page: "map" });
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("opens the fight as a spectator from the notice", () => {
+      const before = scenarios.visitorDecision().game;
+      const { game } = scenarios.fightStartedElsewhere("2");
+      const view = renderThen(before, game, "2");
+      fireEvent.click(screen.getByRole("button", { name: "Watch" }));
+      expect(view.path()).toBe("/room/R001/fight");
+      expect(screen.getByTestId("fight-view")).toHaveAttribute("data-role", "spectator");
+      expect(screen.queryByRole("button", { name: "Roll" })).not.toBeInTheDocument();
+    });
+
+    it("tells the absent owner that their plot is attacked", () => {
+      const before = scenarios.visitorDecision().game;
+      const { game } = scenarios.fightStartedElsewhere("1");
+      renderThen(before, game, "1", "home");
+      expect(dialog("Fight!")).toHaveTextContent("Alice is attacking your Plot 5!");
+    });
+
+    const reveal = (): void => {
+      act(() => {
+        vi.advanceTimersByTime(700);
+      });
+    };
+
+    it("keeps the Fight page on the last round, then shows the result once and returns to the Map", () => {
+      const before = scenarios.fightStartedElsewhere("0").game;
+      const { game } = scenarios.fightWon();
+      const view = renderThen(before, game, "0", "fight");
+      // The deciding round is revealed first: no popup while the dice roll, and the page stays on the fight.
+      expect(view.path()).toBe("/room/R001/fight");
+      expect(screen.getByTestId("fight-dice")).toHaveAttribute("data-rolling", "true");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      reveal();
+      expect(screen.getByTestId("fight-dice")).toHaveAttribute("data-rolling", "false");
+      expect(screen.getAllByTestId("fight-score").map((node) => node.textContent)).toEqual(["6 + 5 = 11", "1 + 4 = 5"]);
+      expect(screen.getByTestId("fight-status")).toHaveTextContent("You win the fight");
+      const result = dialog("Victory!");
+      expect(result).toHaveTextContent("Winner: You");
+      expect(result).toHaveTextContent("You looted");
+      expect(result).toHaveTextContent("residents were killed");
+      fireEvent.click(screen.getByRole("button", { name: "Done" }));
+      expect(view.path()).toBe("/room/R001/map");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      cleanup();
+      renderGame(game, "0", { page: "map" });
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("shows the result right away after a reload, without replaying the last round", () => {
+      const before = scenarios.fightStartedElsewhere("0").game;
+      const { game } = scenarios.fightWon();
+      renderGame(before, "0", { page: "fight" });
+      cleanup();
+      const view = renderGame(game, "0", { page: "fight" });
+      expect(view.path()).toBe("/room/R001/map");
+      expect(screen.queryByTestId("fight-view")).not.toBeInTheDocument();
+      expect(dialog("Victory!")).toBeInTheDocument();
+    });
+
+    it("lets a watcher see the last round and then a Fight over popup", () => {
+      const before = scenarios.fightStartedElsewhere("2").game;
+      const { game } = scenarios.fightWon();
+      const view = renderThen(before, game, "2", "fight");
+      expect(view.path()).toBe("/room/R001/fight");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      reveal();
+      expect(screen.getByTestId("fight-status")).toHaveTextContent("Alice wins the fight");
+      expect(dialog("Fight over")).toHaveTextContent("Winner: Alice");
+      fireEvent.click(screen.getByRole("button", { name: "Done" }));
+      expect(view.path()).toBe("/room/R001/map");
+    });
+
+    it("does not make a watcher wait for a fight they never watched", () => {
+      const before = scenarios.fightStartedElsewhere("2").game;
+      const { game } = scenarios.fightWon();
+      renderThen(before, game, "2", "map");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("shows a retreat at once: no last round to roll", () => {
+      const before = scenarios.fightStartedElsewhere("0").game;
+      const { game } = scenarios.fightRetreated();
+      const view = renderThen(before, game, "0", "fight");
+      expect(view.path()).toBe("/room/R001/fight");
+      expect(screen.getByTestId("fight-dice")).toHaveAttribute("data-rolling", "false");
+      expect(screen.getByTestId("fight-status")).toHaveTextContent("You retreated");
+      expect(dialog("Defeat")).toHaveTextContent("You retreated. It counts as a loss.");
+    });
+
+    it("shows the result before the offer to buy a destroyed plot", () => {
+      const before = scenarios.fightStartedElsewhere("0").game;
+      const { game } = scenarios.fightDestroyed();
+      renderThen(before, game, "0", "fight");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      reveal();
+      expect(dialog("Victory!")).toHaveTextContent("Plot 5 was destroyed");
+      fireEvent.click(screen.getByRole("button", { name: "Done" }));
+      expect(screen.getByRole("dialog")).toHaveTextContent("You broke Plot 5. Buy it now");
+    });
+
+    it("tells the plot owner how the fight ended", () => {
+      const before = scenarios.fightStartedElsewhere("1").game;
+      const { game } = scenarios.fightWon();
+      renderThen(before, game, "1", "home");
+      expect(dialog("Fight over")).toHaveTextContent("Winner: Alice");
+    });
   });
 });

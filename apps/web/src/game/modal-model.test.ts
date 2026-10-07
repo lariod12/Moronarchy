@@ -113,3 +113,77 @@ describe("selectModal", () => {
     });
   });
 });
+
+describe("selectModal during and after fights", () => {
+  const unseen = { seenSeq: 0 };
+
+  it("shows fighters nothing but their fight while it runs", () => {
+    const { game } = scenarios.fightKingMid();
+    expect(select(game, "1", unseen)).toBeNull();
+    expect(select(game, "0", unseen)).toBeNull();
+  });
+
+  it("offers a bystander and the absent owner a fight notice, once per fight", () => {
+    const { game } = scenarios.fightStartedElsewhere();
+    const started = [...game.log].reverse().find((entry) => entry.type === "fightStarted");
+    if (!started) {
+      throw new Error("fightStarted missing");
+    }
+    const bystander = select(game, "2", { seenSeq: started.seq - 1 });
+    expect(bystander).toMatchObject({ kind: "fightNotice", plotId: 5, attackerId: "0", ownerId: "1", key: `fightNotice:${started.seq}` });
+    expect(select(game, "1", { seenSeq: started.seq - 1 })?.kind).toBe("fightNotice");
+    // Answered (dismissed) or already seen (a tab that opened mid-fight): nothing more.
+    expect(select(game, "2", { seenSeq: started.seq - 1, dismissed: new Set([`fightNotice:${started.seq}`]) })).toBeNull();
+    expect(select(game, "2", { seenSeq: started.seq })).toBeNull();
+  });
+
+  it("shows the result to the fighters and the plot owner, then never again", () => {
+    const { game } = scenarios.fightWon();
+    const ended = [...game.log].reverse().find((entry) => entry.type === "fightEnded");
+    if (!ended) {
+      throw new Error("fightEnded missing");
+    }
+    const key = `fightResult:${ended.seq}`;
+    for (const viewerId of ["0", "1"]) {
+      const modal = select(game, viewerId, { seenSeq: ended.seq - 1 });
+      expect(modal).toMatchObject({ kind: "fightResult", model: { key } });
+      expect(select(game, viewerId, { seenSeq: ended.seq - 1, dismissed: new Set([key]) })?.kind).not.toBe("fightResult");
+    }
+    expect(select(game, "2", { seenSeq: ended.seq - 1 })).toBeNull();
+  });
+
+  it("puts the result before notifications and the destroyed-plot offer", () => {
+    const { game } = scenarios.fightDestroyed();
+    expect(game.pending?.kind).toBe("buyPlot");
+    const first = select(game, "0", unseen);
+    expect(first?.kind).toBe("fightResult");
+    const ended = [...game.log].reverse().find((entry) => entry.type === "fightEnded");
+    expect(select(game, "0", { seenSeq: 0, dismissed: new Set([`fightResult:${ended?.seq}`]) })?.kind).toBe("buyPlot");
+  });
+
+  it("keeps a decision of the viewer ahead of an old result", () => {
+    const { game } = scenarios.fightWon();
+    game.pending = { kind: "visitorChoice", playerId: "0", plotId: 5, ownerId: "1", canAttack: true };
+    expect(select(game, "0", unseen)?.kind).toBe("visitorChoice");
+  });
+
+  it("holds the result back on the Fight page until its last round was shown", () => {
+    const { game } = scenarios.fightWon();
+    const ended = [...game.log].reverse().find((entry) => entry.type === "fightEnded");
+    const key = `fightResult:${ended?.seq}`;
+    expect(select(game, "0", { seenSeq: 0, onFightPage: true })).toBeNull();
+    expect(select(game, "0", { seenSeq: 0, onFightPage: true, revealedKey: "fightResult:0" })).toBeNull();
+    expect(select(game, "0", { seenSeq: 0, onFightPage: true, revealedKey: key })).toMatchObject({ kind: "fightResult", model: { key } });
+    // Elsewhere there is nothing to wait for.
+    expect(select(game, "0", { seenSeq: 0 })?.kind).toBe("fightResult");
+  });
+
+  it("gives a watcher of the Fight page a Fight over result, nobody else", () => {
+    const { game } = scenarios.fightWon();
+    const ended = [...game.log].reverse().find((entry) => entry.type === "fightEnded");
+    const key = `fightResult:${ended?.seq}`;
+    const watcher = select(game, "2", { seenSeq: 0, onFightPage: true, revealedKey: key });
+    expect(watcher).toMatchObject({ kind: "fightResult", model: { role: "spectator", title: "Fight over" } });
+    expect(select(game, "2", { seenSeq: 0 })).toBeNull();
+  });
+});

@@ -17,6 +17,23 @@ export interface MoveRuntime {
   random: BoardgameRandom;
 }
 
+// What other clients see instead of a king's unrevealed fight roll: enough to know that they rolled.
+export const HIDDEN_ROLL = 0;
+
+// The match as one client may see it: in a running fight every other king's submitted roll is replaced by
+// HIDDEN_ROLL, so nobody can peek at a roll before making their own (or retreating). Never mutates `G`.
+export const maskMatchFor = (G: MatchState, playerID: string | null | undefined): MatchState => {
+  const fight = G.game?.fight;
+  if (!G.game || !fight || Object.keys(fight.pendingRolls).length === 0) {
+    return G;
+  }
+  const pendingRolls: typeof fight.pendingRolls = {};
+  for (const [id, value] of Object.entries(fight.pendingRolls)) {
+    pendingRolls[id] = id === playerID ? value : HIDDEN_ROLL;
+  }
+  return { ...G, game: { ...G.game, fight: { ...fight, pendingRolls } } };
+};
+
 export const toRng = (random: BoardgameRandom): Rng => ({ d6: () => random.D6(), next: () => random.Number() });
 
 export const createMoronarchyMatchGame = <TInvalid>(invalidMove: TInvalid) => {
@@ -61,6 +78,7 @@ export const createMoronarchyMatchGame = <TInvalid>(invalidMove: TInvalid) => {
     setup: (): MatchState => createMatchState(),
     // One long boardgame.io turn: every connected player may submit moves; engine and lobby validate the actor.
     turn: { activePlayers: { all: null } },
+    playerView: ({ G, playerID }: { G: MatchState; playerID?: string | null }): MatchState => maskMatchFor(G, playerID),
     moves
   };
 };

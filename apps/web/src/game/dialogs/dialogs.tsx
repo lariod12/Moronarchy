@@ -5,13 +5,9 @@ import { CARD_LABELS, plotLabel } from "../labels";
 // Text straight from the design (screen 12).
 export const END_TURN_TEXT = "This action will be end turn and you cannot interactive some action. Are you sure?";
 
-// Fights are not playable yet (step 5B), so Attack is shown but never sendable.
-export const FIGHT_SOON_HINT = "Fights arrive in the next update";
 export const PEACE_TREATY_HINT = "Peace Treaty: no attacks";
 
 export const cardText = (offer: CardOffer): string => `${CARD_LABELS[offer.type]} +${offer.value}`;
-
-const attackHint = (canAttack: boolean): string => (canAttack ? FIGHT_SOON_HINT : PEACE_TREATY_HINT);
 
 export interface BuyPlotDialogProps {
   plotId: TileId;
@@ -37,24 +33,27 @@ export const BuyPlotDialog = ({ plotId, price, reason, canAfford, onSkip, onBuy 
   </Dialog>
 );
 
+// The rules only allow attacks outside a Peace Treaty (`canAttack`); `attackEnabled` is what the engine says right now.
 export interface VisitorChoiceDialogProps {
   ownerName: string;
   plotId: TileId;
   fee: number;
   canAttack: boolean;
+  attackEnabled?: boolean;
   onPay: () => void;
+  onAttack: () => void;
 }
 
-export const VisitorChoiceDialog = ({ ownerName, plotId, fee, canAttack, onPay }: VisitorChoiceDialogProps) => (
+export const VisitorChoiceDialog = ({ ownerName, plotId, fee, canAttack, attackEnabled = canAttack, onPay, onAttack }: VisitorChoiceDialogProps) => (
   <Dialog
     title="Message"
     actions={[
       { label: `Pay ${fee}`, onSelect: onPay, tone: "strong" },
-      { label: "Attack", onSelect: () => undefined, disabled: true }
+      { label: "Attack", onSelect: onAttack, disabled: !attackEnabled }
     ]}
   >
     {`You get in ${ownerName}'s plot (${plotLabel(plotId)}). Pay ${fee} coin or attack?`}
-    <p className="ui-dialog__hint">{attackHint(canAttack)}</p>
+    {canAttack ? null : <p className="ui-dialog__hint">{PEACE_TREATY_HINT}</p>}
   </Dialog>
 );
 
@@ -63,19 +62,21 @@ export interface OwnerChoiceDialogProps {
   plotId: TileId;
   fee: number;
   canAttack: boolean;
+  attackEnabled?: boolean;
   onCollect: () => void;
+  onAttack: () => void;
 }
 
-export const OwnerChoiceDialog = ({ visitorName, plotId, fee, canAttack, onCollect }: OwnerChoiceDialogProps) => (
+export const OwnerChoiceDialog = ({ visitorName, plotId, fee, canAttack, attackEnabled = canAttack, onCollect, onAttack }: OwnerChoiceDialogProps) => (
   <Dialog
     title="Message"
     actions={[
       { label: "Collect", onSelect: onCollect, tone: "strong" },
-      { label: "Attack", onSelect: () => undefined, disabled: true }
+      { label: "Attack", onSelect: onAttack, disabled: !attackEnabled }
     ]}
   >
     {`${visitorName} stopped on your ${plotLabel(plotId)}. Collect ${fee} coin or attack?`}
-    <p className="ui-dialog__hint">{attackHint(canAttack)}</p>
+    {canAttack ? null : <p className="ui-dialog__hint">{PEACE_TREATY_HINT}</p>}
   </Dialog>
 );
 
@@ -155,6 +156,61 @@ export interface NoticeDialogProps {
 export const NoticeDialog = ({ title, text, onDone }: NoticeDialogProps) => (
   <Dialog title={title} actions={[{ label: "Done", onSelect: onDone }]} onDismiss={onDone}>
     {text}
+  </Dialog>
+);
+
+export interface FightNoticeDialogProps {
+  text: string;
+  onWatch: () => void;
+  onLater: () => void;
+}
+
+// A fight started that the viewer is not part of (or an attack on the viewer's own plot while they are away).
+export const FightNoticeDialog = ({ text, onWatch, onLater }: FightNoticeDialogProps) => (
+  <Dialog
+    title="Fight!"
+    actions={[
+      { label: "Later", onSelect: onLater },
+      { label: "Watch", onSelect: onWatch, tone: "strong" }
+    ]}
+    onDismiss={onLater}
+  >
+    {text}
+  </Dialog>
+);
+
+export interface FightResultDialogProps {
+  title: string;
+  lines: string[];
+  onDone: () => void;
+}
+
+export const FightResultDialog = ({ title, lines, onDone }: FightResultDialogProps) => (
+  <Dialog title={title} actions={[{ label: "Done", onSelect: onDone, tone: "strong" }]} onDismiss={onDone}>
+    <ul className="ui-dialog__lines" data-testid="fight-result-lines">
+      {lines.map((line) => (
+        <li key={line}>{line}</li>
+      ))}
+    </ul>
+  </Dialog>
+);
+
+export interface RetreatConfirmDialogProps {
+  fee: number;
+  onNo: () => void;
+  onYes: () => void;
+}
+
+export const RetreatConfirmDialog = ({ fee, onNo, onYes }: RetreatConfirmDialogProps) => (
+  <Dialog
+    title="Retreat"
+    actions={[
+      { label: "No", onSelect: onNo },
+      { label: "Yes", onSelect: onYes, tone: "strong" }
+    ]}
+    onDismiss={onNo}
+  >
+    {fee > 0 ? `Retreat counts as a loss. You will pay ${fee} coin.` : "Retreat counts as a loss."}
   </Dialog>
 );
 

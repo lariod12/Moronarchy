@@ -1,4 +1,4 @@
-import { claimTurn, payFee, pickCard, rollDice } from "@moronarchy/core/engine";
+import { attack, claimTurn, fightRoll, payFee, pickCard, retreat, rollDice, useItem } from "@moronarchy/core/engine";
 import type { GameState, PlayerId } from "@moronarchy/core/engine";
 import { addResident, createScriptedRng, createTestGame, giveItem, givePlot, placeKing, setTurnStep } from "@moronarchy/core/testing";
 
@@ -206,4 +206,144 @@ export const spectator = (): GameScenario => {
     game.eliminationOrder.push("1");
   }
   return { game, viewerId: "1" };
+};
+
+// ---- Fights. Alice ("0") rolled a 4 from Start and stands on tile 5, Bob ("1") owns it. Every fight roll is a scripted
+// d6, consumed in the order the commands run (attacker first, then the other king or the system side). ----
+
+const FIGHT_PLOT = 5;
+
+// Alice lands on Bob's plot while Bob stands on it: Bob chooses and attacks, so the duel is Bob (attacker) vs Alice.
+const duel = (d6: number[], options: { plotLevel?: number; players?: number } = {}): { game: GameState; rng: ReturnType<typeof rngFor> } => {
+  const game = claimed(named(options.players ?? 3));
+  givePlot(game, "1", FIGHT_PLOT, options.plotLevel ?? 1);
+  placeKing(game, "1", FIGHT_PLOT);
+  const rng = rngFor([4, ...d6]);
+  rollDice(game, "0", rng);
+  attack(game, "1", rng);
+  return { game, rng };
+};
+
+// Alice lands on Bob's plot while Bob is elsewhere and attacks the garrison (or the plot when nobody lives there).
+const siege = (
+  d6: number[],
+  options: { plotLevel?: number; residents?: Array<"warrior" | "farmer">; residentHealth?: number[]; weakAttack?: boolean } = {}
+): { game: GameState; rng: ReturnType<typeof rngFor> } => {
+  const game = claimed(named(3));
+  givePlot(game, "1", FIGHT_PLOT, options.plotLevel ?? 2);
+  placeKing(game, "1", 20);
+  (options.residents ?? []).forEach((kind, index) => {
+    const resident = addResident(game, FIGHT_PLOT, kind, 1);
+    const health = options.residentHealth?.[index];
+    if (health !== undefined) {
+      resident.health = health;
+    }
+  });
+  const alice = game.kings["0"];
+  if (alice && options.weakAttack) {
+    // A passive plot can only block a king whose attack is below 5.
+    alice.attack = 2;
+  }
+  const rng = rngFor([4, ...d6]);
+  rollDice(game, "0", rng);
+  attack(game, "0", rng);
+  return { game, rng };
+};
+
+const rollBoth = (game: GameState, rng: ReturnType<typeof rngFor>): void => {
+  fightRoll(game, "1", rng);
+  fightRoll(game, "0", rng);
+};
+
+// A duel that just started, nobody has rolled. Bob (the owner, attacker) carries the three fight items.
+export const fightKingStart = (viewerId: PlayerId = "1"): GameScenario => {
+  const { game } = duel([]);
+  for (const itemId of ["meat", "warHorn", "woodShield"] as const) {
+    giveItem(game, "1", itemId, itemId === "meat" ? 2 : 1);
+  }
+  return { game, viewerId };
+};
+
+// One round each: the attacker won the first, the defender the second (1-1, damage shown).
+export const fightKingMid = (viewerId: PlayerId = "1"): GameScenario => {
+  const { game, rng } = duel([6, 1, 2, 6]);
+  rollBoth(game, rng);
+  rollBoth(game, rng);
+  return { game, viewerId };
+};
+
+// Same duel, third round: Bob rolled and waits for Alice.
+export const fightWaiting = (): GameScenario => {
+  const { game, rng } = duel([6, 1, 2, 6, 4]);
+  rollBoth(game, rng);
+  rollBoth(game, rng);
+  fightRoll(game, "1", rng);
+  return { game, viewerId: "1" };
+};
+
+// A third king watches the 1-1 duel.
+export const fightSpectator = (): GameScenario => ({ game: fightKingMid().game, viewerId: "2" });
+
+// Alice (attacker) against three weakened residents: round one kills two of them, round two goes to the garrison.
+export const fightGarrison = (): GameScenario => {
+  const { game, rng } = siege([6, 1, 1, 6], { residents: ["farmer", "warrior", "warrior"], residentHealth: [4, 12, 12] });
+  fightRoll(game, "0", rng);
+  fightRoll(game, "0", rng);
+  return { game, viewerId: "0" };
+};
+
+// Alice against a passive plot with no residents: round one hurts it, round two is Blocked.
+export const fightPlot = (): GameScenario => {
+  const { game, rng } = siege([6, 1, 1, 6], { plotLevel: 2, weakAttack: true });
+  fightRoll(game, "0", rng);
+  fightRoll(game, "0", rng);
+  return { game, viewerId: "0" };
+};
+
+// Both kings played War Horn / Wood Shield before the first roll.
+export const fightBuffs = (): GameScenario => {
+  const { game, rng } = duel([]);
+  giveItem(game, "1", "warHorn");
+  giveItem(game, "1", "woodShield");
+  giveItem(game, "0", "warHorn");
+  useItem(game, "1", rng, "warHorn");
+  useItem(game, "1", rng, "woodShield");
+  useItem(game, "0", rng, "warHorn");
+  return { game, viewerId: "1" };
+};
+
+// Alice has just started a siege against the garrison of Bob's plot: bystanders (viewer "2") or Bob (viewer "1") are told.
+export const fightStartedElsewhere = (viewerId: PlayerId = "2"): GameScenario => {
+  const { game } = siege([], { residents: ["warrior", "farmer"] });
+  return { game, viewerId };
+};
+
+// Finished fights, seen by Alice (the attacker). The fight popup shows what the engine recorded.
+export const fightWon = (): GameScenario => {
+  const { game, rng } = siege([6, 1, 6, 1], { residents: ["farmer", "warrior", "warrior"], residentHealth: [4, 12, 12] });
+  fightRoll(game, "0", rng);
+  fightRoll(game, "0", rng);
+  return { game, viewerId: "0" };
+};
+
+export const fightLost = (): GameScenario => {
+  const { game, rng } = siege([1, 6, 1, 6], { residents: ["warrior", "warrior"] });
+  fightRoll(game, "0", rng);
+  fightRoll(game, "0", rng);
+  return { game, viewerId: "0" };
+};
+
+// A plain level 0 plot is beaten to pieces: it is destroyed and the attacker may buy it.
+export const fightDestroyed = (): GameScenario => {
+  const { game, rng } = siege([6, 1, 6, 1], { plotLevel: 0 });
+  fightRoll(game, "0", rng);
+  fightRoll(game, "0", rng);
+  return { game, viewerId: "0" };
+};
+
+// Alice retreats from the siege before rolling.
+export const fightRetreated = (): GameScenario => {
+  const { game, rng } = siege([], { residents: ["warrior"] });
+  retreat(game, "0", rng);
+  return { game, viewerId: "0" };
 };

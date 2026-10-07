@@ -123,6 +123,24 @@ export interface FightState {
   garrison: { startCount: number; maxPool: number; pool: number } | null;
 }
 
+export type FightRoundResult = "won" | "lost";
+
+// What the Fight page draws for one side, frozen when the fight ended (the live fight is gone from the state by then).
+export interface FightSideSnapshot {
+  kind: FighterRef["type"];
+  playerId: PlayerId | null; // the king behind this side (null for the garrison and the plot)
+  name: string | null;
+  health: number; // king health, garrison pool or plot health
+  maxHealth: number;
+  attack: number; // what the engine adds to the die
+  defense: number;
+  buffs: { attack: number; defense: number };
+  aliveResidents: number | null; // garrison only
+  plotLevel: number | null; // plot only
+  roundsWon: number;
+  results: FightRoundResult[]; // one per decided round (ties leave no mark), oldest first
+}
+
 export interface FightResult {
   kind: FightState["kind"];
   plotId: TileId;
@@ -134,6 +152,10 @@ export interface FightResult {
   loot: number;
   residentsKilled: number;
   plotOutcome: "none" | "levelDown" | "destroyed";
+  // Final display data, for the last round that the live fight no longer shows.
+  rounds: FightRoundRecord[];
+  attackerSide: FightSideSnapshot;
+  defenderSide: FightSideSnapshot;
 }
 
 export interface ActiveGlobalEvent {

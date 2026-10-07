@@ -1,7 +1,9 @@
 import {
   AMBUSH_DAMAGE,
   BOUNTIFUL_YEAR_INCOME_MULTIPLIER,
+  FIGHT_BUFF,
   HARVEST_FESTIVAL_COIN,
+  MEAT_HEAL,
   MARKET_BOOM_FEE_MULTIPLIER,
   PICKPOCKET_COIN,
   PLAGUE_HEALTH_LOSS_RATIO,
@@ -23,6 +25,15 @@ export const ITEM_LABELS: Record<ItemId, string> = {
   ironSword: "Iron Sword",
   ironArmor: "Iron Armor",
   cloverCharm: "Clover Charm"
+};
+
+// Items a fighter may use before rolling, with what they do (numbers from the engine content).
+export const FIGHT_ITEM_IDS: ItemId[] = ["meat", "warHorn", "woodShield"];
+
+export const FIGHT_ITEM_EFFECTS: Partial<Record<ItemId, string>> = {
+  meat: `Heal ${MEAT_HEAL} health`,
+  warHorn: `+${FIGHT_BUFF} attack for this fight`,
+  woodShield: `+${FIGHT_BUFF} defense for this fight`
 };
 
 export const CARD_LABELS: Record<CardType, string> = {

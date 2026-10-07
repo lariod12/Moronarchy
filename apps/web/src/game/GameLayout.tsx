@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { getCrownState } from "@moronarchy/core/engine";
 import { GameFrame } from "../screens/game/GameFrame";
+import { FightRevealProvider } from "./FightRevealContext";
 import { getForcedPage, getPageName } from "./forced-route";
 import { useGameSession } from "./GameSession";
 import { roomPath } from "./labels";
@@ -16,6 +17,8 @@ const pageTitle = (pageName: string, pathname: string): string => {
       return "Upgrade Card";
     case "station":
       return "Start Station";
+    case "fight":
+      return "Fight";
     case "manage": {
       const plotId = pathname.split("/").pop();
       return plotId ? `Plot ${plotId}` : "Plot";
@@ -66,18 +69,20 @@ export const GameLayout = () => {
   const handleBack = () => (location.key === "default" ? goHome() : navigate(-1));
 
   return (
-    <GameFrame
-      game={game}
-      viewerId={viewerId}
-      roomCode={roomCode}
-      title={pageTitle(pageName, location.pathname)}
-      backDisabled={pageName === "home" || forced !== null}
-      onBack={handleBack}
-      onCrownPress={goHome}
-      onCrownLongPress={handleCrownLongPress}
-      overlay={<ModalHost endTurnOpen={endTurnOpen} onEndTurnClose={() => setEndTurnOpen(false)} />}
-    >
-      <Outlet />
-    </GameFrame>
+    <FightRevealProvider>
+      <GameFrame
+        game={game}
+        viewerId={viewerId}
+        roomCode={roomCode}
+        title={pageTitle(pageName, location.pathname)}
+        backDisabled={pageName === "home" || forced !== null}
+        onBack={handleBack}
+        onCrownPress={goHome}
+        onCrownLongPress={handleCrownLongPress}
+        overlay={<ModalHost endTurnOpen={endTurnOpen} onEndTurnClose={() => setEndTurnOpen(false)} />}
+      >
+        <Outlet />
+      </GameFrame>
+    </FightRevealProvider>
   );
 };
