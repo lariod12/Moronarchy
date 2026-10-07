@@ -63,6 +63,25 @@ const toLobbyError = (error: unknown): LobbyError => {
   return new LobbyError("NETWORK");
 };
 
+// A blocked port (e.g. a firewall dropping packets) makes fetch hang instead of failing, which would leave the
+// Welcome screen on its busy overlay forever. Give every lobby request a deadline and report it as a network error.
+export const LOBBY_REQUEST_TIMEOUT_MS = 10_000;
+
+const withTimeout = <T>(request: Promise<T>, timeoutMs = LOBBY_REQUEST_TIMEOUT_MS): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new LobbyError("NETWORK")), timeoutMs);
+    request.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+
 const sessionKey = (matchID: string): string => `moronarchy:session:${matchID}`;
 
 export const normalizeRoomCode = (value: string): string => value.trim().toUpperCase();
@@ -95,15 +114,19 @@ export const clearPlayerSession = (matchID: string): void => {
 export const createRoom = async (playerName: string): Promise<PlayerSession> => {
   const safePlayerName = sanitizePlayerName(playerName);
   try {
-    const { matchID } = await lobbyClient.createMatch(GAME_NAME, {
-      numPlayers: ROOM_PLAYER_COUNT,
-      unlisted: true
-    });
+    const { matchID } = await withTimeout(
+      lobbyClient.createMatch(GAME_NAME, {
+        numPlayers: ROOM_PLAYER_COUNT,
+        unlisted: true
+      })
+    );
 
-    const joinResult = await lobbyClient.joinMatch(GAME_NAME, matchID, {
-      playerID: "0",
-      playerName: safePlayerName
-    });
+    const joinResult = await withTimeout(
+      lobbyClient.joinMatch(GAME_NAME, matchID, {
+        playerID: "0",
+        playerName: safePlayerName
+      })
+    );
 
     const session: PlayerSession = {
       matchID,
@@ -125,9 +148,11 @@ export const joinRoom = async (roomCode: string, playerName: string): Promise<Pl
   }
   const safePlayerName = sanitizePlayerName(playerName);
   try {
-    const joinResult = await lobbyClient.joinMatch(GAME_NAME, matchID, {
-      playerName: safePlayerName
-    });
+    const joinResult = await withTimeout(
+      lobbyClient.joinMatch(GAME_NAME, matchID, {
+        playerName: safePlayerName
+      })
+    );
 
     const session: PlayerSession = {
       matchID,

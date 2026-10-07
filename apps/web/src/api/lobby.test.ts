@@ -15,6 +15,7 @@ vi.mock("boardgame.io/client", () => ({
 }));
 
 import {
+  LOBBY_REQUEST_TIMEOUT_MS,
   clearPlayerSession,
   createRoom,
   describeLobbyError,
@@ -102,6 +103,19 @@ describe("lobby client helpers", () => {
     expect(await joinCode("RABCD")).toBe("NETWORK");
     client.createMatch.mockRejectedValue(new TypeError("Failed to fetch"));
     await expect(createRoom("Alice")).rejects.toMatchObject({ code: "NETWORK" });
+  });
+
+  it("gives up with NETWORK when the server never answers (e.g. a firewall drops the request)", async () => {
+    vi.useFakeTimers();
+    try {
+      client.createMatch.mockReturnValue(new Promise(() => undefined));
+      const pending = createRoom("Alice");
+      const assertion = expect(pending).rejects.toMatchObject({ code: "NETWORK" });
+      await vi.advanceTimersByTimeAsync(LOBBY_REQUEST_TIMEOUT_MS);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects implausible codes without calling the server", async () => {
