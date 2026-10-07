@@ -75,15 +75,17 @@ Khi vua đi qua hoặc dừng tại ô 01, vua tạm dừng ở Start và lần 
 
 1. Nhận **Start bonus coin** (Đề xuất: +50).
 2. **King Level +1** (giới hạn level tối đa: TBD).
-3. Nhận **Income** của tất cả Plot đang sở hữu, tính theo level từng Plot, cộng thêm phần Farmer (mục 8).
-4. Chọn **1 trong 3 Upgrade Card** random (mục 11).
-5. **Nâng cấp Plot**: nâng được nhiều Plot, mỗi lần trả coin ("Spend X coin for next level"). Level Plot không vượt quá level vua.
-6. **Tuyển Resident**: trả coin để tuyển Warrior/Farmer và đặt vào Plot (giới hạn Max Resident).
-7. **Mua Item** ở cửa hàng.
+3. **Vua hồi đầy máu**, miễn phí.
+4. Nhận **Income** của tất cả Plot đang sở hữu, tính theo level từng Plot, cộng thêm phần Farmer (mục 8).
+5. Chọn **1 trong 3 Upgrade Card** random (mục 11).
+6. **Nâng cấp Plot**: nâng được nhiều Plot, mỗi lần trả coin ("Spend X coin for next level"). Level Plot không vượt quá level vua.
+7. **Hồi máu Plot / Resident**: trả coin để hồi máu. Level của Plot hoặc resident càng cao thì chi phí càng tăng.
+8. **Tuyển Resident**: trả coin để tuyển Warrior/Farmer và đặt vào Plot (giới hạn Max Resident).
+9. **Mua Item** ở cửa hàng.
 
 Xong Start Station, vua đi nốt số bước còn lại.
 
-Bước 1–4 là bắt buộc hoặc tự động. Bước 5–7 tùy chọn, có nút "Done" để đi tiếp. Thứ tự hiển thị các bước 5–7: **Đề xuất**, cần duyệt.
+Bước 1–5 là bắt buộc hoặc tự động. Bước 6–9 tùy chọn, có nút "Done" để đi tiếp. Thứ tự hiển thị các bước 6–9: **Đề xuất**, cần duyệt.
 
 ## 7. Plots
 
@@ -91,9 +93,10 @@ Bước 1–4 là bắt buộc hoặc tự động. Bước 5–7 tùy chọn, c
 - Chỉ số của Plot: Level, Price, Income, Fee (phí người khác trả), Health, Max Health, Defense, Max Resident. Tất cả phụ thuộc level (và có thể cả vùng của bản đồ).
 - **Fee:** vua khác dừng trên Plot phải trả phí theo level của Plot, trừ khi chọn hoặc bị tấn công (mục 9).
 - **Income:** chủ Plot nhận khi vua của mình hoàn thành vòng (Start Station bước 3).
-- **Bị tấn công:**
+- **Bị tấn công** (chỉ khi Plot không còn resident, xem mục 10.5):
   - Health về 0 → Plot tụt 1 level và hồi đầy máu theo Max Health của level mới.
-  - Đang level 0 mà Health về 0 → mất đất, Plot trở lại trống, residents (nếu còn) biến mất; người dừng lên sau được mua.
+  - Đang level 0 mà Health về 0 → mất đất, Plot trở lại trống. Người vừa phá được **mua ngay trong lượt đó**; nếu không mua thì người dừng lên sau được mua.
+- Máu Plot không tự hồi. Chủ trả coin để hồi ở Start Station.
 - Dừng trên đất của chính mình: **TBD** (vd không có gì, hoặc được tuyển/di chuyển resident).
 
 ## 8. Residents
@@ -107,7 +110,8 @@ Bước 1–4 là bắt buộc hoặc tự động. Bước 5–7 tùy chọn, c
 | Warrior | Attack / Defense / Health cao hơn. Khi vua chủ đứng trên Plot có Warrior của mình và xảy ra giao tranh tại đó, vua được cộng Attack/Defense. |
 | Farmer | Chỉ số cơ bản. Tăng Income của Plot khi vua chủ về Start thu hoạch. |
 
-- Muốn tấn công Plot thì phải hạ hết residents trên Plot đó trước.
+- Residents trên cùng một Plot phòng thủ chung thành **một đội** (mục 10.4). Plot chỉ bị đánh trực tiếp khi không còn resident nào.
+- Máu resident không tự hồi. Chủ trả coin để hồi ở Start Station.
 - Nâng cấp resident (màn Resident detail có nút Upgrade): thời điểm và chi phí **TBD** (đề xuất: chỉ ở Start Station, giống Plot).
 
 ## 9. Dừng trên đất của đối thủ
@@ -118,23 +122,78 @@ Vua A dừng trên Plot của B:
 Vua B có đang đứng trên Plot đó không?
 ├─ Có  → B quyết định (A thấy "You stand on other players plot, waiting for decision…")
 │        ├─ Thu phí → A trả Fee
-│        └─ Tấn công A → Fight (vua B + bonus Warrior vs vua A)
+│        └─ Tấn công A → Fight vua đấu vua (10.3)
+│                 ├─ B thắng → A trả Fee
+│                 └─ A thắng → A không trả phí
 └─ Không → A quyết định ("You get in other players plot. Do you want to attack on it?")
-         ├─ No → A trả Fee
-         └─ Yes → A đánh lần lượt residents → rồi đánh Plot (mục 7)
+         ├─ No  → A trả Fee
+         └─ Yes → Plot còn resident?
+                  ├─ Có    → Fight với đội resident (10.4)
+                  └─ Không → Fight với Plot (10.5)
 ```
 
-- B được báo khi có người xông vào đất ("Another player break in your plot. Do you want to fight back?"). Fight back chỉ có khi vua B đứng tại Plot đó. Nếu B không ở đó thì residents tự thủ.
-- Khi B đứng tại Plot, quan hệ giữa popup "fight back" của B và lựa chọn "thu phí / tấn công": **TBD**, chốt khi phỏng vấn phần Fight.
+- Popup "Another player break in your plot. Do you want to fight back?" ([63](ui/63-map-fight-back-prompt.png)) **bị bỏ**. Khi B có mặt, B nhận popup quyết định "Thu phí / Tấn công".
+- Khi B vắng mặt, B vẫn được thông báo và xem trận đấu, nhưng không thao tác gì.
 
-## 10. Fight — TBD
+## 10. Fight
 
-Phần này sẽ phỏng vấn riêng. Những gì đã biết từ thiết kế:
+### 10.1 Luật chung của một trận
 
-- Màn Fight: hai bên có thanh máu (vd 50/100 vs 80/100), avatar, xúc xắc giữa màn và nút Roll.
-- Có ô hiệu ứng trạng thái phía trên avatar (màn 92-fight-status).
+- Mỗi trận là **best of 3**: bên nào thắng **2 hiệp** trước thì thắng trận.
+- Mỗi hiệp, mỗi bên **tự bấm Roll trên máy mình**. Bên không có người điều khiển (đội resident, Plot) do hệ thống tự đổ.
+- **Điểm đánh = số xúc xắc (1–6) + Attack** (cộng bonus Warrior/item nếu có).
+- Bên có điểm đánh cao hơn thắng hiệp. Hòa thì đổ lại.
+- Bên thắng hiệp gây **sát thương = điểm đánh của bên thắng − Defense của bên thua**, tối thiểu 1.
+- Máu về 0 giữa trận thì bên đó thua trận ngay.
+- **Item:** mỗi bên được dùng item trước mỗi hiệp.
+- **Rút lui:** người tấn công được rút lui giữa các hiệp. Rút lui tính như thua: dừng và trả Fee, giữ nguyên máu còn lại.
+- Lucky không dùng trong Fight (tác dụng ngoài Fight: TBD).
 
-Còn cần chốt: công thức sát thương, số hiệp, ai đổ xúc xắc, hậu quả khi vua hết Health, phần thưởng khi thắng, tác dụng của Lucky.
+Ví dụ (You: Attack 5, Defense 3, máu 50; Player 2: Attack 6, Defense 2, máu 80):
+
+| Hiệp | You | Player 2 | Kết quả |
+| --- | --- | --- | --- |
+| 1 | đổ 4 → 9 | đổ 2 → 8 | You thắng, P2 mất 9 − 2 = 7 (80 → 73) |
+| 2 | đổ 1 → 6 | đổ 5 → 11 | P2 thắng, You mất 11 − 3 = 8 (50 → 42) |
+| 3 | đổ 6 → 11 | đổ 3 → 9 | You thắng 2 hiệp → **thắng trận**, P2 mất 9 (73 → 64) |
+
+### 10.2 Vua hết máu
+
+- Thua trận đang đánh, **mất lượt kế tiếp**, sau đó hồi máu (Đề xuất: 50% Max Health).
+- Hết máu **không** làm vua bị loại. Vua chỉ bị loại khi phá sản (mục 14).
+- Vua hồi đầy máu miễn phí mỗi lần qua Start.
+
+### 10.3 Vua đấu vua
+
+- Xảy ra khi B đứng trên Plot của mình và chọn tấn công A.
+- B được cộng bonus Attack/Defense từ Warrior đang đóng trên Plot đó (giá trị bonus: TBD).
+- Kết quả về phí: B thắng thì A trả Fee; A thắng thì A không phải trả.
+
+### 10.4 Đánh đội resident
+
+Mọi resident trên Plot gộp thành **một đội**, đánh **một trận** chứ không đánh từng người:
+
+- **Máu đội** = tổng máu các resident.
+- **Attack / Defense đội** = Attack / Defense cao nhất trong đội, cộng 1 cho mỗi resident thêm.
+  Ví dụ: 3 resident có Attack 4, 6, 3 → Attack đội = 6 + 2 = 8.
+- Sát thương trừ vào máu đội và chia đều cho các resident. Máu đội càng thấp thì resident chết càng nhiều:
+  - **Số resident còn sống = làm tròn lên(máu đội còn lại ÷ máu đội tối đa × số resident ban đầu)** (Đề xuất). Ví dụ 5 resident, máu đội còn 40% → còn sống 2, chết 3.
+  - Máu đội về 0 → toàn bộ resident chết.
+  - Ai chết trước: Đề xuất Farmer chết trước, rồi đến resident level thấp.
+- **A thắng trận:** A không trả Fee và **cướp một khoản coin theo level của Plot** (số coin: TBD). A dừng ở đó, lượt này không đánh tiếp vào Plot.
+- **A thua trận:** A dừng và trả Fee. Đội resident giữ nguyên thiệt hại đã nhận.
+- Plot chỉ bị đánh trực tiếp khi đội resident không còn ai.
+
+### 10.5 Đánh Plot (không còn resident)
+
+Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ. Trận vẫn là best of 3.
+
+- **Đề xuất** cách tính một hiệp: A có điểm đánh = xúc xắc + Attack. Plot có điểm chống = xúc xắc (hệ thống đổ) + Defense của Plot.
+  - A cao hơn → A thắng hiệp, Plot mất (điểm đánh của A − Defense Plot), tối thiểu 1.
+  - Plot cao hơn hoặc bằng → Plot thắng hiệp, A không mất máu (Plot không đánh trả).
+- Máu Plot về 0 → trận kết thúc ngay, Plot tụt 1 level và hồi đầy máu (mục 7). Đang level 0 thì Plot mất và **A được mua ngay**.
+- A thắng 2 hiệp mà Plot chưa hết máu → không chiếm được đất. Plot giữ thiệt hại. A không trả Fee (Đề xuất, giống khi thắng đội resident).
+- Plot thắng 2 hiệp → A dừng và trả Fee.
 
 ## 11. Upgrade Card
 
@@ -169,7 +228,7 @@ Còn cần chốt: công thức sát thương, số hiệp, ai đổ xúc xắc,
 - Cuối trận mọi người thấy bảng xếp hạng: thứ hạng theo thứ tự bị loại, người thắng đứng đầu.
   - Play Again: cả nhóm quay về Lobby cùng phòng.
   - Quit: về màn Welcome.
-- Vua hết Health thì có bị loại không: **TBD** (theo phỏng vấn thì hiện tại là không, chờ phần Fight).
+- Vua hết Health không bị loại (mục 10.2).
 
 ## 15. Bảng tham số cân bằng (TBD)
 
@@ -183,14 +242,14 @@ Mọi con số sẽ nằm trong file config của `packages/core`, không hardco
 | Upgrade Card | Pool, trọng số random, khoảng giá trị |
 | Item | Danh sách, giá, loại, hiệu ứng, tỉ lệ rơi |
 | Event | Danh sách, phạm vi, thời hạn, điều kiện kích hoạt |
-| Fight | Công thức (TBD) |
+| Fight | Bonus Warrior cho vua, máu hồi sau khi vua về 0 (đề xuất 50%), coin cướp theo level Plot, chi phí hồi máu Plot/Resident theo level |
 
 ## 16. Câu hỏi còn mở
 
-1. Toàn bộ hệ thống Fight (mục 10).
+1. Fight: duyệt các mục Đề xuất ở 10.4–10.5 (cách tính số resident chết, ai chết trước, cách Plot thắng hiệp, không trả Fee khi thắng Plot).
 2. Các con số cân bằng (mục 15).
 3. Ô nào là ô sự kiện; dừng trên đất của mình thì sao.
 4. Level tối đa của vua và của Plot.
-5. Tác dụng của Lucky.
+5. Tác dụng của Lucky (ngoài Fight).
 6. Nâng cấp resident: thời điểm và chi phí.
 7. Mua Plot trống: có cần giữ lại ít nhất 1 coin sau khi mua không (code cũ có quy tắc này).

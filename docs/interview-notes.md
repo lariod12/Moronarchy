@@ -90,3 +90,20 @@ Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là inpu
 - Toàn bộ con số cân bằng: giá đất, phí theo level, Income, chi phí nâng cấp, Health/Defense đất theo level, Max Resident, chỉ số và giá Warrior/Farmer, coin thưởng qua Start, giới hạn level vua, chỉ số khởi đầu của vua.
 - Danh sách item cụ thể và hiệu ứng; danh sách event và điều kiện kích hoạt; ô nào là ô sự kiện.
 - Lucky ảnh hưởng gì.
+
+## 12. Fight (phỏng vấn lần 2)
+
+- Màn 92: ✕ = hiệp thua, vương miện = hiệp thắng.
+- Mọi trận đều best of 3 (thắng 2 hiệp). Mỗi bên tự bấm Roll trên máy mình.
+- Công thức (đã đồng ý): điểm đánh = xúc xắc 1–6 + Attack; ai cao hơn thắng hiệp; sát thương = điểm đánh bên thắng − Defense bên thua, tối thiểu 1; hòa đổ lại.
+- Lucky không dùng trong Fight (dùng ngoài Fight).
+- Vua hết máu: mất lượt kế tiếp, sau đó hồi máu. Không bị loại.
+- Vua đấu vua (B có mặt và chọn tấn công): B thắng thì A trả phí; A thắng thì A miễn phí.
+- A tấn công và thua: dừng lại và vẫn trả phí. Rút lui giữa trận được, nhưng tính như thua (trả phí).
+- Bỏ popup "fight back?" (màn 63). Khi B có mặt, B nhận popup quyết định Thu phí / Tấn công.
+- Residents trên một đất gộp thành một đội: máu đội = tổng máu; Attack/Defense = cao nhất trong đội, +1 cho mỗi resident thêm (đồng ý đề xuất). Sát thương chia đều; máu đội càng thấp thì càng nhiều resident chết; máu đội về 0 thì chết hết. Mục đích: tạo cảm giác thiệt hại, đánh nhanh, không phải đánh từng resident.
+- Thắng đội resident: vượt qua và cướp coin theo level đất, rồi dừng (không đánh tiếp vào đất trong lượt đó).
+- Đánh đất (khi không còn resident): cũng best of 3. Đất thụ động, chỉ bên tấn công gây sát thương; công thức do mình đề xuất. Chỉ chiếm được khi đất hết máu; thắng 2 hiệp mà đất chưa hết máu thì không chiếm được.
+- Đất mất (level 0, hết máu): người phá được mua ngay trong lượt đó.
+- Được dùng item trước mỗi hiệp.
+- Hồi máu: vua hồi đầy miễn phí ở Start. Resident và đất: ở Start, trong vòng nâng cấp, trả coin để hồi; chi phí tăng theo level.

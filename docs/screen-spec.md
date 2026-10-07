@@ -99,7 +99,8 @@ Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrad
 - Sau khi đổ: vua đi từng ô (có animation), đi qua Start thì mở Start Station, xong thì đi tiếp.
 - Popup trên Map:
   - [62](ui/62-map-waiting-decision.png) "You stand on other players plot, waiting for decision…": A chờ B quyết định, không có nút.
-  - [63](ui/63-map-fight-back-prompt.png) "Another player break in your plot. Do you want to fight back?" Yes / No: hiện cho B.
+  - ~~[63](ui/63-map-fight-back-prompt.png) "fight back?"~~: **bỏ**. Thay bằng popup cho B khi B đứng trên đất: "Player A stopped on your plot" với **Collect fee** / **Attack** (dùng style của 63).
+  - B vắng mặt khi đất bị tấn công: thông báo "Player A is attacking your plot", có nút xem trận.
   - [64](ui/64-map-attack-prompt.png) "You get in other players plot. Do you want to attack on it?" Yes / No: hiện cho A khi B không ở đó.
   - Mua đất trống: popup "Buy this plot? Price X" Buy / Skip. Thiết kế chưa vẽ, Đề xuất theo style popup chung.
   - Trả phí: TBD (đề xuất popup thông báo "You paid X coin to Player B", nút Done).
@@ -157,10 +158,20 @@ Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrad
 
 ## 14. Fight — [90](ui/90-fight.png), [91](ui/91-fight-empty.png), [92](ui/92-fight-status.png)
 
-- TopBar "Fight". Hai khung đấu: thanh máu "50/100" ở trên, tên ("You" / "Player 2"), avatar. Biểu tượng kiếm chéo ở giữa.
-- Xúc xắc và nút **Roll** (thiết kế ghi "Scroll") ở dưới.
-- Màn 92: hàng icon trạng thái nhỏ phía trên avatar (buff/debuff).
-- Luồng và luật: TBD (game-design mục 10).
+Luật: [game-design.md mục 10](game-design.md#10-fight).
+
+- TopBar "Fight". Hai khung đấu, bên trái là mình, bên phải là đối thủ. Mỗi khung có:
+  - thanh máu "hiện tại/tối đa" ở trên (vd 50/100);
+  - tên ("You", "Player 2", "Residents ×5", "Plot 12");
+  - hình đại diện: avatar vua, icon đội resident kèm số còn sống, hoặc icon Plot kèm level.
+- Kiếm chéo ở giữa hai khung.
+- Hàng icon dưới thanh máu (màn 92): **vương miện = hiệp thắng, ✕ = hiệp thua**. Thắng 2 hiệp là thắng trận.
+- Xúc xắc và nút **Roll** (thiết kế ghi "Scroll") ở dưới. Mỗi người tự bấm Roll trên máy mình. Bên hệ thống (residents, Plot) tự đổ.
+- Sau mỗi hiệp hiện điểm đánh hai bên và số máu mất (bong bóng số trên khung bị đánh).
+- Trước mỗi hiệp: nút **Use item** (mở kho đồ dạng popup). Người tấn công có thêm nút **Retreat**, kèm xác nhận "Retreat counts as a loss — you will pay X coin".
+- Màn 91 (khung trống): trạng thái chờ khi đang nạp đối thủ hoặc chờ bên kia Roll (Đề xuất).
+- Kết thúc trận: popup kết quả (thắng/thua, coin cướp được hoặc phí phải trả, resident chết, Plot tụt level). Nếu Plot bị phá mất: popup "Buy this plot now? Price X".
+- Người không tham gia trận vẫn xem được (chế độ khán giả, không có nút).
 
 ## 15. Kết thúc — [95](ui/95-map-before-game-over.png), [96](ui/96-game-over-spectator.png), [97](ui/97-result-win.png), [98](ui/98-result-lose.png), [99](ui/99-result-ranking.png)
 
@@ -178,6 +189,6 @@ Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrad
 1. Vào Map từ đâu khi Home hub mới không còn ô Map?
 2. Hiển thị đất và vị trí của người chơi khác trên Map (màu theo người chơi?).
 3. Các màn Start Station chưa có thiết kế: tổng kết vòng, nâng cấp, tuyển resident, cửa hàng.
-4. Popup mua đất, trả phí, nút Use item.
+4. Popup mua đất, trả phí, nút Use item; popup kết quả Fight; màn Start Station hồi máu Plot/Resident.
 5. Xem chỉ số người chơi khác.
 6. Phong cách hình ảnh cuối cùng.
