@@ -117,3 +117,9 @@ Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là inpu
 - Lucky (ngoài Fight): tăng tỉ lệ rơi item, chất lượng Upgrade Card, độ may của event cá nhân.
 - Nâng cấp resident: ở Start và khi dừng trên đất của mình; trả coin; level resident không vượt level đất.
 - Chi tiêu tự do: chỉ kiểm tra đủ coin, được tiêu về 0; ít coin thì dễ phá sản là rủi ro của người chơi.
+
+## 14. Cân bằng (duyệt sau mô phỏng)
+
+- Q1: đánh đất mà không phá được (đất không tụt level / không mất) thì vẫn trả phí. Đây là thay đổi so với mục 12.
+- Q2: thêm Lạm phát hoàng gia: từ round 20 phí ×1.25, cứ mỗi 5 round tăng thêm 0.25.
+- Q3: mỗi level vua +10 Max Health, +1 Attack.

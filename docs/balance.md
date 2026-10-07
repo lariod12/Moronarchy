@@ -1,9 +1,9 @@
 # Moronarchy — Bảng số cân bằng (đề xuất)
 
-> Trạng thái: **Đề xuất — chờ duyệt**. Mọi con số sẽ nằm trong `packages/core/src/content/` để chỉnh mà không phải sửa luật.
+> Trạng thái: **Q1–Q3 đã duyệt; các con số còn lại là đề xuất — chờ duyệt**. Mọi con số sẽ nằm trong `packages/core/src/content/` để chỉnh mà không phải sửa luật.
 > Luật: [game-design.md](game-design.md). Mục 0 có 3 quyết định cần bạn chốt trước, vì chúng ảnh hưởng mạnh đến độ dài ván.
 
-## 0. Ba quyết định cần chốt
+## 0. Ba quyết định (đã duyệt: Q1, Q2, Q3 đều theo đề xuất)
 
 Bảng số được kiểm tra bằng một mô phỏng đơn giản (bot tự chơi hàng trăm ván, chưa tính item/event). Mô phỏng phát hiện 3 vấn đề:
 

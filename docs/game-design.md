@@ -74,7 +74,7 @@ Chờ lượt ──► Crown rung (tới lượt mình)
 Khi vua đi qua hoặc dừng tại ô 01, vua tạm dừng ở Start và lần lượt thực hiện:
 
 1. Nhận **Start bonus coin** (Đề xuất: +50).
-2. **King Level +1**, tối đa level 5.
+2. **King Level +1**, tối đa level 5. Mỗi level vua được **+10 Max Health, +1 Attack**.
 3. **Vua hồi đầy máu**, miễn phí.
 4. Nhận **Income** của tất cả Plot đang sở hữu, tính theo level từng Plot, cộng thêm phần Farmer (mục 8).
 5. Chọn **1 trong 3 Upgrade Card** random (mục 11).
@@ -193,7 +193,7 @@ Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ.
   - A cao hơn → A thắng hiệp, Plot mất (điểm đánh của A − Defense Plot), tối thiểu 1.
   - Plot cao hơn hoặc bằng → Plot thắng hiệp, A không mất máu (Plot không đánh trả).
 - Máu Plot về 0 → trận kết thúc ngay, Plot tụt 1 level và hồi đầy máu (mục 7). Đang level 0 thì Plot mất và **A được mua ngay**.
-- A thắng 2 hiệp mà Plot chưa hết máu → không chiếm được đất. Plot giữ thiệt hại. A không trả Fee.
+- A thắng 2 hiệp mà Plot chưa hết máu → không chiếm được đất. Plot giữ thiệt hại. **A vẫn trả Fee.** Chỉ được miễn phí khi phá được đất (đất tụt level hoặc mất). Lý do: Plot không đánh trả, nếu thắng hiệp là miễn phí thì người chơi luôn tấn công để né phí (xem [balance.md](balance.md) Q1).
 - Plot thắng 2 hiệp → A dừng và trả Fee.
 
 ## 11. Upgrade Card
@@ -220,6 +220,12 @@ Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ.
 - Nguồn kích hoạt: ngẫu nhiên khi dừng trên Plot (event cá nhân, Lucky cao thì dễ gặp event có lợi), hoặc do hệ thống theo điều kiện (vd sau 3 vòng thì vòng 4 random kích hoạt một sự kiện). Điều kiện cụ thể: **TBD**. Engine cần cho phép thêm trigger mới mà không sửa luật lõi.
 - Ví dụ: Harvest Festival, "You will get 50 coin immediately", 1 Turn.
 - Màn Events: lịch sử sự kiện và thời hạn còn lại.
+
+## 13b. Lạm phát hoàng gia
+
+- Từ **round 20**, phí đất ×1.25; sau đó cứ mỗi 5 round tăng thêm 0.25 (round 25: ×1.5, round 30: ×1.75…).
+- Chỉ áp dụng cho phí đất (kể cả phí dùng để tính coin cướp được). Không ảnh hưởng giá mua, income, chi phí nâng cấp.
+- Mục đích: tạo áp lực cuối trận để ván kết thúc trong khoảng 35–45 round.
 
 ## 14. Bị loại và chiến thắng
 

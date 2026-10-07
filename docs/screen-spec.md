@@ -21,7 +21,7 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 └──────────┴──────────┴────────┴─────────┘
 ```
 
-- **TopBar:** số round hiện tại, mã phòng, tên trang đang mở (Home, Map, Plots, Residents, Warrior, Farmer, Items, Events, Steps, Players Info, Upgrade Card, Fight…).
+- **TopBar:** số round hiện tại (từ round 20 kèm hệ số lạm phát phí, vd "Round 22 · Fee ×1.25"), mã phòng, tên trang đang mở (Home, Map, Plots, Residents, Warrior, Farmer, Items, Events, Steps, Players Info, Upgrade Card, Fight…).
 - **BottomHud:**
   - Avatar và tên: chạm vào để mở Players Info (màn 20).
   - health / coin / level của vua mình.
