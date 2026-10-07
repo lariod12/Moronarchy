@@ -1,70 +1,40 @@
 # Moronarchy
 
-Moronarchy is a mobile-first multiplayer web board game where 2-4 kings roll dice around a 40-tile kingdom loop, buy land, charge rivals, upgrade territory, and fight to keep the crown.
+Moronarchy is a mobile-first multiplayer web board game. 2–6 kings roll dice around a 40-tile kingdom, buy plots, recruit residents, upgrade at the Start station, raid rival land, and try not to go bankrupt. The last king standing wins.
+
+> **Status: re-foundation in progress.** The design source of truth is [docs/All UI.png](docs/All%20UI.png). The new rules, screen spec and target architecture live in `docs/` (draft, awaiting approval). The code in `apps/` and `packages/` is still the earlier Monopoly-style MVP and will be refactored step by step — see [docs/architecture.md](docs/architecture.md#8-lộ-trình).
+
+## Documentation
+
+| Doc | Purpose |
+| --- | --- |
+| [docs/All UI.png](docs/All%20UI.png) | Original UI design (source of truth) |
+| [docs/Tutorial button.png](docs/Tutorial%20button.png) | Crown / Back button behavior |
+| [docs/ui/](docs/ui/) | Each design frame cropped from `All UI.png` |
+| [docs/game-design.md](docs/game-design.md) | Game rules (GDD) |
+| [docs/screen-spec.md](docs/screen-spec.md) | Screens, navigation, visible states |
+| [docs/architecture.md](docs/architecture.md) | Target architecture and refactor roadmap |
+| [docs/interview-notes.md](docs/interview-notes.md) | Raw product-owner interview record |
 
 ## Tech Stack
 
-- pnpm workspace
-- TypeScript
-- React + Vite + PWA
-- Tailwind CSS + Motion
-- Node.js + boardgame.io
-- Vitest + Testing Library
+- pnpm workspace, TypeScript
+- React + Vite (PWA), Tailwind CSS, Motion
+- Node.js + boardgame.io (server-authoritative multiplayer)
+- Vitest, Testing Library, Playwright
 
 ## Project Structure
 
 ```text
 apps/
   web/        React mobile webapp
-  server/     Node.js boardgame.io multiplayer server
+  server/     boardgame.io multiplayer server
 packages/
   core/       Shared pure TypeScript game rules
-design/
-  index.html  Interactive prototype hub
-  *.html      One interactive UI frame per screen or game phase
-  README.md   Design frame list, interaction rules, and porting notes
-docs/
-  game-rules.md
-  system-architecture.md
-  tech-stack.md
-  development-guide.md
+design/       Legacy HTML prototype (to be replaced by an in-app gallery)
+docs/         Design source, GDD, screen spec, architecture
+tests/        Playwright e2e and legacy design checks
 ```
-
-## Documentation
-
-- [System architecture](docs/system-architecture.md): runtime flow, module boundaries, state ownership, and multiplayer data flow.
-- [Development guide](docs/development-guide.md): how to update rules, UI, lobby flow, tests, and future features.
-- [Game rules](docs/game-rules.md): MVP gameplay rules and economy.
-- [Tech stack](docs/tech-stack.md): selected libraries, environment variables, and future visual layers.
-- [Design task validation workflow](docs/design-task-validation-workflow.md): goal/expected-result approval and three-layer testing for interactive design tasks.
-
-## Design Preview
-
-Use `design/index.html` and `design/*.html` for quick interactive UI exploration before touching production React code.
-
-The design folder is intentionally simple: `index.html` is the click-through prototype hub, and each standalone HTML file is one screen/frame with layout, CSS, local demo state, function names, and interaction notes. Approved designs can later be implemented in `apps/web`.
-
-Before changing an interactive design frame, define the goal, expected results, interaction steps, and test workflow first. Add or update `tests/design/` assertions for changed behavior, then compare the actual result against that contract using the three-layer validation workflow in [docs/design-task-validation-workflow.md](docs/design-task-validation-workflow.md).
-
-Run the mandatory automated design interaction gate:
-
-```bash
-pnpm design:check
-```
-
-For real mobile-device UI testing, run:
-
-```bash
-pnpm design:mobile
-```
-
-Or double-click:
-
-```text
-start-design-mobile.bat
-```
-
-Keep the terminal window open, then open the printed LAN URL on a phone connected to the same Wi-Fi.
 
 ## Prerequisites
 
@@ -79,17 +49,8 @@ pnpm build
 pnpm dev
 ```
 
-Open the web app at:
-
-```text
-http://localhost:5173
-```
-
-The multiplayer server runs at:
-
-```text
-http://localhost:8000
-```
+- Web app: http://localhost:5173
+- Multiplayer server: http://localhost:8000
 
 ## Environment
 
@@ -99,7 +60,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 VITE_GAME_SERVER_URL=http://localhost:8000
 ```
 
-For public deployment, put the server behind a real reverse proxy or platform rate limit. The MVP server includes a small in-memory lobby guard, but it is not a substitute for production edge protection.
+For public deployment, put the server behind a real reverse proxy or platform rate limit. The in-memory lobby guard is not a substitute for edge protection.
 
 ## Scripts
 
@@ -107,51 +68,10 @@ For public deployment, put the server behind a real reverse proxy or platform ra
 pnpm dev          # Build core, then run web + server together
 pnpm dev:web      # Run only the web app
 pnpm dev:server   # Run only the multiplayer server
-pnpm design:mobile # Serve design/*.html on LAN for real phone testing
-pnpm design:check # Run automated design DOM/browser interaction checks
 pnpm build        # Build core, server, and web
 pnpm test         # Run all tests
 pnpm typecheck    # Typecheck all packages
 pnpm lint         # Lint all packages
 pnpm e2e          # Run Playwright multiplayer smoke test
+pnpm design:check # Legacy design prototype checks (to be removed)
 ```
-
-## MVP Rules
-
-- Players: 2-4.
-- Board: 40 tiles, tile 01 is Start, tiles 02-40 are land.
-- Each king starts with 100 Health, 200 Coin, Level 1.
-- Roll one six-sided die each turn.
-- Passing or landing on Start gives 50 Coin.
-- Completing a lap increases Level, capped at 3.
-- Empty land can be bought if the player keeps at least 1 Coin.
-- Owned land charges rent when rivals land on it.
-- Land can be upgraded to Level 3 if the king level allows it.
-- Forced rent that reduces Coin to 0 defeats the player.
-- Last surviving king wins.
-- If 30 full table rounds pass, highest total kingdom value wins.
-
-## MVP Scope
-
-Included:
-
-- Shared game rules package
-- boardgame.io multiplayer server
-- Lobby create/join flow
-- Mobile-first React board UI
-- Basic buy, upgrade, roll, and victory flows
-
-Deferred:
-
-- Accounts
-- Database
-- Ranking
-- AI opponents
-- Action cards
-- Trap tiles
-- Rive animated assets
-- PixiJS effects layer
-
-## Notes
-
-The board is rendered with React DOM for full CSS control. Rive and PixiJS are reserved for future visual polish and should be added behind component boundaries, not inside core game logic.

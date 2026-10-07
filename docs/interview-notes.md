@@ -1,0 +1,92 @@
+# Interview Notes — Game Rules & UI Workflow
+
+Nguồn thiết kế gốc: `docs/All UI.png` (+ `docs/Tutorial button.png`).
+Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là input để viết lại GDD và screen spec.
+
+## 1. Tổng quan
+
+- Mỗi người chơi dùng 1 điện thoại riêng, chơi online, vào cùng phòng bằng mã (vd `R001`).
+- 2–6 người / phòng.
+- Thắng: người cuối cùng còn sống (không có giới hạn round).
+- Xúc xắc: 1 viên 1–6 (số "11" trong thiết kế chỉ là ví dụ minh họa).
+
+## 2. Welcome & Lobby
+
+- Avatar mặc định (không chọn/không upload), phân biệt bằng tên/màu.
+- Chủ phòng bắt đầu game: với chủ phòng, nút Ready hiển thị thành Start, bấm được khi mọi người khác đã Ready → đếm ngược "Game Starting 3-2-1".
+- Thứ tự lượt: random khi bắt đầu.
+- Chat: bong bóng trên avatar vài giây + khung log; chỉ có ở Lobby, không có trong game.
+
+## 3. Lượt chơi & nút Crown
+
+- Luồng Crown (theo Tutorial): rung khi tới lượt → nhấn giữ nhận lượt → đổi màu ("your turn!") → thao tác → nhấn giữ lần nữa → popup "End of turn… Are you sure?" → người kế. Nhấn 1 lần = về Home. Back = trang trước.
+- Trong lượt: bắt buộc đổ xúc xắc 1 lần; được dùng Item; được mua đất khi đứng trên ô trống.
+- Ngoài lượt: xem mọi màn nhưng không thao tác; chỉ trả lời popup khi bị hỏi.
+- Không giới hạn thời gian lượt.
+
+## 4. Map & xúc xắc
+
+- Map 40 ô. Ô xám = đất của mình; icon người = vị trí hiện tại của mình.
+- Loại ô: Start (01), Plot (đất), ô sự kiện/thẻ.
+- Ô Start = trạm dừng nâng cấp sau khi đi hết 1 vòng. Hết vòng nhận: + coin, +1 level, chọn 1 trong 3 Upgrade Card random, và được nâng cấp đất.
+- Event / Item / Card có thể đến từ ô đất hoặc từ hệ thống (vd sau 3 vòng thì vòng 4 random kích hoạt sự kiện). Logic chi tiết bổ sung sau → thiết kế hệ thống trigger dễ mở rộng.
+- Màn Steps / Dice Status: hiển thị vị trí hiện tại.
+- Đi qua Start: KHÔNG dừng bắt buộc, vẫn nhận đủ thưởng rồi đi nốt số bước còn lại.
+
+## 5. Plots (đất)
+
+- Đất vừa mua bắt đầu ở level 0.
+- Ở Start được nâng cấp nhiều mảnh đất, mỗi lần trả coin (popup "Spend X coin for next level"), giới hạn bởi level vua.
+- Người khác dừng trên đất phải trả phí theo level của đất.
+- Income: khi vua của chủ đất hoàn thành vòng của chính mình (qua Start), chủ nhận Income của tất cả đất đang sở hữu, tính theo level từng đất.
+- Đất có Health / Max Health / Defense / Max Resident.
+- Bị tấn công hết máu → tụt 1 level và hồi đầy máu theo level mới. Level 0 mà hết máu → mất đất, đất trở lại trống, ai dừng lên sau cũng mua được.
+
+## 6. Residents
+
+- Tuyển (mua bằng coin) ở Start, đặt vào đất (giới hạn Max Resident của đất).
+- 2 loại: Warrior và Farmer. Cả hai đều đánh/thủ khi đất bị tấn công.
+  - Warrior: Attack, Defense, Health cao hơn. Khi vua đứng trên đất có Warrior của mình, vua được + Attack/Defense nếu xảy ra giao tranh tại đó.
+  - Farmer: chỉ số cơ bản. Tăng Income của đất khi vua về Start thu hoạch.
+- Muốn tấn công/chiếm đất phải hạ hết resident trên đất đó trước.
+
+## 7. Fight
+
+- Vua A dừng trên đất của B:
+  - Nếu vua B đang đứng tại đất đó → B quyết định: thu phí hoặc tấn công A. A thấy "waiting for decision…".
+  - Nếu vua B không ở đó → A quyết định: tấn công (residents → đất) hoặc trả phí.
+- Fight back chỉ xảy ra khi vua B đứng tại đất; nếu không, residents tự thủ.
+- Vua bị loại: chỉ khi không đủ coin trả phí (phá sản).
+- **TODO (phỏng vấn riêng):** cách tính trận đánh (số hiệp, công thức sát thương, xúc xắc), hậu quả khi vua hết Health, phần thưởng khi thắng.
+
+## 8. Items, Upgrade Card, Events
+
+- Items lấy được từ: mua ở Start, rơi từ ô đất/ô sự kiện, phần thưởng Event.
+- Có 2 loại item: tiêu hao (dùng 1 lần, số xN giảm) và trang bị (vĩnh viễn).
+- Upgrade Card: ở Start random 3 thẻ (Max Health / Attack / Defense / Lucky / Coin) với giá trị random, chọn 1 → cộng vĩnh viễn vào vua (thẻ Coin cộng coin ngay).
+- Events: có cả loại toàn bàn và loại cá nhân, có thời hạn (vd "1 Turn"). Màn Events = lịch sử sự kiện + thời hạn còn lại.
+
+## 9. Kết thúc ván
+
+- Người bị loại: hiện màn mặt buồn → thành khán giả xem tiếp (HUD gạch chéo đỏ + "Game Over"), tổng kết ở cuối trận.
+- Đất và residents của người bị loại trở về trống.
+- Người thắng: màn mặt cười → bảng xếp hạng.
+- Bảng xếp hạng có Play Again (cả nhóm về Lobby cùng phòng) và Quit.
+- Tên game chính thức: **Moronarchy** (sửa chữ "Welcome KingDoom" trong thiết kế).
+
+## 10. Ô Start — thời điểm thao tác
+
+- Khi đi qua Start: vua tạm dừng tại Start, làm hết thao tác (nhận coin/level/income, chọn Upgrade Card, nâng đất, tuyển resident, mua item), rồi đi nốt số bước còn lại.
+
+## 11. Quyết định về dự án
+
+- Giữ `docs/All UI.png` và `docs/Tutorial button.png` làm thiết kế gốc.
+- Bỏ thư mục `design/` (prototype HTML) và quy trình `design:check`; thay bằng route gallery trong `apps/web` dùng state giả từ core.
+- Thứ tự làm: viết docs mới (GDD, screen spec, architecture), xóa docs cũ → chủ dự án duyệt → mới refactor code.
+
+## Còn mở (cần phỏng vấn/duyệt tiếp)
+
+- Hệ thống Fight: công thức, số hiệp, hậu quả khi vua hết Health, phần thưởng.
+- Toàn bộ con số cân bằng: giá đất, phí theo level, Income, chi phí nâng cấp, Health/Defense đất theo level, Max Resident, chỉ số và giá Warrior/Farmer, coin thưởng qua Start, giới hạn level vua, chỉ số khởi đầu của vua.
+- Danh sách item cụ thể và hiệu ứng; danh sách event và điều kiện kích hoạt; ô nào là ô sự kiện.
+- Lucky ảnh hưởng gì.
