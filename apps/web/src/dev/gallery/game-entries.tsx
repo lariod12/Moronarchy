@@ -51,7 +51,7 @@ const feeOf = (game: GameState, plotId: TileId): number => {
   return plot ? getPlotFee(game, plot) : 0;
 };
 
-export const frame = ({ game, viewerId }: GameScenario, title: string, content: ReactNode, log: Log, overlay?: ReactNode): ReactNode => (
+export const frame = ({ game, viewerId }: GameScenario, title: string, content: ReactNode, log: Log, overlay?: ReactNode, banners?: ReactNode): ReactNode => (
   <GameFrame
     game={game}
     viewerId={viewerId}
@@ -61,13 +61,14 @@ export const frame = ({ game, viewerId }: GameScenario, title: string, content: 
     onBack={() => log("back")}
     onCrownPress={() => log("press")}
     onCrownLongPress={() => log("longPress")}
+    banners={banners}
     overlay={overlay}
   >
     {content}
   </GameFrame>
 );
 
-export const mapContent = (scenario: GameScenario, log: Log, rolling = false): ReactNode => {
+export const mapContent = (scenario: GameScenario, log: Log, rolling = false, offlineIds?: ReadonlySet<PlayerId>): ReactNode => {
   const { game, viewerId } = scenario;
   const canRun = createCanRun(game, viewerId);
   return (
@@ -75,6 +76,7 @@ export const mapContent = (scenario: GameScenario, log: Log, rolling = false): R
       game={game}
       viewerId={viewerId}
       positions={positionsOf(game)}
+      offlineIds={offlineIds}
       canRoll={canRun("rollDice")}
       canUseHorse={canRun("useItem", "horse")}
       rolling={rolling}

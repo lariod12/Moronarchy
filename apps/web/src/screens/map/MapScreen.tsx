@@ -12,7 +12,7 @@ import { MapView } from "./MapView";
 const ROLL_FEEDBACK_MAX_MS = 3000;
 
 export const MapScreen = () => {
-  const { game, viewerId, roomCode, actions, canRun } = useGameSession();
+  const { game, viewerId, roomCode, actions, canRun, offlineIds } = useGameSession();
   const navigate = useNavigate();
   const { animatedPosition, isAnimating } = useMovement();
   const [rolling, setRolling] = useState(false);
@@ -44,11 +44,13 @@ export const MapScreen = () => {
       viewerId={viewerId}
       tab={tab}
       onTab={setTab}
+      offlineIds={offlineIds}
       board={
         <MapView
           game={game}
           viewerId={viewerId}
           positions={positions}
+          offlineIds={offlineIds}
           canRoll={canRun("rollDice")}
           canUseHorse={canRun("useItem", "horse")}
           rolling={rolling}

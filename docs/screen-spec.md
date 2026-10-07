@@ -28,6 +28,10 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
   - **Back:** về trang trước trong ván.
   - **Crown:** điều khiển lượt (mục 2).
 - **Activity line (bước 5A):** một dòng chữ ngay dưới TopBar, hiện sự kiện mới nhất trong log bằng tiếng Anh, nhìn từ phía người xem ("You rolled 4 → Plot 15", "Bob bought Plot 7", "Cara paid 40 coin to Bob", "Bob completed a lap"). Có ở mọi trang trong ván.
+- **Banner kết nối (độ bền multiplayer):** nằm ngay dưới activity line, hiện ở mọi trang trong ván và ở Lobby (Lobby chỉ có banner thứ nhất).
+  - `Reconnecting…`: khi **chính máy này** mất kết nối (nền đen, chữ trắng); biến mất khi nối lại.
+  - `Bob disconnected — removed in ~25s`: khi ván đang chờ Bob (người giữ lượt / người phải quyết định / người chưa đổ xúc xắc trong trận) và server báo Bob mất kết nối. Đếm ngược 30 giây là **ước lượng phía máy khách** (bắt đầu khi máy này thấy cả hai điều kiện), nên ghi dấu `~`; về 0 thì ghi `removing…`. Bob nối lại thì hiện `Bob reconnected` khoảng 3 giây rồi tắt. Khi Bob bị loại thì thông báo cho người khác `Bob was removed (disconnected).` (popup Done) và activity line ghi `Bob left the game (disconnected)`.
+- **Đánh dấu offline:** vua mà server báo mất kết nối bị làm mờ: token trên Map mờ và viền nét đứt (nhãn `Bob (offline)` cho trình đọc màn hình), hàng trong bảng Positions mờ kèm tag `offline`, tiêu đề Players Info có tag `offline`. (Ô ở Lobby đã làm mờ từ trước.)
 - **Modal:** phủ nền xám lên toàn màn (cả TopBar/BottomHud), hộp thoại bo góc ở giữa, nút Yes/No hoặc Done/Close. Chỉ hiện một modal một lúc, ở bất kỳ trang nào người chơi đang xem (`ModalHost`): màn mặt buồn toàn khung khi bị loại (mục 15) → quyết định dành cho mình → chọn Lucky Die → "waiting for decision" → End of turn → thông báo (item, event cá nhân, nhận phí, bị hạ gục, mất đất) → lối tắt "Your plot". Mọi modal chờ đến khi vua đi xong.
 - **Tooltip / bong bóng:** bong bóng nói nhỏ trỏ vào phần tử (vd "your turn!", "end turn!", số xúc xắc).
 
@@ -82,9 +86,9 @@ Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/s
 ### 4.2 Lobby — [03](ui/03-lobby-chat.png), [04](ui/04-lobby-typing.png), [05](ui/05-lobby-ready.png), [06](ui/06-lobby-game-starting.png)
 
 - TopBar chỉ có mã phòng. Chạm vào mã để copy, hiện bong bóng `copied!` 1,5 giây.
-- Lưới 6 ô Player (2 cột × 3 hàng). Mỗi ô có tên, avatar, bong bóng chat vài giây và nhãn dọc "ready" bên trái khi người đó đã Ready. Ô chưa có người: ô viền nét đứt, mờ, ghi `Empty`. Chỗ ngồi cố định theo playerID nên người rời đi để lại ô trống thay vì dồn chỗ. Chủ phòng có tag nhỏ `host`; người mất kết nối bị làm mờ. Chủ phòng chạm vào ô của người khác thì hiện hộp thoại `Kick <tên>?` No / Yes; người bị kick quay về Welcome.
+- Lưới 6 ô Player (2 cột × 3 hàng). Mỗi ô có tên, avatar, bong bóng chat vài giây và nhãn dọc "ready" bên trái khi người đó đã Ready. Ô chưa có người: ô viền nét đứt, mờ, ghi `Empty`. Chỗ ngồi cố định theo playerID nên người rời đi để lại ô trống thay vì dồn chỗ. Chủ phòng có tag nhỏ `host`; người mất kết nối bị làm mờ. Banner `Reconnecting…` hiện dưới TopBar khi máy này mất kết nối. Chủ phòng chạm vào ô của người khác thì hiện hộp thoại `Kick <tên>?` No / Yes; người bị kick quay về Welcome.
 - Dưới cùng: khung log chat cuộn được, "Player 1 (you): …" | nút **Chat** | nút **Ready**.
-  - Chat: mở một hàng nhập (`Say something…` + `Send`, tối đa 120 ký tự, Enter gửi, Esc đóng) và bàn phím hệ thống (màn 04). Gửi xong hàng nhập vẫn mở và được xóa. Tin hiện bong bóng 3 giây trên ô của người gửi ở mọi máy và thêm vào log (`Tên (you): …` cho tin của mình, `Tên: …` cho người khác). Tin cũ có sẵn khi vào phòng không tạo bong bóng.
+  - Chat: mở một hàng nhập (`Say something…` + `Send`, tối đa 120 ký tự, Enter gửi, Esc đóng) và bàn phím hệ thống (màn 04). **Bàn phím ảo không được che ô nhập và nút Send:** `index.html` khai báo `interactive-widget=resizes-content` (trình duyệt thu nhỏ khung nhìn khi bàn phím mở thay vì đè lên), giao diện cao đúng `100dvh` (`100vh` dự phòng) và ô nhập tự `scrollIntoView({ block: "nearest" })` khi nhận focus. Trang không cuộn ngang. Gửi xong hàng nhập vẫn mở và được xóa. Tin hiện bong bóng 3 giây trên ô của người gửi ở mọi máy và thêm vào log (`Tên (you): …` cho tin của mình, `Tên: …` cho người khác). Tin cũ có sẵn khi vào phòng không tạo bong bóng.
   - Ready: bật/tắt. Khi bật, nút tô đậm.
   - Với chủ phòng, nút Ready hiển thị thành **Start**: bị khóa đến khi có ít nhất 2 người và mọi người khác đã Ready.
 - Bấm Start: phủ xám + "Game Starting 3 → 2 → 1" trên mọi máy đang ở lobby, rồi vào Game Shell (Home hub). Máy tải lại hoặc vào phòng khi ván đã chạy thì vào thẳng Game Shell, không đếm ngược.
@@ -101,7 +105,7 @@ Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/s
 
 - 40 ô viền quanh màn: hàng trên 31…40, 01 (01 ở góc trên phải); cột phải 02…10; hàng dưới 11 (góc dưới phải) … 21; cột trái 22…30.
 - Ô xám đậm: đất của mình. Đất của người khác có nền xám nhạt và huy hiệu **số ghế** của chủ đất (ghế 1 = playerID 0). Ô 01 (Start) viền đôi.
-- Mọi vua còn sống là một token tròn có chữ cái đầu của tên (token của mình đảo màu), nằm trên ô vua đang đứng; nhiều vua trên một ô thì xếp chồng lệch nhau.
+- Mọi vua còn sống là một token tròn có chữ cái đầu của tên (token của mình đảo màu), nằm trên ô vua đang đứng; nhiều vua trên một ô thì xếp chồng lệch nhau. Vua đang mất kết nối: token mờ, viền nét đứt, `aria-label` thêm `(offline)` (token chỉ 14 px nên không có chữ `offline` hiện ra; chữ nằm ở tab Positions và Players Info).
 - Giữa bản đồ: xúc xắc, bong bóng hiện kết quả (số xúc xắc + bonus), nút **Tap to Roll** (thiết kế ghi "Tap to Scroll"). Nút chỉ bật trong lượt mình khi đã nhận lượt và chưa đổ. Trước khi đổ, nếu có Horse thì có thêm nút **Use Horse (+3)**. Dòng chữ nhỏ bên dưới cho biết đang là lượt ai / cần làm gì.
 - Sau khi đổ: xúc xắc hiện số, vua của người đang đi di chuyển từng ô theo `turn.path` (khoảng 220 ms mỗi ô, tắt animation khi người dùng chọn giảm chuyển động) trên **mọi máy**; popup chỉ hiện sau khi vua đi xong. Tải lại trang giữa lượt không chạy lại animation. Đi qua Start thì mở Upgrade Card rồi Start Station, xong thì đi tiếp.
 - Có Lucky Die: sau khi đổ hiện popup "You rolled N" với **Reroll (Lucky Die)** / **Move**.
@@ -127,6 +131,7 @@ Route `/room/<MÃ>/stats/<playerId>`, TopBar "Players Info". Đã làm ở bư�
 - Mở từ ô Stats ở Home (trang của mình) hoặc chạm avatar ở BottomHud.
 - **Xem người khác:** hai nút `‹` / `›` ở hai bên tên đi vòng qua mọi vua theo thứ tự lượt (kể cả người đã bị loại). Mỗi lần chuyển thay thế mục lịch sử hiện tại nên Back rời hẳn trang. Người xem mặc định là chính mình ("This is your king"). ID lạ chuyển về trang của mình.
 - Khán giả và người đã bị loại xem được mọi trang.
+- Vua mà server báo mất kết nối có tag `offline` dưới tên và các thẻ chỉ số bị làm xám.
 
 ## 8. Plots — [40](ui/40-plots-table.png), [41](ui/41-plots-grid.png), [42](ui/42-plot-detail.png), [43](ui/43-plot-upgrade-confirm.png)
 
@@ -210,12 +215,13 @@ Luật: [game-design.md mục 10](game-design.md#10-fight). Đã làm ở bướ
 Mọi chữ và luật lấy từ core (`getEliminationInfo`, `getFinalRanking`, log `kingEliminated` / `gameFinished`); web chỉ chọn màn nào cần hiện (`game/end-model.ts`).
 
 - **Bị loại khi ván còn tiếp tục:** ngay khi vua đi xong ô, người bị loại thấy màn mặt buồn **toàn khung** (98): `You are out!`, dòng phụ `Bankrupt in round N`, nút `Keep watching` và link nhỏ `Leave room`. Màn này ưu tiên hơn mọi popup khác, chỉ hiện **một lần** (key `lose:<seq>` trong seen-store). `Keep watching` về Map ở chế độ khán giả (96): HUD avatar gạch chéo đỏ, chỉ số xám, chữ "Game Over" thay Back/Crown (chạm "Game Over" về Home, giống Crown), xem được mọi trang thông tin, không có thao tác nào. Không bao giờ thấy Crown rung.
+- **Bị loại vì mất kết nối:** cùng màn mặt buồn nhưng tiêu đề `You were removed` và dòng phụ `Disconnected for too long`; chỉ hiện nếu chính tab đó còn mở (seen-store là `sessionStorage` theo tab) khi nối lại, tab mới mở chỉ thấy Map ở chế độ khán giả (hoặc Ranking nếu ván đã xong).
 - **Ván kết thúc (`stage = finished`):**
   - Người thắng thấy mặt cười (97): `You win!`, `Last king standing`, nút `See ranking`.
   - Người bị loại đúng nước cuối thấy màn mặt buồn trước (nút `See ranking`, vẫn có `Leave room`).
   - Mọi người khác (kể cả người đã bị loại và đã bấm `Keep watching` trước đó) vào thẳng Ranking.
   - Mặt chỉ hiện một lần cho mỗi người mỗi ván (key `win:<seq>` / `lose:<seq>`, seen-store theo `roomCode-gamesPlayed`); tải lại trang khi đã bấm nút thì vào thẳng Ranking, tab chưa từng thấy ván này cũng vậy. Tải lại khi mặt đang hiện mà chưa bấm thì mặt hiện lại.
-- **Ranking (99):** danh sách theo thứ hạng `getFinalRanking`: số thứ hạng, icon người, tên (`(you)` cho mình), `Winner` hoặc `Out in round N`. Hai nút **Play Again** và **Quit** nằm cạnh nhau dưới danh sách.
+- **Ranking (99):** danh sách theo thứ hạng `getFinalRanking`: số thứ hạng, icon người, tên (`(you)` cho mình), `Winner`, `Out in round N` (phá sản) hoặc `Left in round N` (rời ván do mất kết nối). Hai nút **Play Again** và **Quit** nằm cạnh nhau dưới danh sách.
   - **Play Again chỉ chủ phòng bấm được** (`returnToLobby`). Người khác thấy nút bị khóa kèm dòng `Waiting for the host to start again`.
   - Play Again đưa mọi máy đang kết nối về **Lobby cùng phòng**: giữ nguyên seat và lịch sử chat, mọi người về trạng thái chưa Ready; chủ phòng bấm Start thì đếm ngược 3 → 2 → 1 và vào ván mới (Round 1). Ván mới có `gamesPlayed` mới nên popup / mặt của ván trước không hiện lại.
   - **Quit** (và `Leave room` ở màn mặt buồn): gửi `leaveSeat` (match cho nhả seat khi ở Lobby hoặc sau khi ván kết thúc), xóa session, về Welcome, không chờ server. Những người còn lại thấy seat biến mất ở Lobby sau Play Again. Nếu chủ phòng Quit, người ngồi seat thấp nhất thành chủ phòng mới và Play Again được. `Leave room` bấm giữa ván (ván chưa kết thúc) chỉ xóa session và về Welcome, vì seat bị khóa suốt ván.

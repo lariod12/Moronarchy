@@ -200,7 +200,8 @@ const payFeeAfterFight = (state: GameState, plot: Plot, payerId: PlayerId): { pa
   return chargeFee(state, payerId, plot.ownerId, getPlotFee(state, plot));
 };
 
-export const endFight = (state: GameState, winner: "attacker" | "defender", retreated: boolean): void => {
+// `forfeit`: a king left the game (disconnected) while this fight ran; it just ends with no knock-out, fee or loot.
+export const endFight = (state: GameState, winner: "attacker" | "defender", retreated: boolean, forfeit = false): void => {
   const fight = state.fight;
   if (!fight || fight.attacker.type !== "king") {
     return;
@@ -217,7 +218,7 @@ export const endFight = (state: GameState, winner: "attacker" | "defender", retr
 
   for (const id of [attackerId, fight.defender.type === "king" ? fight.defender.playerId : null]) {
     const king = id ? state.kings[id] : undefined;
-    if (king && !king.eliminated && king.health <= 0) {
+    if (!forfeit && king && !king.eliminated && king.health <= 0) {
       knockOut(state, king.id);
     }
   }
@@ -229,6 +230,7 @@ export const endFight = (state: GameState, winner: "attacker" | "defender", retr
     defender: fight.defender,
     winner,
     retreated,
+    ...(forfeit ? { forfeit: true } : {}),
     feePaid: 0,
     loot: 0,
     residentsKilled,
@@ -239,7 +241,9 @@ export const endFight = (state: GameState, winner: "attacker" | "defender", retr
   };
   state.fight = null;
 
-  if (fight.kind === "kingVsKing") {
+  if (forfeit) {
+    // The leaving king's assets are released right after; nobody pays or loots anything.
+  } else if (fight.kind === "kingVsKing") {
     // Attacker is the plot owner; a winning owner collects the fee from the visitor.
     if (winner === "attacker" && fight.defender.type === "king") {
       result.feePaid = payFeeAfterFight(state, plot, fight.defender.playerId).paid;

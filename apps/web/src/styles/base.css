@@ -11,6 +11,13 @@ body,
   margin: 0;
 }
 
+/* The app is exactly as tall as the visible area: with the viewport meta "interactive-widget=resizes-content" the
+   on-screen keyboard shrinks it, so the chat input and its Send button stay on screen. 100vh is the fallback. */
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   background: var(--paper);
   color: var(--ink);

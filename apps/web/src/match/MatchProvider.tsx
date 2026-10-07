@@ -18,8 +18,10 @@ export interface MatchContextValue {
   playerID: string;
   matchID: string;
   roomCode: string;
+  // Seat presence as the server reports it (`isConnected` is undefined until a player has connected once).
   players: MatchPlayer[];
-  isConnected: boolean;
+  // Whether this client's own socket is up; false while the page is reconnecting.
+  selfConnected: boolean;
   // True once this viewer had a seat and lost it (host kicked them).
   kicked: boolean;
   send: (move: string, ...args: unknown[]) => void;
@@ -28,10 +30,10 @@ export interface MatchContextValue {
 interface Snapshot {
   state: MatchState | null;
   players: MatchPlayer[];
-  isConnected: boolean;
+  selfConnected: boolean;
 }
 
-const EMPTY_SNAPSHOT: Snapshot = { state: null, players: [], isConnected: false };
+const EMPTY_SNAPSHOT: Snapshot = { state: null, players: [], selfConnected: false };
 
 const MatchContext = createContext<MatchContextValue | null>(null);
 
@@ -73,7 +75,7 @@ export const MatchProvider = ({ session, children }: MatchProviderProps) => {
           name: player.name,
           isConnected: player.isConnected
         })),
-        isConnected: clientState?.isConnected ?? false
+        selfConnected: clientState?.isConnected ?? false
       });
     });
     client.start();
@@ -118,7 +120,7 @@ export const MatchProvider = ({ session, children }: MatchProviderProps) => {
       matchID,
       roomCode: matchID,
       players: snapshot.players,
-      isConnected: snapshot.isConnected,
+      selfConnected: snapshot.selfConnected,
       kicked,
       send
     }),

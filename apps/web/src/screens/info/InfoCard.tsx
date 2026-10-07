@@ -13,6 +13,8 @@ export interface InfoCardProps {
   // Controls on both sides of the title (e.g. the previous / next king buttons).
   titleStart?: ReactNode;
   titleEnd?: ReactNode;
+  // A small tag under the title (e.g. "offline").
+  titleBadge?: ReactNode;
   // A text box across the bottom of the card.
   note?: ReactNode;
   // Buttons that hang over the bottom edge of the card.
@@ -23,12 +25,15 @@ export interface InfoCardProps {
 }
 
 // The big framed card of the wireframes (Players Info, Plot, Resident, Item): title, stat tags down the left, a big icon.
-export const InfoCard = ({ title, stats, icon, corner, titleStart, titleEnd, note, actions, muted = false, className, "data-testid": testId }: InfoCardProps) => (
+export const InfoCard = ({ title, stats, icon, corner, titleStart, titleEnd, titleBadge, note, actions, muted = false, className, "data-testid": testId }: InfoCardProps) => (
   <div className={cx("info-card-wrap", actions !== undefined && "info-card-wrap--actions", className)} data-testid={testId}>
     <section className="info-card" aria-label={title}>
       <header className="info-card__header">
         {titleStart ?? <span className="info-card__side" />}
-        <h2 className="info-card__title">{title}</h2>
+        <div className="info-card__titles">
+          <h2 className="info-card__title">{title}</h2>
+          {titleBadge ? <div className="info-card__badge">{titleBadge}</div> : null}
+        </div>
         {titleEnd ?? <span className="info-card__side" />}
       </header>
       {corner ? <Tag className="info-card__corner">{corner}</Tag> : null}

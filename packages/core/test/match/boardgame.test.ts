@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { attack, fightRoll, getFightView } from "../../src/engine";
-import { GAME_COMMAND_NAMES, HIDDEN_ROLL, MATCH_SEATS, createMoronarchyMatchGame, maskMatchFor, toRng } from "../../src/match";
+import { CONCURRENT_MOVES, GAME_COMMAND_NAMES, HIDDEN_ROLL, MATCH_SEATS, createMoronarchyMatchGame, maskMatchFor, toRng } from "../../src/match";
 import type { BoardgameRandom, MatchState } from "../../src/match";
 import { createTestGame, givePlot, placeKing } from "../../src/testing";
 import { landOn } from "../engine/helpers";
@@ -86,6 +86,35 @@ describe("createMoronarchyMatchGame", () => {
     expect(G.game?.turn.step).toBe("preRoll");
     expect(run("rollDice", G, actor, scriptedRandom([4]))).toBeUndefined();
     expect(G.game?.turn.dice?.value).toBe(4);
+  });
+
+  it("only lets moves that players send concurrently skip the stale-state check", () => {
+    for (const name of ["sit", "setReady", "sendChat", "startGame", "fightRoll", "collectFee", "forfeit"]) {
+      expect(CONCURRENT_MOVES.has(name), name).toBe(true);
+      expect(game.moves[name]?.ignoreStaleStateID, name).toBe(true);
+    }
+    for (const name of ["buyPlot", "buyItem", "upgradePlot", "recruitResident", "rollDice", "endTurn"]) {
+      expect(game.moves[name]?.ignoreStaleStateID, name).toBeUndefined();
+    }
+    for (const name of CONCURRENT_MOVES) {
+      expect(game.moves[name], name).toBeDefined();
+    }
+  });
+
+  it("forfeit is a normal move for the sender only", () => {
+    const G = game.setup();
+    const random = scriptedRandom();
+    run("sit", G, "0", random, "Ann");
+    run("sit", G, "1", random, "Bob");
+    run("setReady", G, "1", random, true);
+    run("startGame", G, "0", random);
+    expect(run("forfeit", G, undefined, random)).toBe(INVALID);
+    expect(run("forfeit", G, "5", random)).toBe(INVALID);
+    expect(G.stage).toBe("playing");
+    expect(run("forfeit", G, "1", random)).toBeUndefined();
+    expect(G.game?.kings["1"]).toMatchObject({ eliminated: true, eliminationReason: "left" });
+    expect(G.stage).toBe("finished");
+    expect(G.game?.winnerId).toBe("0");
   });
 
   describe("playerView", () => {

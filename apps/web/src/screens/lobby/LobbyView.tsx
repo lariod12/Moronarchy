@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { MAX_CHAT_TEXT_LENGTH } from "@moronarchy/core/match";
 import type { LobbyView as LobbyViewModel, StartBlockedReason } from "@moronarchy/core/match";
+import { ConnectionBanner } from "../../shell/ConnectionBanners/ConnectionBanners";
 import { TopBar } from "../../shell/TopBar/TopBar";
 import { Button } from "../../ui/Button/Button";
 import { Dialog } from "../../ui/Dialog/Dialog";
@@ -31,6 +32,8 @@ export interface LobbyViewProps {
   // Seeds for local UI state; lets the gallery show the chat row or the kick dialog directly.
   initialChatOpen?: boolean;
   initialKickTargetId?: string | null;
+  // False while this client has lost its connection (shows the Reconnecting banner).
+  selfConnected?: boolean;
   overlay?: ReactNode;
 }
 
@@ -46,6 +49,7 @@ export const LobbyView = ({
   onKick,
   initialChatOpen = false,
   initialKickTargetId = null,
+  selfConnected = true,
   overlay
 }: LobbyViewProps) => {
   const [chatOpen, setChatOpen] = useState(initialChatOpen);
@@ -95,6 +99,11 @@ export const LobbyView = ({
     setDraft("");
   };
 
+  // With the on-screen keyboard open the visible area shrinks: scroll the input row back into it.
+  const keepChatInView = (event: FocusEvent<HTMLInputElement>) => {
+    event.currentTarget.scrollIntoView?.({ block: "nearest" });
+  };
+
   const handleChatKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && !event.nativeEvent.isComposing) {
       event.preventDefault();
@@ -108,6 +117,7 @@ export const LobbyView = ({
   return (
     <div className="screen lobby">
       <TopBar roomCode={roomCode} onRoomPress={handleCopy} roomBubble={copied ? "copied!" : undefined} />
+      <ConnectionBanner connected={selfConnected} />
 
       <div className="lobby__seats" role="list" aria-label="Players">
         {slots.map((slot, index) => (
@@ -130,6 +140,7 @@ export const LobbyView = ({
             aria-label="Chat message"
             enterKeyHint="send"
             onChange={(event) => setDraft(event.target.value)}
+            onFocus={keepChatInView}
             onKeyDown={handleChatKeyDown}
           />
           <Button onClick={sendDraft} disabled={!canSend}>

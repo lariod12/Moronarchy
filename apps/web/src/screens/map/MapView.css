@@ -97,6 +97,11 @@
   line-height: 1;
 }
 
+.king-token--offline {
+  border-style: dashed;
+  opacity: 0.45;
+}
+
 .king-token--me {
   background: var(--ink);
   color: var(--paper);
@@ -175,6 +180,21 @@
 
 .positions-row--current td {
   font-weight: 700;
+}
+
+.positions-row--offline td {
+  color: var(--muted);
+}
+
+.positions-row--offline .positions__player > span:first-of-type {
+  opacity: 0.6;
+}
+
+.positions .positions__offline {
+  margin-left: 4px;
+  padding: 0 4px;
+  box-shadow: none;
+  font-size: var(--text-xs);
 }
 
 .positions-row--out td {

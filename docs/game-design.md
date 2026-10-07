@@ -229,7 +229,7 @@ Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ.
 
 ## 14. Bị loại và chiến thắng
 
-- Vua bị loại **chỉ khi không đủ coin trả phí** (phá sản).
+- Vua bị loại khi **không đủ coin trả phí** (phá sản) hoặc khi **rời ván do mất kết nối** (mục dưới).
   - Người bị loại thấy màn mặt buồn, sau đó thành khán giả: xem mọi màn, HUD gạch chéo đỏ, chữ "Game Over".
   - Toàn bộ Plot và residents của họ trở về trống.
 - Còn một vua duy nhất → người đó thắng → màn mặt cười.
@@ -237,6 +237,16 @@ Plot là bên **thụ động**: không gây sát thương, chỉ chống đỡ.
   - Play Again: cả nhóm quay về Lobby cùng phòng.
   - Quit: về màn Welcome.
 - Vua hết Health không bị loại (mục 10.2).
+
+### Rời ván do mất kết nối
+
+Quyết định của chủ dự án (2026-10-08, xem `interview-notes.md` mục 15): một người mất kết nối không được làm kẹt ván của những người còn lại.
+
+- **"Ván đang chờ X"** (trong giai đoạn `playing`) nghĩa là một trong ba điều: X là người đang giữ lượt; hoặc X là người một quyết định đang chờ (`pending.playerId`); hoặc đang có trận đánh và X là vua trực tiếp đổ xúc xắc nhưng chưa đổ vòng này (`getBlockingPlayerIds` trong core).
+- Nếu X **mất kết nối** *và* ván đang chờ X **quá 30 giây** (đồng hồ của server, đổi được bằng `MORONARCHY_ABSENT_TIMEOUT_MS`), server cho X rời ván: X bị loại với lý do `left` (khác `bankrupt`), toàn bộ Plot và residents của X trở về bản đồ như mới. Kết nối lại trong 30 giây thì hủy.
+  - Lượt: nếu X đang giữ lượt thì lượt chuyển cho người kế tiếp; quyết định đang chờ X bị xóa và người giữ lượt đi tiếp; trận đánh có X kết thúc với phía X thua, **không ai trả hay nhận phí/cướp coin** với vua đã rời; chỉ còn một vua thì ván kết thúc.
+  - Log `Bob left the game (disconnected)`; Ranking ghi `Left in round N` (còn phá sản vẫn là `Out in round N`); nếu X quay lại (cùng tab) thì thấy màn `You were removed` / `Disconnected for too long`.
+- **Không có giới hạn thời gian lượt** cho người đang kết nối: người chơi chậm nhưng còn kết nối không bao giờ bị loại. Sảnh (`lobby`) và sau ván (`finished`) không bao giờ tự loại ai.
 
 ## 15. Bảng tham số cân bằng
 

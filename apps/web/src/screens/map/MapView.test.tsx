@@ -114,4 +114,16 @@ describe("MapView", () => {
     render(<MapView game={game} viewerId="1" positions={positionsOf(game)} canRoll={false} />);
     expect(screen.getByText("Alice's turn")).toBeInTheDocument();
   });
+
+  it("dims the token of a king the server reports as offline and names it in the label", () => {
+    const { game, viewerId } = scenarios.mapMidgame();
+    render(<MapView game={game} viewerId={viewerId} positions={positionsOf(game)} offlineIds={new Set(["2"])} canRoll />);
+    const cara = screen.getAllByTestId("king-token").find((token) => token.getAttribute("data-player") === "2");
+    expect(cara).toHaveAttribute("data-offline", "true");
+    expect(cara).toHaveAttribute("aria-label", "Cara (offline)");
+    expect(cara).toHaveClass("king-token--offline");
+    const bob = screen.getAllByTestId("king-token").find((token) => token.getAttribute("data-player") === "1");
+    expect(bob).not.toHaveAttribute("data-offline");
+    expect(bob).toHaveAttribute("aria-label", "Bob");
+  });
 });

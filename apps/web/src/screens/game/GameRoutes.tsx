@@ -55,7 +55,7 @@ export const GameRouteTree = () => (
 );
 
 export const GameRoutes = () => {
-  const { state, playerID, roomCode, send } = useMatch();
+  const { state, playerID, roomCode, players, selfConnected, send } = useMatch();
   const game = state?.game;
   const leaveRoom = useLeaveRoom();
 
@@ -70,7 +70,16 @@ export const GameRoutes = () => {
   }
 
   return (
-    <GameSessionProvider game={game} viewerId={playerID} roomCode={roomCode} gameId={toGameId(roomCode, state.gamesPlayed)} send={send} onLeave={leaveRoom}>
+    <GameSessionProvider
+      game={game}
+      viewerId={playerID}
+      roomCode={roomCode}
+      gameId={toGameId(roomCode, state.gamesPlayed)}
+      send={send}
+      onLeave={leaveRoom}
+      selfConnected={selfConnected}
+      offlinePlayerIds={players.filter((player) => player.isConnected === false && game.kings[player.id]?.eliminated === false).map((player) => player.id)}
+    >
       <GameRouteTree />
     </GameSessionProvider>
   );

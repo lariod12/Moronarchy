@@ -17,6 +17,8 @@ export interface GameFrameProps {
   onBack?: () => void;
   onCrownPress?: () => void;
   onCrownLongPress?: () => void;
+  // Notices under the activity line (connection and absent-player banners).
+  banners?: ReactNode;
   overlay?: ReactNode;
   children: ReactNode;
 }
@@ -32,6 +34,7 @@ export const GameFrame = ({
   onBack,
   onCrownPress,
   onCrownLongPress,
+  banners,
   overlay,
   children
 }: GameFrameProps) => (
@@ -40,6 +43,7 @@ export const GameFrame = ({
       <>
         <TopBar {...toTopBarModel(game, roomCode, title)} />
         <ActivityLine text={getActivityText(game, viewerId)} />
+        {banners}
       </>
     }
     hud={

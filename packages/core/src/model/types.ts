@@ -13,6 +13,7 @@ export type ItemId =
   | "ironSword"
   | "ironArmor"
   | "cloverCharm";
+export type EliminationReason = "bankrupt" | "left";
 export type CardType = "maxHealth" | "attack" | "defense" | "lucky" | "coin";
 export type PersonalEventId =
   | "treasureChest"
@@ -48,6 +49,8 @@ export interface King {
   laps: number;
   eliminated: boolean;
   eliminatedRound: number | null;
+  // Why the king is out: ran out of coin ("bankrupt") or was removed after disconnecting ("left").
+  eliminationReason: EliminationReason | null;
   skipNextTurn: boolean;
   items: Partial<Record<ItemId, number>>;
   recruited: number; // residents ever recruited, used for naming
@@ -148,6 +151,8 @@ export interface FightResult {
   defender: FighterRef;
   winner: "attacker" | "defender";
   retreated: boolean;
+  // True when a king left the game mid-fight (disconnected): no fee, no loot, nothing changes on the plot.
+  forfeit?: boolean;
   feePaid: number;
   loot: number;
   residentsKilled: number;

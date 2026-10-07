@@ -10,6 +10,8 @@ export interface MapViewProps {
   game: GameState;
   viewerId: PlayerId;
   positions: Record<PlayerId, TileId>;
+  // Kings the server reports as disconnected.
+  offlineIds?: ReadonlySet<PlayerId>;
   canRoll: boolean;
   canUseHorse?: boolean;
   rolling?: boolean;
@@ -47,7 +49,7 @@ export const getMapHint = (game: GameState, viewerId: PlayerId): string => {
   }
 };
 
-export const MapView = ({ game, viewerId, positions, canRoll, canUseHorse = true, rolling = false, animating = false, onRoll, onUseHorse, onWatchFight }: MapViewProps) => {
+export const MapView = ({ game, viewerId, positions, offlineIds, canRoll, canUseHorse = true, rolling = false, animating = false, onRoll, onUseHorse, onWatchFight }: MapViewProps) => {
   const { turn } = game;
   const viewer = game.kings[viewerId];
   const showHorse =
@@ -57,7 +59,7 @@ export const MapView = ({ game, viewerId, positions, canRoll, canUseHorse = true
 
   return (
     <div className="map" data-animating={String(animating)}>
-      <MapBoard game={game} viewerId={viewerId} positions={positions}>
+      <MapBoard game={game} viewerId={viewerId} positions={positions} offlineIds={offlineIds}>
         <div className="map-center">
           <div className="map-center__dice">
             <Dice value={dice && isDieValue(dice.value) ? dice.value : 1} rolling={rolling} size={64} />

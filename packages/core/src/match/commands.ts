@@ -25,7 +25,8 @@ export const GAME_COMMAND_NAMES = [
   "upgradeResident",
   "healResident",
   "buyItem",
-  "endTurn"
+  "endTurn",
+  "forfeit"
 ] as const;
 
 export type GameCommandName = (typeof GAME_COMMAND_NAMES)[number];
@@ -72,6 +73,8 @@ export const dispatchGameCommand = (game: GameState, actorId: PlayerId, rng: Rng
       return engine.retreat(game, actorId, rng);
     case "endTurn":
       return engine.endTurn(game, actorId, rng);
+    case "forfeit":
+      return engine.forfeit(game, actorId, rng);
     case "pickCard":
       return typeof first === "number" && Number.isInteger(first) ? engine.pickCard(game, actorId, rng, first) : invalid();
     case "useItem": {

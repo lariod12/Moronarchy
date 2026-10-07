@@ -126,6 +126,16 @@ const END_ENTRY_IDS = [
   "end-spectator-hud"
 ];
 
+// The gallery group "Robustness": offline markers, banners and the removed-player screens.
+const ROBUSTNESS_ENTRY_IDS = [
+  "banner-reconnecting",
+  "banner-absent",
+  "map-offline-token",
+  "positions-offline",
+  "ranking-left",
+  "lose-left"
+];
+
 const holdCrown = async (page: Page, name: RegExp, ms: number): Promise<void> => {
   const box = await page.getByRole("button", { name }).boundingBox();
   if (!box) {
@@ -211,7 +221,8 @@ test.describe("gallery", () => {
       "lobby-kick-dialog",
       "lobby-starting",
       "game-home",
-      ...GAME_ENTRY_IDS
+      ...GAME_ENTRY_IDS,
+      ...ROBUSTNESS_ENTRY_IDS
     ]) {
       visited += 1;
       if (visited % FRESH_PAGE_EVERY === 0) {
@@ -713,6 +724,75 @@ test.describe("gallery", () => {
     expect(errors).toEqual([]);
   });
 
+  test("every Robustness entry is listed in the gallery", async ({ page }) => {
+    const hrefs = await getEntryHrefs(page);
+    for (const id of ROBUSTNESS_ENTRY_IDS) {
+      expect(hrefs, id).toContain(`/dev/gallery/${id}`);
+    }
+  });
+
+  test("the Reconnecting banner sits under the activity line", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/banner-reconnecting");
+    const banner = page.getByTestId("connection-banner");
+    await expect(banner).toHaveText("Reconnecting…");
+    const [activity, bannerBox] = [await page.getByTestId("activity-line").boundingBox(), await banner.boundingBox()];
+    expect(bannerBox!.y).toBeGreaterThanOrEqual(activity!.y + activity!.height - 1);
+    expect(errors).toEqual([]);
+  });
+
+  test("the absent banner names the disconnected king and the time left", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/banner-absent");
+    await expect(page.getByTestId("absent-banner")).toHaveText("Alice disconnected — removed in ~25s");
+    await expect(page.getByTestId("connection-banner")).toHaveCount(0);
+    await expect(page.locator('[data-testid="king-token"][data-player="0"]')).toHaveAttribute("data-offline", "true");
+    expect(errors).toEqual([]);
+  });
+
+  test("an offline king is dimmed on the map, tagged on Positions and told apart in the ranking", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/map-offline-token");
+    const offline = page.locator('[data-testid="king-token"][data-offline="true"]');
+    await expect(offline).toHaveCount(1);
+    await expect(offline).toHaveAttribute("data-player", "2");
+    await expect(offline).toHaveAttribute("aria-label", "Cara (offline)");
+    expect(await offline.evaluate((element) => Number(getComputedStyle(element).opacity))).toBeLessThan(0.6);
+
+    await page.goto("/dev/gallery/positions-offline");
+    await expect(page.getByText("offline", { exact: true })).toHaveCount(1);
+    await expect(page.locator("tbody tr").nth(1)).toContainText("offline");
+    await expect(page.locator("tbody tr").nth(1)).toHaveClass(/positions-row--offline/);
+
+    await page.goto("/dev/gallery/ranking-left");
+    await expect(page.locator(".result-ranking__name")).toHaveText(["Alice (you)", "Cara", "Bob"]);
+    await expect(page.locator(".result-ranking__status")).toHaveText(["Winner", "Left in round 3", "Out in round 2"]);
+    expect(errors).toEqual([]);
+  });
+
+  test("a removed king sees that they were removed for being disconnected", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/dev/gallery/lose-left");
+    const face = page.getByTestId("lose-face");
+    await expect(face.getByRole("heading", { name: "You were removed" })).toBeVisible();
+    await expect(face.getByText("Disconnected for too long")).toBeVisible();
+    await expect(face.getByRole("button", { name: "Keep watching" })).toBeVisible();
+    await expect(face.getByRole("button", { name: "Leave room" })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("robustness entries have no horizontal overflow at 320px", async ({ page }) => {
+    test.setTimeout(120_000);
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 320, height: 640 });
+    for (const id of ROBUSTNESS_ENTRY_IDS) {
+      await page.goto(`/dev/gallery/${id}`);
+      await expect(page.locator("[data-gallery-entry]")).toBeVisible();
+      expect(await hasHorizontalOverflow(page), `overflow on ${id} at 320px`).toBe(false);
+    }
+    expect(errors).toEqual([]);
+  });
+
   test("saves reference screenshots", async ({ page }) => {
     for (const id of [
       "shell-active",
@@ -738,7 +818,8 @@ test.describe("gallery", () => {
       "item-detail",
       "events-list",
       "map-positions",
-      ...END_ENTRY_IDS
+      ...END_ENTRY_IDS,
+      ...ROBUSTNESS_ENTRY_IDS
     ]) {
       await page.goto(`/dev/gallery/${id}`);
       await expect(page.locator("[data-gallery-entry]")).toBeVisible();

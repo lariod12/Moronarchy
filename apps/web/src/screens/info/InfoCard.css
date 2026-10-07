@@ -28,8 +28,21 @@
   width: 40px;
 }
 
-.info-card__title {
+.info-card__titles {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.info-card__badge {
+  display: flex;
+  justify-content: center;
+}
+
+.info-card__title {
+  max-width: 100%;
   min-width: 0;
   margin: 0;
   overflow: hidden;

@@ -26,7 +26,8 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 120_000,
       // MORONARCHY_ENABLE_TEST_SCENARIOS lets endgame.spec.ts create a rigged "finale" room. Set it nowhere else, never in production.
-      env: { PORT: serverPort, WEB_PORT: webPort, MORONARCHY_ENABLE_TEST_SCENARIOS: "1" }
+      // MORONARCHY_ABSENT_TIMEOUT_MS shortens "disconnected for 30 s" so robustness.spec.ts can watch a removal in seconds.
+      env: { PORT: serverPort, WEB_PORT: webPort, MORONARCHY_ENABLE_TEST_SCENARIOS: "1", MORONARCHY_ABSENT_TIMEOUT_MS: "4000" }
     },
     {
       command: `cmd /c pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,

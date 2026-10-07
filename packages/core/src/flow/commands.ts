@@ -28,6 +28,7 @@ import {
 } from "../rules/residents";
 import type { Rng } from "../rules/rng";
 import { getKingStats } from "../rules/stats";
+import { forfeitKing } from "./forfeit";
 import { afterResolution, finishTurn, leaveStartStation as leaveStartStationFlow, startMove } from "./turn";
 
 const OK: CommandResult = { ok: true };
@@ -454,3 +455,6 @@ export const endTurn = (state: GameState, actorId: PlayerId, rng: Rng): CommandR
   finishTurn(state, rng);
   return OK;
 };
+
+// Leaving the game (only ever sent for oneself; the server sends it for a player who stayed disconnected too long).
+export const forfeit = (state: GameState, actorId: PlayerId, rng: Rng): CommandResult => forfeitKing(state, actorId, rng);

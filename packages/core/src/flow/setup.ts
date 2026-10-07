@@ -29,6 +29,7 @@ export const createKing = (id: PlayerId, name: string): King => ({
   laps: 0,
   eliminated: false,
   eliminatedRound: null,
+  eliminationReason: null,
   skipNextTurn: false,
   items: {},
   recruited: 0

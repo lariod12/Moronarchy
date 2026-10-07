@@ -29,7 +29,7 @@ const EndSequence = ({ game, viewerId, gameId, isHost, onPlayAgain, onQuit }: En
     return <WinView onContinue={() => seen.dismiss(face.key)} />;
   }
   if (face?.kind === "lose") {
-    return <LoseView round={face.round} continueLabel="See ranking" onContinue={() => seen.dismiss(face.key)} onLeave={onQuit} />;
+    return <LoseView round={face.round} reason={face.reason} continueLabel="See ranking" onContinue={() => seen.dismiss(face.key)} onLeave={onQuit} />;
   }
   return <RankingView rows={toRankingRows(game, viewerId)} isHost={isHost} onPlayAgain={onPlayAgain} onQuit={onQuit} />;
 };

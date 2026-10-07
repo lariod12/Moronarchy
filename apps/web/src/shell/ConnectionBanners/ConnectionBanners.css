@@ -1,0 +1,17 @@
+.shell-banner {
+  margin: 0;
+  padding: 3px 10px;
+  overflow: hidden;
+  border-bottom: var(--stroke-thin) solid var(--ink);
+  background: var(--paper);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-banner--connection,
+.shell-banner--absent {
+  background: var(--ink);
+  color: var(--paper);
+}

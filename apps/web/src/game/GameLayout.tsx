@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { getCrownState } from "@moronarchy/core/engine";
 import { GameFrame } from "../screens/game/GameFrame";
+import { AbsentBanner, ConnectionBanner } from "../shell/ConnectionBanners/ConnectionBanners";
 import { FightRevealProvider } from "./FightRevealContext";
 import { getForcedPage, getPageName } from "./forced-route";
 import { useGameSession } from "./GameSession";
@@ -9,14 +10,16 @@ import { roomPath } from "./labels";
 import { getPageTitle } from "./page-title";
 import { ModalHost } from "./ModalHost";
 import { useMovement } from "./MovementContext";
+import { useAbsentCountdown } from "./useAbsentCountdown";
 
 // Chrome for every in-game page: TopBar, activity line, HUD with the Crown, and the modal host.
 export const GameLayout = () => {
-  const { game, viewerId, roomCode, actions } = useGameSession();
+  const { game, viewerId, roomCode, actions, selfConnected, offlineIds } = useGameSession();
   const { isAnimating } = useMovement();
   const navigate = useNavigate();
   const location = useLocation();
   const [endTurnOpen, setEndTurnOpen] = useState(false);
+  const absent = useAbsentCountdown(game, offlineIds);
 
   const pageName = getPageName(location.pathname);
   const crownState = getCrownState(game, viewerId);
@@ -64,6 +67,12 @@ export const GameLayout = () => {
         onBack={handleBack}
         onCrownPress={goHome}
         onCrownLongPress={handleCrownLongPress}
+        banners={
+          <>
+            <ConnectionBanner connected={selfConnected} />
+            <AbsentBanner status={absent} name={absent ? (game.kings[absent.playerId]?.name ?? "Someone") : ""} />
+          </>
+        }
         overlay={<ModalHost endTurnOpen={endTurnOpen} onEndTurnClose={() => setEndTurnOpen(false)} />}
       >
         <Outlet />

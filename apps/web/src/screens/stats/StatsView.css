@@ -5,3 +5,9 @@
   padding: 4px;
   box-shadow: var(--shadow-sm);
 }
+
+.info-card .stats-offline {
+  padding: 0 6px;
+  box-shadow: none;
+  font-size: var(--text-xs);
+}

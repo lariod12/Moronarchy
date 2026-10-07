@@ -73,9 +73,11 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 VITE_GAME_SERVER_URL=http://localhost:8000
 ```
 
+Optional server variable `MORONARCHY_ABSENT_TIMEOUT_MS` (default `30000`): a player who is disconnected while the running game waits on them (their turn, their decision or their fight roll) for this long is removed from the game; their plots and residents return to the map. Players who stay connected are never timed out, and nobody is removed in the lobby or after the game.
+
 `pnpm e2e` also reads `E2E_WEB_PORT` (default 5173) and `E2E_SERVER_PORT` (default 8000), for when another dev server already uses those ports.
 
-Playwright starts the e2e game server with `MORONARCHY_ENABLE_TEST_SCENARIOS=1` automatically (see `playwright.config.ts`). That switch lets a test create a rigged room (`setupData: { scenario: "finale" }`) so the end-of-game e2e takes a couple of moves. Never set it yourself and never in production: without it the server refuses every room that asks for a scenario.
+Playwright starts the e2e game server with `MORONARCHY_ENABLE_TEST_SCENARIOS=1` automatically (see `playwright.config.ts`). That switch lets a test create a rigged room (`setupData: { scenario: "finale" }`) so the end-of-game e2e takes a couple of moves. Never set it yourself and never in production: without it the server refuses every room that asks for a scenario. It also sets `MORONARCHY_ABSENT_TIMEOUT_MS=4000` so `tests/e2e/robustness.spec.ts` can watch an absent player being removed in seconds.
 
 For public deployment, put the server behind a real reverse proxy or platform rate limit. The in-memory lobby guard is not a substitute for edge protection.
 

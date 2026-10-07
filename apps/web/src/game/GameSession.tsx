@@ -17,6 +17,10 @@ export interface GameSessionValue {
   check: RunCheck;
   // Gives the seat back and goes to Welcome (the Lose face offers it). Absent where there is no room to leave.
   leaveRoom?: () => void;
+  // False while this client's own connection is down.
+  selfConnected: boolean;
+  // Kings the server reports as disconnected.
+  offlineIds: ReadonlySet<PlayerId>;
 }
 
 const GameSessionContext = createContext<GameSessionValue | null>(null);
@@ -28,17 +32,22 @@ export interface GameSessionProviderProps {
   gameId?: string;
   send: SendMove;
   onLeave?: () => void;
+  selfConnected?: boolean;
+  offlinePlayerIds?: readonly PlayerId[];
   moveStepMs?: number;
   children: ReactNode;
 }
 
-export const GameSessionProvider = ({ game, viewerId, roomCode, gameId, send, onLeave, moveStepMs, children }: GameSessionProviderProps) => {
+export const GameSessionProvider = ({ game, viewerId, roomCode, gameId, send, onLeave, selfConnected = true, offlinePlayerIds = [], moveStepMs, children }: GameSessionProviderProps) => {
   const actions = useMemo(() => createGameActions(send), [send]);
   const canRun = useMemo(() => createCanRun(game, viewerId), [game, viewerId]);
   const check = useMemo(() => createRunCheck(game, viewerId), [game, viewerId]);
+  const offlineKey = [...offlinePlayerIds].sort().join(",");
+  // The key stands for the list: a new array with the same ids keeps the same set.
+  const offlineIds = useMemo<ReadonlySet<PlayerId>>(() => new Set(offlineKey === "" ? [] : offlineKey.split(",")), [offlineKey]);
   const value = useMemo<GameSessionValue>(
-    () => ({ game, viewerId, roomCode, gameId: gameId ?? roomCode, actions, canRun, check, leaveRoom: onLeave }),
-    [game, viewerId, roomCode, gameId, actions, canRun, check, onLeave]
+    () => ({ game, viewerId, roomCode, gameId: gameId ?? roomCode, actions, canRun, check, leaveRoom: onLeave, selfConnected, offlineIds }),
+    [game, viewerId, roomCode, gameId, actions, canRun, check, onLeave, selfConnected, offlineIds]
   );
   return (
     <GameSessionContext.Provider value={value}>

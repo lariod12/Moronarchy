@@ -125,4 +125,12 @@ describe("getLatestLogEntry", () => {
     expect(getLatestLogEntry(state, "lapCompleted", "1")).toBeUndefined();
     expect(getLatestLogEntry(state, "lapCompleted")?.seq).toBe(entry?.seq);
   });
+
+  it("previews forfeit as accepted for any live king and leaves the state alone", () => {
+    const state = createTestGame(3);
+    const before = snapshot(state);
+    expect(previewCommand(state, "1", "forfeit")).toEqual({ ok: true });
+    expect(previewCommand(state, "9", "forfeit")).toEqual({ ok: false, error: "NOT_ACTOR" });
+    expect(snapshot(state)).toBe(before);
+  });
 });

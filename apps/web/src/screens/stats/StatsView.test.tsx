@@ -68,4 +68,12 @@ describe("StatsView", () => {
     render(<StatsView game={game} playerId="9" viewerId={viewerId} />);
     expect(screen.getByText("Unknown player")).toBeInTheDocument();
   });
+
+  it("tags a king the server reports as offline in the header", () => {
+    const { game, viewerId } = scenarios.infoGame();
+    const { rerender } = render(<StatsView game={game} playerId="1" viewerId={viewerId} />);
+    expect(screen.queryByTestId("offline-tag")).not.toBeInTheDocument();
+    rerender(<StatsView game={game} playerId="1" viewerId={viewerId} offline />);
+    expect(screen.getByTestId("offline-tag")).toHaveTextContent("offline");
+  });
 });

@@ -4,7 +4,7 @@ import type { GameState, GlobalEventId, LogEntry, PersonalEventId, PlayerId } fr
 // Log types in use: gameStarted, turnClaimed, turnSkipped, diceRolled, diceRerolled, lapCompleted, cardPicked,
 // plotBought, plotSkipped, plotUpgraded, plotHealed, residentRecruited, residentUpgraded, residentHealed,
 // itemBought, itemUsed, itemFound, bagFull, personalEvent, globalEvent, feePaid, fightStarted, fightRound,
-// fightEnded, knockedOut, residentKilled, plotLevelDown, plotDestroyed, kingEliminated, gameFinished.
+// fightEnded, knockedOut, residentKilled, plotLevelDown, plotDestroyed, kingEliminated, kingLeft, gameFinished.
 
 export const nextSeq = (state: GameState): number => {
   state.seq += 1;

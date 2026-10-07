@@ -85,6 +85,25 @@ describe("runGameCommand", () => {
     expect(state.stage).toBe("playing");
   });
 
+  it("forfeit removes only the sender and finishes a two-player match", () => {
+    const state = playingMatch(31);
+    const rng = createSeededRng(31);
+    const leaver = turnPlayer(state);
+    ok(runGameCommand(state, leaver, rng, "forfeit", []));
+    expect(state.game?.kings[leaver]).toMatchObject({ eliminated: true, eliminationReason: "left" });
+    expect(state.stage).toBe("finished");
+    fails(runGameCommand(state, leaver, rng, "forfeit", []), "WRONG_STAGE");
+  });
+
+  it("forfeit is rejected in the lobby and for strangers", () => {
+    const lobby = createMatchState();
+    ok(sit(lobby, "0", "Ann"));
+    fails(runGameCommand(lobby, "0", createSeededRng(1), "forfeit", []), "WRONG_STAGE");
+    const state = playingMatch(32);
+    fails(runGameCommand(state, "9", createSeededRng(1), "forfeit", []), "NOT_ACTOR");
+    expect(state.stage).toBe("playing");
+  });
+
   it("moves the match to finished once the engine game is over", () => {
     const state = playingMatch(21);
     const game = state.game as NonNullable<MatchState["game"]>;

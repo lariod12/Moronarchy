@@ -57,6 +57,7 @@ describe("createGame", () => {
         position: 1,
         laps: 0,
         eliminated: false,
+        eliminationReason: null,
         skipNextTurn: false,
         items: {},
         recruited: 0

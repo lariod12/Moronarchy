@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as scenarios from "../dev/gallery/game-fixtures";
 import { holdButton, renderGame } from "./test-utils";
@@ -124,5 +124,30 @@ describe("GameLayout", () => {
     expect(screen.getByText("Game Over")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Crown/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
+  });
+
+  it("shows Reconnecting while this client is offline and nothing while it is online", () => {
+    const { game, viewerId } = scenarios.mapStart();
+    const view = renderGame(game, viewerId, { page: "map", selfConnected: false });
+    expect(screen.getByTestId("connection-banner")).toHaveTextContent("Reconnecting…");
+    view.unmount();
+    renderGame(game, viewerId, { page: "map" });
+    expect(screen.queryByTestId("connection-banner")).not.toBeInTheDocument();
+  });
+
+  it("shows how long until a disconnected king that the game waits on is removed", () => {
+    const { game } = scenarios.waitingForAlice();
+    renderGame(game, "1", { page: "map", offlinePlayerIds: ["0"] });
+    expect(screen.getByTestId("absent-banner")).toHaveTextContent("Alice disconnected — removed in ~30s");
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.getByTestId("absent-banner")).toHaveTextContent("Alice disconnected — removed in ~25s");
+  });
+
+  it("shows no absent banner when the offline king is not the one the game waits on", () => {
+    const { game } = scenarios.waitingForAlice();
+    renderGame(game, "1", { page: "map", offlinePlayerIds: ["2"] });
+    expect(screen.queryByTestId("absent-banner")).not.toBeInTheDocument();
   });
 });

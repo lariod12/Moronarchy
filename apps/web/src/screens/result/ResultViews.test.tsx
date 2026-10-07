@@ -6,9 +6,9 @@ import { RankingView } from "./RankingView";
 import { WinView } from "./WinView";
 
 const ROWS: RankingRow[] = [
-  { playerId: "0", name: "Alice", isSelf: false, rank: 1, outRound: null },
-  { playerId: "1", name: "Bob", isSelf: true, rank: 2, outRound: 4 },
-  { playerId: "2", name: "Cara", isSelf: false, rank: 3, outRound: 2 }
+  { playerId: "0", name: "Alice", isSelf: false, rank: 1, outRound: null, outReason: null },
+  { playerId: "1", name: "Bob", isSelf: true, rank: 2, outRound: 4, outReason: "bankrupt" },
+  { playerId: "2", name: "Cara", isSelf: false, rank: 3, outRound: 2, outReason: "left" }
 ];
 
 describe("LoseView", () => {
@@ -20,6 +20,13 @@ describe("LoseView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep watching" }));
     expect(onContinue).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("button", { name: "Leave room" })).not.toBeInTheDocument();
+  });
+
+  it("tells a king who was removed for staying disconnected", () => {
+    render(<LoseView round={3} reason="left" continueLabel="Keep watching" onContinue={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "You were removed" })).toBeInTheDocument();
+    expect(screen.getByText("Disconnected for too long")).toBeInTheDocument();
+    expect(screen.queryByText(/Bankrupt/)).not.toBeInTheDocument();
   });
 
   it("offers Leave room only when it is given", () => {
@@ -46,7 +53,7 @@ describe("RankingView", () => {
   it("lists the kings in the given order with rank, (you) marker and status", () => {
     render(<RankingView rows={ROWS} isHost onPlayAgain={vi.fn()} onQuit={vi.fn()} />);
     const rows = screen.getAllByTestId("ranking-row");
-    expect(rows.map((row) => row.textContent)).toEqual(["1AliceWinner", "2Bob (you)Out in round 4", "3CaraOut in round 2"]);
+    expect(rows.map((row) => row.textContent)).toEqual(["1AliceWinner", "2Bob (you)Out in round 4", "3CaraLeft in round 2"]);
     expect(within(rows[0] as HTMLElement).getByText("Winner")).toBeInTheDocument();
   });
 

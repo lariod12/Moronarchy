@@ -12,11 +12,13 @@ export interface MapBoardProps {
   viewerId: PlayerId;
   // Where each king is drawn right now (mid-walk for the turn player).
   positions: Record<PlayerId, TileId>;
+  // Kings the server reports as disconnected.
+  offlineIds?: ReadonlySet<PlayerId>;
   children?: ReactNode;
 }
 
 // The 40-tile ring with plot owners and king tokens; `children` fill the empty middle.
-export const MapBoard = ({ game, viewerId, positions, children }: MapBoardProps) => {
+export const MapBoard = ({ game, viewerId, positions, offlineIds, children }: MapBoardProps) => {
   const tokensByTile = new Map<TileId, KingTokenProps[]>();
   for (const playerId of game.turnOrder) {
     const king = game.kings[playerId];
@@ -25,7 +27,7 @@ export const MapBoard = ({ game, viewerId, positions, children }: MapBoardProps)
       continue;
     }
     const list = tokensByTile.get(tileId) ?? [];
-    list.push({ playerId, name: king.name, isViewer: playerId === viewerId });
+    list.push({ playerId, name: king.name, isViewer: playerId === viewerId, offline: offlineIds?.has(playerId) ?? false });
     tokensByTile.set(tileId, list);
   }
 

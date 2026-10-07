@@ -144,6 +144,8 @@ export const formatLogEntry = (entry: LogEntry, game: GameState, viewerId: Playe
       return `${actor} destroyed ${plotName(entry)}`;
     case "kingEliminated":
       return `${actor} ${actor === "You" ? "are" : "is"} out of the game`;
+    case "kingLeft":
+      return `${actor} left the game (disconnected)`;
     case "gameFinished":
       return `Game over: ${actor} win${actor === "You" ? "" : "s"}`;
     default:
@@ -181,6 +183,10 @@ export const getNotification = (entry: LogEntry, game: GameState, viewerId: Play
     case "plotDestroyed":
       return text(entry, "ownerId") === viewerId
         ? { title: "Plot lost", text: `${who(game, viewerId, entry.playerId)} destroyed your ${plotName(entry)}.` }
+        : null;
+    case "kingLeft":
+      return entry.playerId !== viewerId
+        ? { title: "Player removed", text: `${who(game, viewerId, entry.playerId)} was removed (disconnected).` }
         : null;
     default:
       return null;

@@ -16,18 +16,24 @@ export interface RenderGameOptions {
   page?: string;
   gameId?: string;
   send?: Mock<SendMove>;
+  selfConnected?: boolean;
+  offlinePlayerIds?: PlayerId[];
 }
 
 // Renders the real in-game route tree for one viewer. `send` records the moves the UI would send; the state itself
 // only changes when the test calls `update` with the next engine state.
-export const renderGame = (initial: GameState, viewerId: PlayerId, { page = "home", gameId = "test-game", send = vi.fn<SendMove>() }: RenderGameOptions = {}) => {
+export const renderGame = (
+  initial: GameState,
+  viewerId: PlayerId,
+  { page = "home", gameId = "test-game", send = vi.fn<SendMove>(), selfConnected, offlinePlayerIds }: RenderGameOptions = {}
+) => {
   const tree = (game: GameState) => (
     <MemoryRouter initialEntries={[`/room/${TEST_ROOM}/${page}`]}>
       <Routes>
         <Route
           path="/room/:roomCode/*"
           element={
-            <GameSessionProvider game={game} viewerId={viewerId} roomCode={TEST_ROOM} gameId={gameId} send={send} moveStepMs={10}>
+            <GameSessionProvider game={game} viewerId={viewerId} roomCode={TEST_ROOM} gameId={gameId} send={send} selfConnected={selfConnected} offlinePlayerIds={offlinePlayerIds} moveStepMs={10}>
               <LocationProbe />
               <GameRouteTree />
             </GameSessionProvider>

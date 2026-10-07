@@ -1,5 +1,5 @@
 import { getCrownState, getFightViewerRole, getPlot } from "@moronarchy/core/engine";
-import type { GameState, LogEntry, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
+import type { EliminationReason, GameState, LogEntry, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
 import { getLoseFace } from "./end-model";
 import { describeFightResult, fightNoticeKey } from "./fight-result";
 import type { FightResultModel } from "./fight-result";
@@ -9,7 +9,7 @@ import type { Notification } from "./log-format";
 type Pending<K extends PendingDecision["kind"]> = Extract<PendingDecision, { kind: K }>;
 
 export type ModalModel =
-  | { kind: "lose"; key: string; round: number | null }
+  | { kind: "lose"; key: string; round: number | null; reason: EliminationReason | null }
   | { kind: "buyPlot"; pending: Pending<"buyPlot"> }
   | { kind: "visitorChoice"; pending: Pending<"visitorChoice"> }
   | { kind: "ownerChoice"; pending: Pending<"ownerChoice"> }
@@ -86,7 +86,7 @@ export const selectModal = ({ game, viewerId, isAnimating, endTurnOpen, seenSeq,
   // Going bankrupt beats everything else, including a decision or fight popup of the same moment.
   const lose = getLoseFace(game, viewerId, seenSeq, dismissed);
   if (lose) {
-    return { kind: "lose", key: lose.key, round: lose.round };
+    return { kind: "lose", key: lose.key, round: lose.round, reason: lose.reason };
   }
   const { pending, turn } = game;
   const isTurnPlayer = turn.playerId === viewerId;

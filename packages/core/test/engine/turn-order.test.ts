@@ -201,16 +201,16 @@ describe("bankruptcy and ranking", () => {
 
   it("reports who is out, in which round, and the final place once the game is over", () => {
     const state = createTestGame(3);
-    expect(getEliminationInfo(state, "2")).toEqual({ eliminated: false, round: null, rank: null });
+    expect(getEliminationInfo(state, "2")).toEqual({ eliminated: false, round: null, reason: null, rank: null });
     eliminate(state, "2");
-    expect(getEliminationInfo(state, "2")).toEqual({ eliminated: true, round: 1, rank: null });
+    expect(getEliminationInfo(state, "2")).toEqual({ eliminated: true, round: 1, reason: "bankrupt", rank: null });
     state.round = 4;
     eliminate(state, "0");
     expect(state.phase).toBe("finished");
-    expect(getEliminationInfo(state, "1")).toEqual({ eliminated: false, round: null, rank: 1 });
-    expect(getEliminationInfo(state, "0")).toEqual({ eliminated: true, round: 4, rank: 2 });
-    expect(getEliminationInfo(state, "2")).toEqual({ eliminated: true, round: 1, rank: 3 });
-    expect(getEliminationInfo(state, "9")).toEqual({ eliminated: false, round: null, rank: null });
+    expect(getEliminationInfo(state, "1")).toEqual({ eliminated: false, round: null, reason: null, rank: 1 });
+    expect(getEliminationInfo(state, "0")).toEqual({ eliminated: true, round: 4, reason: "bankrupt", rank: 2 });
+    expect(getEliminationInfo(state, "2")).toEqual({ eliminated: true, round: 1, reason: "bankrupt", rank: 3 });
+    expect(getEliminationInfo(state, "9")).toEqual({ eliminated: false, round: null, reason: null, rank: null });
   });
 
   it("paying a fee with exactly enough coin keeps the king in the game", () => {

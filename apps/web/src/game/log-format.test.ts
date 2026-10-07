@@ -43,6 +43,7 @@ const ALL_TYPES: Array<[string, string | null, LogEntry["data"], string]> = [
   ["plotLevelDown", "0", { plotId: 7, level: 1 }, "Plot 7 dropped to level 1"],
   ["plotDestroyed", "1", { plotId: 7, ownerId: "0" }, "Bob destroyed Plot 7"],
   ["kingEliminated", "1", { round: 3 }, "Bob is out of the game"],
+  ["kingLeft", "1", { round: 3, reason: "disconnected" }, "Bob left the game (disconnected)"],
   ["gameFinished", "0", { round: 3 }, "Game over: Alice wins"]
 ];
 
@@ -161,6 +162,13 @@ describe("getNotification", () => {
     // Going bankrupt is announced by the full-frame Lose face (end-model.ts), not by a popup.
     expect(isNotificationFor(entry("kingEliminated", "2", { round: 2 }), state, "2")).toBe(false);
     expect(isNotificationFor(entry("kingEliminated", "2", { round: 2 }), state, "0")).toBe(false);
+  });
+
+  it("tells the others when a king was removed for being disconnected, but not the king themselves", () => {
+    const state = game();
+    const left = entry("kingLeft", "2", { round: 2, reason: "disconnected" });
+    expect(getNotification(left, state, "0")).toEqual({ title: "Player removed", text: "King 2 was removed (disconnected)." });
+    expect(isNotificationFor(left, state, "2")).toBe(false);
   });
 
   it("stays quiet for plain activity", () => {

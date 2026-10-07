@@ -54,3 +54,15 @@ describe("PositionsView", () => {
     expect(rows[1]).not.toHaveClass("positions-row--out");
   });
 });
+
+describe("PositionsView offline markers", () => {
+  it("tags and dims an offline king, never an online one", () => {
+    const { game, viewerId } = scenarios.mapMidgame();
+    render(<PositionsView game={game} viewerId={viewerId} offlineIds={new Set(["1"])} />);
+    const bob = screen.getAllByTestId("positions-player").find((cell) => cell.getAttribute("data-player") === "1");
+    expect(bob).toHaveTextContent("offline");
+    expect(screen.getAllByText("offline")).toHaveLength(1);
+    expect(bob?.closest("tr")).toHaveClass("positions-row--offline");
+    expect(screen.getAllByTestId("positions-player")[0]).not.toHaveTextContent("offline");
+  });
+});

@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getKingInfo } from "@moronarchy/core/engine";
 import type { GameState, KingInfo, PlayerId } from "@moronarchy/core/engine";
 import { Avatar } from "../../ui/Avatar/Avatar";
+import { Tag } from "../../ui/Tag/Tag";
 import { IconButton } from "../../ui/IconButton/IconButton";
 import { InfoCard } from "../info/InfoCard";
 import { EmptyState } from "../info/EmptyState";
@@ -13,6 +14,8 @@ export interface StatsViewProps {
   // Whose page this is.
   playerId: PlayerId;
   viewerId: PlayerId;
+  // The server reports this king as disconnected.
+  offline?: boolean;
   // Step to the king before / after in turn order (not given when there is only one king).
   onPrev?: () => void;
   onNext?: () => void;
@@ -34,7 +37,7 @@ export const getStatRows = (info: KingInfo): Array<{ label: string; value: strin
 ];
 
 // Players Info: one king at a time, with arrows to the other kings. Everybody can read everybody (spectators too).
-export const StatsView = ({ game, playerId, viewerId, onPrev, onNext }: StatsViewProps) => {
+export const StatsView = ({ game, playerId, viewerId, offline = false, onPrev, onNext }: StatsViewProps) => {
   const info = getKingInfo(game, playerId);
   if (!info) {
     return <EmptyState text="Unknown player" />;
@@ -44,7 +47,14 @@ export const StatsView = ({ game, playerId, viewerId, onPrev, onNext }: StatsVie
       <InfoCard
         title={info.name}
         stats={getStatRows(info)}
-        muted={info.eliminated}
+        muted={info.eliminated || offline}
+        titleBadge={
+          offline && !info.eliminated ? (
+            <Tag tone="muted" className="stats-offline" data-testid="offline-tag">
+              offline
+            </Tag>
+          ) : undefined
+        }
         icon={<Avatar size="fill" crossed={info.eliminated} className="info-card__avatar" />}
         titleStart={
           onPrev ? (

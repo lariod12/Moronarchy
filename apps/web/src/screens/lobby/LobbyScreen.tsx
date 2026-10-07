@@ -18,7 +18,7 @@ export interface LobbyScreenProps {
 }
 
 export const LobbyScreen = ({ overlay }: LobbyScreenProps) => {
-  const { state, playerID, roomCode, players, send } = useMatch();
+  const { state, playerID, roomCode, players, selfConnected, send } = useMatch();
   const bubbles = useChatBubbles(state?.chat ?? []);
   if (!state) {
     return null;
@@ -35,6 +35,7 @@ export const LobbyScreen = ({ overlay }: LobbyScreenProps) => {
       onStart={() => send("startGame")}
       onSendChat={(text) => send("sendChat", text)}
       onKick={(targetId) => send("kickSeat", targetId)}
+      selfConnected={selfConnected}
       overlay={overlay}
     />
   );

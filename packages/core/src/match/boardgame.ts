@@ -42,6 +42,27 @@ export interface MatchGameOptions {
   allowScenarios?: boolean;
 }
 
+// boardgame.io silently drops a move whose stateID is stale, i.e. when anyone else moved after this client last synced.
+// These moves are routinely sent by several players at once (lobby, both duelists rolling, the plot owner answering,
+// the server forfeiting an absent player), and each is re-validated against the current state by the lobby/engine, so
+// they must not be dropped. Coin-spending moves of the turn player keep the check: it also stops double-tap repeats.
+export const CONCURRENT_MOVES: ReadonlySet<string> = new Set([
+  "sit",
+  "leaveSeat",
+  "setReady",
+  "sendChat",
+  "kickSeat",
+  "startGame",
+  "returnToLobby",
+  "fightRoll",
+  "retreat",
+  "useItem",
+  "collectFee",
+  "payFee",
+  "attack",
+  "forfeit"
+]);
+
 export const createMoronarchyMatchGame = <TInvalid>(invalidMove: TInvalid, { allowScenarios = false }: MatchGameOptions = {}) => {
   const wrap =
     (run: (G: MatchState, playerID: string, rng: Rng, args: unknown[]) => MatchResult) =>
@@ -70,9 +91,11 @@ export const createMoronarchyMatchGame = <TInvalid>(invalidMove: TInvalid, { all
     gameMoves[name] = wrap((G, id, rng, args) => runGameCommand(G, id, rng, name, args));
   }
 
-  const moves: Record<string, { move: ReturnType<typeof wrap>; client: false }> = {};
+  const moves: Record<string, { move: ReturnType<typeof wrap>; client: false; ignoreStaleStateID?: true }> = {};
   for (const [name, move] of Object.entries({ ...lobbyMoves, ...gameMoves })) {
-    moves[name] = { move, client: false };
+    moves[name] = CONCURRENT_MOVES.has(name)
+      ? { move, client: false, ignoreStaleStateID: true }
+      : { move, client: false };
   }
 
   return {

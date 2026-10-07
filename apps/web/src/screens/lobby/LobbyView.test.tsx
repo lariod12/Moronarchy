@@ -209,3 +209,24 @@ describe("LobbyView overlay", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Game Starting 2");
   });
 });
+
+describe("LobbyView connection", () => {
+  it("shows the Reconnecting banner only while this client is disconnected", () => {
+    const { rerender } = render(<LobbyView {...toLobbyViewProps(lobbyHostWaiting(), "0", CODE)} />);
+    expect(screen.queryByTestId("connection-banner")).not.toBeInTheDocument();
+    rerender(<LobbyView {...toLobbyViewProps(lobbyHostWaiting(), "0", CODE)} selfConnected={false} />);
+    expect(screen.getByTestId("connection-banner")).toHaveTextContent("Reconnecting…");
+    rerender(<LobbyView {...toLobbyViewProps(lobbyHostWaiting(), "0", CODE)} selfConnected />);
+    expect(screen.queryByTestId("connection-banner")).not.toBeInTheDocument();
+  });
+
+  it("scrolls the chat input into view when it gets focus (on-screen keyboard)", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(<LobbyView {...toLobbyViewProps(lobbyHostWaiting(), "1", CODE)} initialChatOpen />);
+    const input = screen.getByLabelText("Chat message");
+    scrollIntoView.mockClear();
+    fireEvent.focus(input);
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+  });
+});

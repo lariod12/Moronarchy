@@ -1,4 +1,4 @@
-import { attack, claimTurn, endTurn, fightRoll, payFee, pickCard, retreat, rollDice, skipPlot, useItem } from "@moronarchy/core/engine";
+import { attack, claimTurn, endTurn, fightRoll, forfeit, payFee, pickCard, retreat, rollDice, skipPlot, useItem } from "@moronarchy/core/engine";
 import type { GameState, PlayerId } from "@moronarchy/core/engine";
 import { addResident, createScriptedRng, createTestGame, giveItem, givePlot, placeKing, setTurnStep } from "@moronarchy/core/testing";
 
@@ -475,3 +475,27 @@ export const eventsGame = (): GameScenario => {
   emptyTurn(game, "2", 2, [], [0.1, 0.99]);
   return { game, viewerId: "0" };
 };
+
+// ---- Disconnected players ----
+
+// Bob (the viewer) was removed after staying disconnected in round 2 of a running 3-player match: his Lose face is due, the game goes on.
+export const justRemoved = (): GameScenario => {
+  const game = named(3);
+  game.round = 2;
+  forfeit(game, "1", rngFor([]));
+  return { game, viewerId: "1" };
+};
+
+// Bob went bankrupt in round 2, then Cara left (disconnected) in round 3: Alice wins. Ranking Alice, Cara (left), Bob (out).
+export const finishedWithLeaver = (viewerId: PlayerId = "0"): GameScenario => {
+  const game = named(3);
+  givePlot(game, "0", 5, 3);
+  const rng = landOnAlicesPlot(game, "1", 2);
+  payFee(game, "1", rng);
+  game.round = 3;
+  forfeit(game, "2", rngFor([]));
+  return { game, viewerId };
+};
+
+// Alice's turn in a running 3-player match; Bob (the viewer) waits for her.
+export const waitingForAlice = (): GameScenario => ({ game: claimed(named(3)), viewerId: "1" });

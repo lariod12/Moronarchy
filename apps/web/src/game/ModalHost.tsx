@@ -65,6 +65,7 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
           <LoseView
             key={modal.key}
             round={modal.round}
+            reason={modal.reason}
             continueLabel="Keep watching"
             onContinue={() => {
               seen.dismiss(modal.key);

@@ -123,3 +123,11 @@ Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là inpu
 - Q1: đánh đất mà không phá được (đất không tụt level / không mất) thì vẫn trả phí. Đây là thay đổi so với mục 12.
 - Q2: thêm Lạm phát hoàng gia: từ round 20 phí ×1.25, cứ mỗi 5 round tăng thêm 0.25.
 - Q3: mỗi level vua +10 Max Health, +1 Attack.
+
+## 15. Độ bền multiplayer (quyết định của chủ dự án, 2026-10-08)
+
+- Người chơi mất kết nối mà ván đang chờ họ quá **30 giây** thì hệ thống cho họ rời ván: bị loại, mọi Plot và resident trở về bản đồ như mới. Kết nối lại trong 30 giây thì hủy việc loại.
+- Người chơi chậm nhưng **còn kết nối** không bao giờ bị loại: ván vẫn không có giới hạn thời gian lượt.
+- Sảnh và màn sau ván không tự loại ai; chỉ chủ phòng kick hoặc chính người đó Quit mới nhả seat (và nhả luôn slot của phòng để người mới vào được).
+- Ranking phân biệt `Left in round N` (rời do mất kết nối) với `Out in round N` (phá sản).
+- Ô chat ở sảnh phải luôn nhìn thấy khi bàn phím ảo mở trên điện thoại.

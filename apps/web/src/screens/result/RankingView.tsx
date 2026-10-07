@@ -20,7 +20,7 @@ export const RankingView = ({ rows, isHost, onPlayAgain, onQuit }: RankingViewPr
           <AvatarSilhouette className="result-ranking__icon" />
           <span className="result-ranking__who">
             <span className="result-ranking__name">{row.isSelf ? `${row.name} (you)` : row.name}</span>
-            <span className="result-ranking__status">{row.outRound === null ? "Winner" : `Out in round ${row.outRound}`}</span>
+            <span className="result-ranking__status">{row.outRound === null ? "Winner" : `${row.outReason === "left" ? "Left" : "Out"} in round ${row.outRound}`}</span>
           </span>
         </li>
       ))}
