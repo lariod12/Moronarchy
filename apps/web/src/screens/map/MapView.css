@@ -127,7 +127,7 @@
   position: absolute;
   /* Same 10px lift as the crown's bubble: the standard tail's tip then just meets the die's top edge. */
   bottom: calc(100% + 10px);
-  left: calc(100% - 50px);
+  left: calc(100% - 60px);
   min-width: 36px;
   padding: 2px 8px;
   font-size: var(--text-sm);
