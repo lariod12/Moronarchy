@@ -1,0 +1,28 @@
+.update-banner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: var(--frame-max);
+  padding: calc(6px + var(--safe-top)) 12px 6px;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--text-sm);
+}
+
+.update-banner__button {
+  min-height: 32px;
+  padding: 2px 14px;
+  border: var(--stroke-thin) solid var(--paper);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

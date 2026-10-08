@@ -28,10 +28,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:solo
+        env:
+          VITE_BUILD_ID: ${{ github.sha }}
       - name: Prepare site
         run: |
           mkdir -p _site
           cp apps/web/dist-solo/moronarchy-solo.html _site/index.html
+          echo "{\"build\":\"${{ github.sha }}\"}" > _site/version.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

@@ -3,6 +3,7 @@ import { BotControlView } from "../../solo/BotControl";
 import { DEFAULT_SOLO_SETTINGS } from "../../solo/solo-settings";
 import type { SoloSettings, SoloSpeed } from "../../solo/solo-settings";
 import { SoloSetupView } from "../../solo/SoloSetupView";
+import { UpdateBannerView } from "../../solo/UpdateBanner";
 import { frame, mapContent } from "./game-entries";
 import type { Log } from "./game-entries";
 import * as scenarios from "./game-fixtures";
@@ -60,5 +61,11 @@ export const SOLO_ENTRIES: GalleryEntry[] = [
     group: "Solo",
     title: "Bots control (paused)",
     render: (log) => <BotControlDemo log={log} initialPaused initialExpanded={false} />
+  },
+  {
+    id: "solo-update-banner",
+    group: "Solo",
+    title: "New version banner (GitHub Pages)",
+    render: (log) => <UpdateBannerView onReload={() => log("reload")} />
   }
 ];
