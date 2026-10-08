@@ -289,7 +289,7 @@ test.describe("gallery", () => {
     await expect(page.getByRole("button", { name: "Crown: hold to take your turn" })).toBeVisible();
     await expect(page.locator(".ui-tile")).toHaveCount(6);
     // Every tile opens something now.
-    for (const title of ["Stats", "Plots", "Dice Status", "Residents", "Items", "Events"]) {
+    for (const title of ["Stats", "Plots", "Map", "Residents", "Items", "Events"]) {
       await expect(page.getByRole("button", { name: title })).toBeEnabled();
     }
     await page.getByRole("button", { name: "Residents" }).click();

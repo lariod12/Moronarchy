@@ -9,7 +9,7 @@ describe("GameHomeView", () => {
     expect(screen.getByText("Round 1")).toBeInTheDocument();
     expect(screen.getByText("RABCD")).toBeInTheDocument();
     expect(screen.getAllByText("Home").length).toBeGreaterThan(0);
-    for (const title of ["Stats", "Plots", "Dice Status", "Residents", "Items", "Events"]) {
+    for (const title of ["Stats", "Plots", "Map", "Residents", "Items", "Events"]) {
       expect(screen.getByRole("button", { name: title })).toBeDisabled();
     }
   });
@@ -17,7 +17,7 @@ describe("GameHomeView", () => {
   it("opens the page behind every enabled tile", () => {
     const onOpen = vi.fn();
     render(<GameHomeView game={createTestGame(3)} viewerId="0" roomCode="RABCD" onOpen={onOpen} />);
-    const pages = { Stats: "stats", Plots: "plots", "Dice Status": "map", Residents: "residents", Items: "items", Events: "events" };
+    const pages = { Stats: "stats", Plots: "plots", Map: "map", Residents: "residents", Items: "items", Events: "events" };
     for (const [title, page] of Object.entries(pages)) {
       expect(screen.getByRole("button", { name: title })).toBeEnabled();
       fireEvent.click(screen.getByRole("button", { name: title }));

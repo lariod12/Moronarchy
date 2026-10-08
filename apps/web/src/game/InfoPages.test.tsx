@@ -16,7 +16,7 @@ describe("in-game info pages", () => {
     const expectations: Array<[string, string, string]> = [
       ["Stats", "/room/R001/stats/0", "Players Info"],
       ["Plots", "/room/R001/plots", "Plots"],
-      ["Dice Status", "/room/R001/map", "Map"],
+      ["Map", "/room/R001/map", "Map"],
       ["Residents", "/room/R001/residents", "Residents"],
       ["Items", "/room/R001/items", "Items"],
       ["Events", "/room/R001/events", "Events"]
@@ -30,9 +30,11 @@ describe("in-game info pages", () => {
     }
   });
 
-  it("returns Home from any info page with the Crown", () => {
+  it("brings the player from any info page back to the live Map with the Crown, then Home", () => {
     const { game, viewerId } = scenarios.infoGame();
     const view = renderGame(game, viewerId, { page: "items" });
+    fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
+    expect(view.path()).toBe("/room/R001/map");
     fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
     expect(view.path()).toBe("/room/R001/home");
   });

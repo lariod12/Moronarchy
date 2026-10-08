@@ -21,10 +21,21 @@ const clearDialogs = async (page: Page): Promise<void> => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 };
 
+// A crown tap goes to the Map, or Home when already on the Map.
+const goHomeWithCrown = async (page: Page): Promise<void> => {
+  const crown = page.getByRole("button", { name: /^Crown/ });
+  const wasOnMap = /\/map$/.test(page.url());
+  await crown.click();
+  if (!wasOnMap) {
+    await expect(page).toHaveURL(/\/map$/);
+    await crown.click();
+  }
+  await expect(page).toHaveURL(/\/home$/);
+};
+
 const openFromHome = async (page: Page, tile: string): Promise<void> => {
   await clearDialogs(page);
-  await page.getByRole("button", { name: /^Crown/ }).click();
-  await expect(page).toHaveURL(/\/home$/);
+  await goHomeWithCrown(page);
   await page.getByRole("button", { name: tile, exact: true }).click();
 };
 
@@ -51,9 +62,8 @@ const walkInfoPages = async (player: Player, me: string, them: string, overflowC
 
   // I1: every tile is enabled on Home.
   await clearDialogs(page);
-  await page.getByRole("button", { name: /^Crown/ }).click();
-  await expect(page).toHaveURL(/\/home$/);
-  for (const tile of ["Stats", "Plots", "Dice Status", "Residents", "Items", "Events"]) {
+  await goHomeWithCrown(page);
+  for (const tile of ["Stats", "Plots", "Map", "Residents", "Items", "Events"]) {
     await expect(page.getByRole("button", { name: tile, exact: true })).toBeEnabled();
   }
   await noOverflow("home");
@@ -76,7 +86,7 @@ const walkInfoPages = async (player: Player, me: string, them: string, overflowC
   await expect(page).toHaveURL(/\/home$/);
 
   // The HUD avatar opens my own Players Info from anywhere.
-  await page.getByRole("button", { name: "Dice Status", exact: true }).click();
+  await page.getByRole("button", { name: "Map", exact: true }).click();
   await clearDialogs(page);
   await page.getByRole("button", { name: new RegExp(`^${me}: profile`) }).click();
   await expect(page).toHaveURL(/\/stats\/\d$/);
@@ -165,7 +175,7 @@ const walkInfoPages = async (player: Player, me: string, them: string, overflowC
   await noOverflow("events");
 
   // I8: the Map's Positions tab lists both kings in turn order.
-  await openFromHome(page, "Dice Status");
+  await openFromHome(page, "Map");
   await expect(page).toHaveURL(/\/map$/);
   expect(await topBarTitle(page)).toBe("Map");
   await page.getByRole("tab", { name: "Positions" }).click();

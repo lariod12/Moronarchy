@@ -57,7 +57,7 @@ Chờ lượt ──► Crown rung (tới lượt mình)
 
 - Chưa đổ xúc xắc thì không kết thúc lượt được.
 - **Ngoài lượt mình:** xem được mọi màn nhưng mọi nút hành động bị khóa. Chỉ được trả lời popup hỏi mình (vd chủ đất quyết định thu phí hay tấn công).
-- Nhấn một lần vào Crown = về Home hub. Nút Back = về trang trước.
+- Nhấn một lần vào Crown = tới Map để xem ván (đang ở Map thì về Home). Lúc Crown đang chờ nhấn giữ thì nhấn một lần chỉ hiện gợi ý. Nút Back = về trang trước.
 
 ## 5. Bản đồ
 
@@ -67,7 +67,7 @@ Chờ lượt ──► Crown rung (tới lượt mình)
   - **Plot (02–40):** mọi ô còn lại đều là đất mua được. **Không có ô sự kiện riêng.**
 - Khi dừng trên một Plot có thể ngẫu nhiên rơi Item hoặc kích hoạt event cá nhân (tỉ lệ phụ thuộc Lucky). Event toàn bàn do hệ thống kích hoạt (mục 13).
 - Hiển thị trên Map: ô xám là đất của mình, icon người là vị trí vua của mình. Cách hiển thị đất và vị trí của người khác: **TBD** (xem screen spec).
-- Màn Steps / Dice Status: vị trí hiện tại của mọi vua.
+- Tab Positions trong Map (màn Steps): vị trí hiện tại của mọi vua.
 
 ## 6. Start Station (ô 01)
 

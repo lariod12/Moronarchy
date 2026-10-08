@@ -74,7 +74,7 @@ test.describe("playing turns", () => {
 
         // The player who waits watches the same Map as the player who moves.
         if (!new URL(other.page.url()).pathname.endsWith("/map")) {
-          await other.page.getByRole("button", { name: "Dice Status" }).click();
+          await other.page.getByRole("button", { name: "Map", exact: true }).click();
         }
         await expect(other.page).toHaveURL(/\/map$/);
 

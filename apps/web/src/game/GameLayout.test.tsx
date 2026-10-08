@@ -55,20 +55,23 @@ describe("GameLayout", () => {
     expect(view.path()).toBe("/room/R001/map");
   });
 
-  it("opens the Map from Dice Status, goes Back to Home and taps the crown to return Home", () => {
+  it("opens the Map from its tile, goes Back to Home, and the crown toggles between Map and Home", () => {
     const { game, viewerId } = scenarios.mapStart();
     const view = renderGame(game, viewerId, { page: "home" });
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Dice Status" }));
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
     expect(view.path()).toBe("/room/R001/map");
     expect(screen.getAllByText("Map").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Back" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(view.path()).toBe("/room/R001/home");
 
-    fireEvent.click(screen.getByRole("button", { name: "Dice Status" }));
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
     fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
     expect(view.path()).toBe("/room/R001/home");
+    // From Home (or any other page) a tap brings the player back to the live game.
+    fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
+    expect(view.path()).toBe("/room/R001/map");
   });
 
   it("ends the turn through the End of turn dialog", () => {

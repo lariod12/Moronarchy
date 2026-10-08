@@ -39,11 +39,11 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 
 | Trạng thái | Hiển thị | Thao tác |
 | --- | --- | --- |
-| Không phải lượt mình | Crown trắng | Chạm: về Home |
+| Không phải lượt mình | Crown trắng | Chạm: tới Map (đang ở Map thì về Home) |
 | Tới lượt, chưa nhận | Crown **rung** | Nhấn giữ: nhận lượt |
-| Đang trong lượt | Crown **đổi màu** (nền tối, crown trắng) + bong bóng "your turn!" | Chạm: về Home. Nhấn giữ: mở popup End of turn |
+| Đang trong lượt | Crown **đổi màu** (nền tối, crown trắng) + bong bóng "your turn!" | Chạm: tới Map (đang ở Map thì về Home). Lúc rung có bong bóng "hold me!"; lúc rung hoặc "end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
 | Đã đổ xúc xắc, có thể kết thúc | Bong bóng "end turn!" | Nhấn giữ → popup "End of turn" → Yes |
-| Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": về Home (không bao giờ rung) |
+| Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": tới Map / về Home như Crown (không bao giờ rung) |
 
 - Nhấn giữ (long-press) cần có phản hồi tiến trình (vòng nạp hoặc rung) để người chơi biết đang giữ. Thời gian giữ: Đề xuất 600 ms.
 - Popup End of turn: "This action will be end turn and you cannot interactive some action. Are you sure?" với Yes / No.
@@ -53,14 +53,14 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 ```text
 Welcome ──Create/Join──► Lobby ──Start (chủ phòng) + đếm ngược──► Game Shell
                                                                     │
-     Home hub ◄─────────── chạm Crown (từ bất kỳ đâu) ──────────────┤
+     Home hub ◄── chạm Crown khi đang ở Map (ở trang khác: chạm Crown → Map) ┤
        ├─ Stats ─► Players Info                                     │
        ├─ Plots ─► Plots table / grid ─► Plot detail ─► Upgrade      │
-       ├─ Dice Status ─► Steps (vị trí mọi vua)                      │
+       ├─ Map ─► tab Positions (vị trí mọi vua)                     │
        ├─ Residents ─► Warrior / Farmer table|grid ─► Resident detail│
        ├─ Items ─► Item detail ─► Description                        │
        ├─ Events ─► History events                                   │
-       └─ Dice Status ─► Map (đổ xúc xắc; nhận lượt cũng tự mở Map)  │
+       └─ Map ─► Board (đổ xúc xắc; nhận lượt cũng tự mở Map)       │
                                                                     ▼
                                   Win / Lose ─► Ranking ─► Play Again (Lobby) | Quit (Welcome)
 ```
@@ -106,8 +106,8 @@ Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/s
 ## 5. Home hub — [10](ui/10-home-hub.png), [11](ui/11-home-your-turn.png), [12](ui/12-home-end-turn-confirm.png), [13](ui/13-home-end-turn-hint.png)
 
 - TopBar: tên trang "Home".
-- Lưới 2 × 3 ô vuông, mỗi ô có tiêu đề và icon: **Stats**, **Plots**, **Dice Status**, **Residents**, **Items**, **Events**.
-- Cả 6 ô đều bật (bước 6): Stats mở `/stats/<mình>`, Plots, Dice Status mở Map, Residents, Items, Events. Chạm avatar ở HUD cũng mở trang Stats của mình.
+- Lưới 2 × 3 ô vuông, mỗi ô có tiêu đề và icon: **Stats**, **Plots**, **Map** (icon bàn cờ, như màn 14), **Residents**, **Items**, **Events**. Ô này trước đây tên "Dice Status"; đổi tên theo góp ý chơi thử 2026-10-08 để người chơi biết đây là nơi xem ván đang diễn ra.
+- Cả 6 ô đều bật (bước 6): Stats mở `/stats/<mình>`, Plots, Map, Residents, Items, Events. Chạm avatar ở HUD cũng mở trang Stats của mình.
 - [14](ui/14-home-hub-old-with-map.png) là phiên bản cũ có ô **Map** thay cho Stats và "Steps Status" thay cho Dice Status (xem câu hỏi mở).
 
 ## 6. Map — [61](ui/61-map.png)
@@ -130,7 +130,7 @@ Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/s
   - Dừng trên đất của mình (hoặc vừa mua xong): popup "Your plot (Plot 12)" với **Manage** (mở `/manage/12`, màn kiểu Start Station chỉ có đất đó, không có Shop) hoặc **Done**.
   - Nhặt được item / gặp event cá nhân / nhận phí / bị hạ gục / mất đất / bị loại: popup thông báo, nút Done. Popup của một lần đã xem được nhớ trong `sessionStorage` nên tải lại trang không hiện lại.
   - Trả phí: người trả chỉ thấy dòng trong activity line; chủ đất nhận popup "Fee received".
-- Vào Map: ô **Dice Status** ở Home mở Map, và nhận lượt cũng mở Map. Map có hai tab **Board** / **Positions**; Positions là màn Steps (mục 13).
+- Vào Map: ô **Map** ở Home, chạm Crown từ bất kỳ trang nào, và nhận lượt cũng mở Map. Map có hai tab **Board** / **Positions**; Positions là màn Steps (mục 13).
 
 ## 7. Stats / Players Info — [20](ui/20-player-stats.png)
 
@@ -192,7 +192,7 @@ Route `/room/<MÃ>/events`, TopBar "Events". Đã làm ở bước 6 (`screens/e
 - **Start Station** (bước 5A, `/room/<MÃ>/station`, TopBar "Start Station"): thanh tóm tắt "Lap complete: +100 coin · Level N · Income +X" lấy từ log `lapCompleted`; ba tab **Plots** / **Residents** / **Shop**; hàng nào cũng có nút kèm giá lấy từ engine: Plots (`Upgrade 45`, `Heal 12`), Residents (`Upgrade 40`, `Heal 8`, `Recruit Warrior 70`, `Recruit Farmer 40` cho từng đất còn chỗ), Shop (`Buy 40`...). Nút khóa đúng lúc engine sẽ từ chối (`previewCommand`). Nâng cấp / tuyển / mua hỏi "Spend X coin …?" No / Yes; hồi máu làm ngay. Thanh dưới cùng là **Continue moving** (còn bước chưa đi) hoặc **Done**.
 - **Manage** (`/room/<MÃ>/manage/<plotId>`): cùng màn nhưng giới hạn trong đất vừa dừng/mua, chỉ có tab Plots và Residents, nút dưới cùng là **Done**.
 
-## 13. Steps / Dice Status — [60](ui/60-steps.png)
+## 13. Steps (tab Positions trong Map) — [60](ui/60-steps.png)
 
 Map có hai tab **Board** / **Positions** (TopBar vẫn là "Map"). Tab Positions là màn Steps (`screens/map/PositionsView`), mặc định mở Board mỗi lần vào Map.
 

@@ -131,3 +131,8 @@ Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là inpu
 - Sảnh và màn sau ván không tự loại ai; chỉ chủ phòng kick hoặc chính người đó Quit mới nhả seat (và nhả luôn slot của phòng để người mới vào được).
 - Ranking phân biệt `Left in round N` (rời do mất kết nối) với `Out in round N` (phá sản).
 - Ô chat ở sảnh phải luôn nhìn thấy khi bàn phím ảo mở trên điện thoại.
+
+## 16. Góp ý chơi thử (2026-10-08)
+
+- Chạm vương miện đang rung mà không có gì xảy ra → thêm bong bóng "hold me!" và gợi ý nhấn giữ khi chỉ chạm.
+- Cần đường quay lại xem ván đang diễn ra → chạm Crown đưa về Map (đang ở Map thì về Home); ô "Dice Status" ở Home đổi tên thành "Map" (icon bàn cờ, như màn 14).

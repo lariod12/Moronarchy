@@ -301,7 +301,7 @@ test.describe("fighting", () => {
         const active = await whoShakes(players);
         const other = players.find((player) => player !== active) as Player;
         if (!new URL(other.page.url()).pathname.endsWith("/map")) {
-          await other.page.getByRole("button", { name: "Dice Status" }).click();
+          await other.page.getByRole("button", { name: "Map", exact: true }).click();
         }
         await expect(other.page).toHaveURL(/\/map$/);
 

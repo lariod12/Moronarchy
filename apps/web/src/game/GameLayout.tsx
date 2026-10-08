@@ -42,6 +42,8 @@ export const GameLayout = () => {
   }, [crownState]);
 
   const goHome = () => navigate(roomPath(roomCode, "home"));
+  // Tapping the crown brings the player back to the live game (the Map); on the Map itself it goes Home.
+  const handleCrownPress = () => navigate(roomPath(roomCode, pageName === "map" ? "home" : "map"));
   // The avatar in the HUD opens my own Players Info (replacing the entry when already looking at one).
   const openMyStats = () => navigate(roomPath(roomCode, `stats/${viewerId}`), { replace: pageName === "stats" });
 
@@ -67,7 +69,7 @@ export const GameLayout = () => {
         backDisabled={pageName === "home" || forced !== null}
         onAvatarPress={openMyStats}
         onBack={handleBack}
-        onCrownPress={goHome}
+        onCrownPress={handleCrownPress}
         onCrownLongPress={handleCrownLongPress}
         banners={
           <>
