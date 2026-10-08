@@ -38,12 +38,12 @@ Before claiming completion:
 
 - Add or update gallery entries in `apps/web/src/dev/gallery/` and assertions in `tests/ui/` when the task introduces or changes an interaction or visible state.
 - Add or update Vitest unit tests for new components and pure logic.
-- Run `cmd /c pnpm ui:check` and require a zero exit code.
-- Report Expected vs Actual for every Expected Result, the exact checks run, console/page error count, and anything not verified.
-- A skipped or unavailable browser check means the interactive task is not verified; report the blocker instead of claiming completion.
-- AI may report `Automated Verified` after executable checks pass. Only the user may approve subjective visual quality, UX feel, touch behavior on a real device, or move a frame to `Approved`.
+- Run quick smoke checks for the touched area only: targeted Vitest unit tests, typecheck, and lint (`pnpm --filter <package> test|typecheck|lint`, `pnpm lint:ui` / `pnpm typecheck:ui` when `tests/` changed). Rebuild `pnpm build:solo` when the owner reviews through the single-file prototype.
+- Do NOT run `pnpm ui:check` or `pnpm e2e` (the Playwright suites take 10+ minutes). Run them only when the user explicitly asks. Report them as "not run (owner preference)".
+- Report Expected vs Actual for every Expected Result, the exact checks run, and anything not verified, plus a short list of what the user should try in the browser to verify the change.
+- Browser behaviour is verified by the user. Only the user may approve visual quality, UX feel, touch behavior on a real device, or move a frame to `Approved`.
 
-`ui:check` is the minimum automated gate. Use `cmd /c pnpm ui:check:headed` for visible/manual review when layout, animation, touch, scroll, or viewport behavior changes. To test on a phone, run `pnpm dev:web` (Vite listens on `0.0.0.0:5173`) and open `http://<LAN-IP>:5173/dev/gallery`.
+When the user asks for the full browser gate: `cmd /c pnpm ui:check` (gallery, zero exit code required), `cmd /c pnpm ui:check:headed` for visible review, and `E2E_WEB_PORT=5190 E2E_SERVER_PORT=8010 cmd /c pnpm e2e` (port 5173 is often used by another project on this machine). To test on a phone, run `pnpm dev:web` (Vite listens on `0.0.0.0:5173`) and open `http://<LAN-IP>:5173/dev/gallery` or `/solo`.
 
 ## Reporting
 
