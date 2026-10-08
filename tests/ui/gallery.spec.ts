@@ -884,16 +884,41 @@ test.describe("gallery", () => {
   test("crown speech bubble is not clipped at 320px", async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 320, height: 640 });
-    for (const id of ["shell-active", "shell-can-end"]) {
-      await page.goto(`/dev/gallery/${id}`);
+    const expectBubbleInside = async (label: string): Promise<void> => {
       const bubble = page.locator(".shell-crown__bubble");
       await expect(bubble).toBeVisible();
       const box = await bubble.boundingBox();
-      expect(box, id).not.toBeNull();
-      expect(box!.x, id).toBeGreaterThanOrEqual(0);
-      expect(box!.x + box!.width, id).toBeLessThanOrEqual(320);
-      expect(await bubble.evaluate((element) => element.scrollWidth <= element.clientWidth), id).toBe(true);
+      expect(box, label).not.toBeNull();
+      expect(box!.x, label).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width, label).toBeLessThanOrEqual(320);
+      expect(await bubble.evaluate((element) => element.scrollWidth <= element.clientWidth), label).toBe(true);
+    };
+    for (const id of ["shell-shaking", "shell-active", "shell-can-end"]) {
+      await page.goto(`/dev/gallery/${id}`);
+      await expectBubbleInside(id);
     }
+    expect(errors).toEqual([]);
+  });
+
+  test("tapping the shaking crown explains the hold instead of acting", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/dev/gallery/shell-shaking");
+    const bubble = page.locator(".shell-crown__bubble");
+    await expect(bubble).toHaveText("hold me!");
+    const crown = page.getByRole("button", { name: /hold to take your turn/ });
+    const box = await crown.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+    await expect(bubble).toHaveText("hold to start your turn");
+    const hintBox = await bubble.boundingBox();
+    expect(hintBox!.x).toBeGreaterThanOrEqual(0);
+    expect(hintBox!.x + hintBox!.width).toBeLessThanOrEqual(320);
+    await expect(page.getByTestId("gallery-last-action")).not.toHaveText("press");
+    await expect(bubble).toHaveText("hold me!", { timeout: 5000 });
+    await page.screenshot({ path: "test-results/ui/screens/crown-tap-hint.png" });
     expect(errors).toEqual([]);
   });
 });

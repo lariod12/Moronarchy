@@ -26,14 +26,25 @@ describe("GameLayout", () => {
     const { game, viewerId } = scenarios.awaitingClaim();
     const view = renderGame(game, viewerId, { page: "home" });
     expect(view.path()).toBe("/room/R001/home");
-    // A quick tap only goes Home.
+    // A quick tap only explains the gesture.
     fireEvent.pointerDown(screen.getByRole("button", { name: /hold to take your turn/ }));
     fireEvent.pointerUp(screen.getByRole("button", { name: /hold to take your turn/ }));
     expect(view.send).not.toHaveBeenCalled();
+    expect(screen.getByText("hold to start your turn")).toBeInTheDocument();
 
     holdButton(screen.getByRole("button", { name: /hold to take your turn/ }));
     expect(view.send).toHaveBeenCalledWith("claimTurn");
     expect(view.path()).toBe("/room/R001/map");
+  });
+
+  it("keeps the player on the Map when they tap the shaking crown", () => {
+    const { game, viewerId } = scenarios.awaitingClaim();
+    const view = renderGame(game, viewerId, { page: "map" });
+    const crown = screen.getByRole("button", { name: /hold to take your turn/ });
+    fireEvent.pointerDown(crown);
+    fireEvent.pointerUp(crown);
+    expect(view.path()).toBe("/room/R001/map");
+    expect(view.send).not.toHaveBeenCalled();
   });
 
   it("does nothing on a long press when it is not the viewer's turn", () => {

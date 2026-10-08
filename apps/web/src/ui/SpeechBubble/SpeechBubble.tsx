@@ -6,8 +6,12 @@ export interface SpeechBubbleProps {
   children: ReactNode;
   tail: "bottom-left" | "bottom-right" | "top-left" | "left";
   className?: string;
+  // e.g. "status" so screen readers announce a transient hint.
+  role?: string;
 }
 
-export const SpeechBubble = ({ children, tail, className }: SpeechBubbleProps) => (
-  <div className={cx("ui-bubble", `ui-bubble--${tail}`, className)}>{children}</div>
+export const SpeechBubble = ({ children, tail, className, role }: SpeechBubbleProps) => (
+  <div className={cx("ui-bubble", `ui-bubble--${tail}`, className)} role={role}>
+    {children}
+  </div>
 );
