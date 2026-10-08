@@ -19,7 +19,7 @@ export interface BotControlViewProps {
 }
 
 // The floating chip of the solo mode: collapsed it only says Bots (or Bots paused); opened it holds the bot speed,
-// Pause / Resume and New game. It sits above the HUD at the left, clear of the Crown and the Back button.
+// Pause / Resume and New game. It is a strip under the activity line, so it never covers the board.
 export const BotControlView = ({ speed, paused, expanded, onToggle, onSpeedChange, onPauseChange, onNewGame }: BotControlViewProps) => (
   <div className="bot-control" data-testid="bot-control">
     <button type="button" className={cx("bot-control__chip", paused && "bot-control__chip--paused")} aria-expanded={expanded} onClick={onToggle}>

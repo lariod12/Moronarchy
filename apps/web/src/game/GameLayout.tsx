@@ -75,12 +75,13 @@ export const GameLayout = () => {
           <>
             <ConnectionBanner connected={selfConnected} />
             <AbsentBanner status={absent} name={absent ? (game.kings[absent.playerId]?.name ?? "Someone") : ""} />
+            {/* Host extras (solo bot driver + Bots control) sit in the banner row so they never cover the board. */}
+            {extras}
           </>
         }
         overlay={
           <>
             <ModalHost endTurnOpen={endTurnOpen} onEndTurnClose={() => setEndTurnOpen(false)} />
-            {extras}
           </>
         }
       >
