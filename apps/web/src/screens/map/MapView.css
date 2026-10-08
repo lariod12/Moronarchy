@@ -121,13 +121,22 @@
   padding-right: 8px;
 }
 
+/* The die "speaks" its result: the bubble sits off the die's top-right corner with its tail slanting down-left
+   into that corner. */
 .map-center .map-center__bubble {
   position: absolute;
-  top: -14px;
-  left: 62px;
+  /* The die has rounded corners, so the bubble tucks into the empty corner for the tail to touch the die. */
+  bottom: calc(100% - 3px);
+  left: calc(100% - 13px);
   min-width: 36px;
   padding: 2px 8px;
   font-size: var(--text-sm);
+}
+
+.map-center .map-center__bubble::before {
+  bottom: -6px;
+  left: 4px;
+  transform: rotate(90deg);
 }
 
 .map-center__hint {
