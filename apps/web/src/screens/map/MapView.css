@@ -125,7 +125,8 @@
    tail points down onto the die (same tail as the crown's bubble). */
 .map-center .map-center__bubble {
   position: absolute;
-  bottom: calc(100% + 2px);
+  /* Same 10px lift as the crown's bubble: the standard tail's tip then just meets the die's top edge. */
+  bottom: calc(100% + 10px);
   left: calc(100% - 42px);
   min-width: 36px;
   padding: 2px 8px;
