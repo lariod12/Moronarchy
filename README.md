@@ -80,6 +80,8 @@ You can review the whole game alone: **Play vs bots** on the Welcome screen (or 
 
 ### Single HTML file
 
+**Online prototype:** every push to `main` publishes the solo game to GitHub Pages via `.github/workflows/pages.yml`: https://lariod12.github.io/Moronarchy/ (public; works on any phone, no server or LAN needed; reload after a push is deployed).
+
 `pnpm build:solo` builds `apps/web/dist-solo/moronarchy-solo.html`: ONE self-contained file (JS, CSS and fonts inlined, no service worker, no network requests) that opens straight into the solo setup.
 
 - On a PC double-click the file (it opens from `file://`).
