@@ -74,21 +74,18 @@ describe("GameLayout", () => {
     expect(view.path()).toBe("/room/R001/map");
   });
 
-  it("ends the turn through the End of turn dialog", () => {
+  it("ends the turn on a long press without a confirmation popup; a tap only hints", () => {
     const { game, viewerId } = scenarios.canEndTurn();
     const view = renderGame(game, viewerId, { page: "map" });
     const crown = screen.getByRole("button", { name: /hold to end your turn/ });
     expect(screen.getByText("end turn!")).toBeInTheDocument();
 
-    holdButton(crown);
-    expect(screen.getByRole("dialog", { name: "End of turn" })).toBeInTheDocument();
-    expect(screen.getByText(/This action will be end turn/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "No" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.pointerDown(crown);
+    fireEvent.pointerUp(crown);
     expect(view.send).not.toHaveBeenCalled();
+    expect(screen.getByText("hold to end your turn")).toBeInTheDocument();
 
     holdButton(crown);
-    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
     expect(view.send).toHaveBeenCalledWith("endTurn");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

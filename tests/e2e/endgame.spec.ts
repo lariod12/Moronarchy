@@ -105,7 +105,6 @@ const playUntilOver = async (alice: Player, bob: Player): Promise<void> => {
       return;
     }
     await holdButton(active.page, END_TURN_CROWN);
-    await active.page.getByRole("button", { name: "Yes" }).click();
   }
   throw new Error("Bob never went bankrupt");
 };

@@ -37,6 +37,5 @@ export const playMyTurn = async (page: Page): Promise<void> => {
   await page.getByRole("button", { name: "Tap to Roll" }).click();
   await resolveUntilSettled(page, page);
   await holdButton(page, END_TURN_CROWN);
-  await page.getByRole("button", { name: "Yes" }).click();
   await expect(page.getByText("end turn!")).toHaveCount(0);
 };

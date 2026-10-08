@@ -42,11 +42,11 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 | Không phải lượt mình | Crown trắng | Chạm: tới Map (đang ở Map thì về Home) |
 | Tới lượt, chưa nhận | Crown **rung** | Nhấn giữ: nhận lượt |
 | Đang trong lượt | Crown **đổi màu** (nền tối, crown trắng) + bong bóng "your turn!" | Chạm: tới Map (đang ở Map thì về Home). Lúc rung có bong bóng "hold me!"; lúc rung hoặc "end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
-| Đã đổ xúc xắc, có thể kết thúc | Bong bóng "end turn!" | Nhấn giữ → popup "End of turn" → Yes |
+| Đã đổ xúc xắc, có thể kết thúc | Bong bóng "end turn!" | Nhấn giữ → kết thúc lượt ngay, không popup xác nhận (chạm một lần chỉ hiện gợi ý "hold to end your turn") |
 | Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": tới Map / về Home như Crown (không bao giờ rung) |
 
 - Nhấn giữ (long-press) cần có phản hồi tiến trình (vòng nạp hoặc rung) để người chơi biết đang giữ. Thời gian giữ: Đề xuất 600 ms.
-- Popup End of turn: "This action will be end turn and you cannot interactive some action. Are you sure?" với Yes / No.
+- Không có popup "End of turn" (màn 12 trong thiết kế): theo góp ý chơi thử 2026-10-08, nhấn giữ Crown chính là xác nhận.
 
 ## 3. Sơ đồ điều hướng
 
@@ -65,7 +65,7 @@ Welcome ──Create/Join──► Lobby ──Start (chủ phòng) + đếm ng�
                                   Win / Lose ─► Ranking ─► Play Again (Lobby) | Quit (Welcome)
 ```
 
-Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrade Card, nâng cấp, tuyển, cửa hàng), các popup trên Map, Fight, End of turn.
+Màn bật lên theo luồng game (không vào từ menu): Start Station (Upgrade Card, nâng cấp, tuyển, cửa hàng), các popup trên Map, Fight.
 
 Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/station`, `/manage/<plotId>`, `/fight` (bước 5) và các trang thông tin của bước 6: `/stats/<playerId>`, `/plots`, `/plots/<plotId>`, `/residents`, `/residents/<warrior|farmer>`, `/residents/<kind>/<residentId>`, `/items`, `/items/<itemId>`, `/events`. Cả 6 ô ở Home đều mở được; Dice Status mở Map. Nhấn giữ Crown đang rung nhận lượt và tự mở Map. Nút Back = về trang trước, khóa ở Home và khi bị buộc ở Upgrade Card / Start Station. Khi qua Start, người chơi bị đưa tới Upgrade Card rồi Start Station và chỉ rời khi bấm "Continue moving".
 

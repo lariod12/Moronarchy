@@ -5,7 +5,6 @@ import { useMovement } from "./MovementContext";
 import { useGameSession } from "./GameSession";
 import {
   BuyPlotDialog,
-  EndTurnDialog,
   FightNoticeDialog,
   FightResultDialog,
   LuckyDieDialog,
@@ -23,11 +22,6 @@ import { selectModal } from "./modal-model";
 import { useSeenState } from "./useSeenState";
 import { LoseView } from "../screens/result/LoseView";
 
-export interface ModalHostProps {
-  endTurnOpen: boolean;
-  onEndTurnClose: () => void;
-}
-
 const nameOf = (game: GameState, playerId: PlayerId): string => game.kings[playerId]?.name ?? "Someone";
 
 const feeOf = (game: GameState, plotId: TileId): number => {
@@ -36,7 +30,7 @@ const feeOf = (game: GameState, plotId: TileId): number => {
 };
 
 // Shows at most one popup, whatever page the viewer is on. What to show is decided by `selectModal`.
-export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
+export const ModalHost = () => {
   const { game, viewerId, roomCode, gameId, actions, canRun, leaveRoom } = useGameSession();
   const { isAnimating } = useMovement();
   const navigate = useNavigate();
@@ -48,7 +42,6 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
     game,
     viewerId,
     isAnimating,
-    endTurnOpen,
     seenSeq: seen.seq,
     dismissed: seen.dismissed,
     onFightPage,
@@ -119,16 +112,6 @@ export const ModalHost = ({ endTurnOpen, onEndTurnClose }: ModalHostProps) => {
           bonus={modal.bonus}
           onReroll={() => actions.useItem("luckyDie")}
           onMove={actions.confirmRoll}
-        />
-      );
-    case "endTurn":
-      return (
-        <EndTurnDialog
-          onNo={onEndTurnClose}
-          onYes={() => {
-            onEndTurnClose();
-            actions.endTurn();
-          }}
         />
       );
     case "fightNotice": {

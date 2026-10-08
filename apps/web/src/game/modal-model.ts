@@ -1,4 +1,4 @@
-import { getCrownState, getFightViewerRole, getPlot } from "@moronarchy/core/engine";
+import { getFightViewerRole, getPlot } from "@moronarchy/core/engine";
 import type { EliminationReason, GameState, LogEntry, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
 import { getLoseFace } from "./end-model";
 import { describeFightResult, fightNoticeKey } from "./fight-result";
@@ -15,7 +15,6 @@ export type ModalModel =
   | { kind: "ownerChoice"; pending: Pending<"ownerChoice"> }
   | { kind: "luckyDie"; value: number; bonus: number }
   | { kind: "waiting"; pending: Pending<"ownerChoice"> }
-  | { kind: "endTurn" }
   | { kind: "fightNotice"; key: string; plotId: TileId; attackerId: PlayerId; ownerId: PlayerId | null }
   | { kind: "fightResult"; model: FightResultModel }
   | { kind: "notice"; entry: LogEntry; notification: Notification }
@@ -25,7 +24,6 @@ export interface ModalInput {
   game: GameState;
   viewerId: PlayerId;
   isAnimating: boolean;
-  endTurnOpen: boolean;
   // Log entries up to this seq were already shown (or predate this tab).
   seenSeq: number;
   dismissed: ReadonlySet<string>;
@@ -77,9 +75,9 @@ const getFightNotice = (game: GameState, viewerId: PlayerId, seenSeq: number, di
 };
 
 // Exactly one modal at a time. Priority: being knocked out of the game (a full-frame face), your decision, the result of your fight, a fight you can watch, Lucky Die,
-// waiting for someone else, End of turn, notifications, own-plot shortcut. Nothing shows while the king is still
+// waiting for someone else, notifications, own-plot shortcut. Nothing shows while the king is still
 // walking, and fighters see only their fight (the Fight page is forced on them).
-export const selectModal = ({ game, viewerId, isAnimating, endTurnOpen, seenSeq, dismissed, onFightPage = false, revealedKey = null }: ModalInput): ModalModel | null => {
+export const selectModal = ({ game, viewerId, isAnimating, seenSeq, dismissed, onFightPage = false, revealedKey = null }: ModalInput): ModalModel | null => {
   if (isAnimating) {
     return null;
   }
@@ -134,10 +132,6 @@ export const selectModal = ({ game, viewerId, isAnimating, endTurnOpen, seenSeq,
 
   if (isTurnPlayer && pending?.kind === "ownerChoice" && pending.visitorId === viewerId) {
     return { kind: "waiting", pending };
-  }
-
-  if (endTurnOpen && getCrownState(game, viewerId) === "canEndTurn") {
-    return { kind: "endTurn" };
   }
 
   const [notice] = getPendingNotices(game, viewerId, seenSeq);

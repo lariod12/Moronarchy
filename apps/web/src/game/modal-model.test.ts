@@ -7,7 +7,7 @@ import type { ModalInput } from "./modal-model";
 import { ownPlotKey, selectModal } from "./modal-model";
 
 const select = (game: GameState, viewerId: string, overrides: Partial<ModalInput> = {}) =>
-  selectModal({ game, viewerId, isAnimating: false, endTurnOpen: false, seenSeq: Number.MAX_SAFE_INTEGER, dismissed: new Set(), ...overrides });
+  selectModal({ game, viewerId, isAnimating: false, seenSeq: Number.MAX_SAFE_INTEGER, dismissed: new Set(), ...overrides });
 
 describe("selectModal", () => {
   it("shows nothing at the start and nothing to bystanders", () => {
@@ -48,16 +48,15 @@ describe("selectModal", () => {
     expect(select(game, "1")).toBeNull();
   });
 
-  it("opens End of turn only after the crown asked for it", () => {
+  it("never asks to confirm the end of the turn (holding the crown is the confirmation)", () => {
     const { game } = scenarios.canEndTurn();
     expect(select(game, "0")).toBeNull();
-    expect(select(game, "0", { endTurnOpen: true })?.kind).toBe("endTurn");
-    expect(select(game, "1", { endTurnOpen: true })).toBeNull();
+    expect(select(game, "1")).toBeNull();
   });
 
-  it("prefers a pending decision over End of turn and Lucky Die over waiting", () => {
+  it("shows a pending decision", () => {
     const { game } = scenarios.buyDecision();
-    expect(select(game, "0", { endTurnOpen: true })?.kind).toBe("buyPlot");
+    expect(select(game, "0")?.kind).toBe("buyPlot");
   });
 
   it("does not turn the card pick into a popup", () => {
@@ -198,7 +197,7 @@ describe("selectModal during and after fights", () => {
     it("waits for the walk, comes before any other popup, and is shown once", () => {
       const { game, viewerId } = scenarios.justEliminated();
       expect(select(game, viewerId, { seenSeq: 0, isAnimating: true })).toBeNull();
-      const lose = select(game, viewerId, { seenSeq: 0, endTurnOpen: true });
+      const lose = select(game, viewerId, { seenSeq: 0 });
       expect(lose?.kind).toBe("lose");
       if (lose?.kind !== "lose") {
         throw new Error("expected the lose face");

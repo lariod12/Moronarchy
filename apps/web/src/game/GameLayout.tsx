@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { getCrownState } from "@moronarchy/core/engine";
 import { GameFrame } from "../screens/game/GameFrame";
@@ -19,7 +19,6 @@ export const GameLayout = () => {
   const { isAnimating } = useMovement();
   const navigate = useNavigate();
   const location = useLocation();
-  const [endTurnOpen, setEndTurnOpen] = useState(false);
   const absent = useAbsentCountdown(game, offlineIds);
   const extras = useGameExtras();
 
@@ -35,12 +34,6 @@ export const GameLayout = () => {
     }
   }, [forced, pageName, navigate, roomCode]);
 
-  useEffect(() => {
-    if (crownState !== "canEndTurn") {
-      setEndTurnOpen(false);
-    }
-  }, [crownState]);
-
   const goHome = () => navigate(roomPath(roomCode, "home"));
   // Tapping the crown brings the player back to the live game (the Map); on the Map itself it goes Home.
   const handleCrownPress = () => navigate(roomPath(roomCode, pageName === "map" ? "home" : "map"));
@@ -52,7 +45,8 @@ export const GameLayout = () => {
       actions.claimTurn();
       navigate(roomPath(roomCode, "map"));
     } else if (crownState === "canEndTurn") {
-      setEndTurnOpen(true);
+      // Holding the crown is the confirmation: the turn ends right away (a plain tap only shows a hint).
+      actions.endTurn();
     }
   };
 
@@ -81,7 +75,7 @@ export const GameLayout = () => {
         }
         overlay={
           <>
-            <ModalHost endTurnOpen={endTurnOpen} onEndTurnClose={() => setEndTurnOpen(false)} />
+            <ModalHost />
           </>
         }
       >

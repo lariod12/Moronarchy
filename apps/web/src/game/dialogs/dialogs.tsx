@@ -110,24 +110,6 @@ export const LuckyDieDialog = ({ value, bonus, onReroll, onMove }: LuckyDieDialo
   </Dialog>
 );
 
-export interface EndTurnDialogProps {
-  onNo: () => void;
-  onYes: () => void;
-}
-
-export const EndTurnDialog = ({ onNo, onYes }: EndTurnDialogProps) => (
-  <Dialog
-    title="End of turn"
-    actions={[
-      { label: "No", onSelect: onNo },
-      { label: "Yes", onSelect: onYes, tone: "strong" }
-    ]}
-    onDismiss={onNo}
-  >
-    {END_TURN_TEXT}
-  </Dialog>
-);
-
 export interface OwnPlotDialogProps {
   plotId: TileId;
   onManage: () => void;

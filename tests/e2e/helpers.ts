@@ -109,7 +109,7 @@ export const readCoin = async (page: Page): Promise<number> => {
 };
 
 // Answers whatever popup is open, the way a careful player would. Returns false when nothing could be answered
-// (no popup, a waiting popup, or the End of turn question that the test opens on purpose).
+// (no popup or a waiting popup).
 const tryAnswerDialog = async (page: Page): Promise<boolean> => {
   const dialog = page.getByRole("dialog");
   if ((await dialog.count()) === 0) {
@@ -127,9 +127,6 @@ const tryAnswerDialog = async (page: Page): Promise<boolean> => {
     return true;
   };
 
-  if (title === "End of turn") {
-    return false;
-  }
   if (/^Plot \d+$/.test(title)) {
     // Buy while a reserve stays in the purse so that fees cannot bankrupt the test.
     const price = Number(/for (\d+) coin/.exec(await dialog.innerText({ timeout: 3000 }))?.[1]);

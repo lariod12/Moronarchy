@@ -3,7 +3,6 @@ import { getFightView, getFinalFightView, getItemCount, getPlot, getPlotFee } fr
 import type { GameState, PendingDecision, PlayerId, TileId } from "@moronarchy/core/engine";
 import {
   BuyPlotDialog,
-  EndTurnDialog,
   FightNoticeDialog,
   FightResultDialog,
   LuckyDieDialog,
@@ -316,9 +315,6 @@ export const GAME_ENTRIES: GalleryEntry[] = [
   dialogEntry("dialog-waiting", "Dialog: waiting for the owner", () => scenarios.ownerDecision("0"), () => <WaitingDialog ownerName="Bob" />),
   dialogEntry("dialog-lucky-die", "Dialog: Lucky Die", scenarios.luckyDieChoice, (scenario, log) => (
     <LuckyDieDialog value={scenario.game.turn.dice?.value ?? 1} bonus={scenario.game.turn.dice?.bonus ?? 0} onReroll={() => log("Reroll")} onMove={() => log("Move")} />
-  )),
-  dialogEntry("dialog-end-turn", "Dialog: end of turn", scenarios.canEndTurn, (_, log) => (
-    <EndTurnDialog onNo={() => log("No")} onYes={() => log("Yes")} />
   )),
   dialogEntry("dialog-own-plot", "Dialog: your plot", scenarios.ownPlot, (scenario, log) => (
     <OwnPlotDialog plotId={scenario.game.turn.manageablePlotId ?? 0} onManage={() => log("Manage")} onDone={() => log("Done")} />

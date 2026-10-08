@@ -144,14 +144,11 @@ test.describe("playing turns", () => {
           expect(await activityText(active.page)).toBe(lineBefore);
         }
 
-        // E1: end of turn needs a long press and a Yes; No keeps the turn.
+        // E1: a tap only hints; holding the crown ends the turn at once (no confirmation popup).
+        await active.page.getByRole("button", { name: END_TURN_CROWN }).click();
+        await expect(active.page.getByText("hold to end your turn")).toBeVisible();
         await holdButton(active.page, END_TURN_CROWN);
-        await expect(active.page.getByRole("dialog", { name: "End of turn" })).toContainText("This action will be end turn");
-        await active.page.getByRole("button", { name: "No" }).click();
         await expect(active.page.getByRole("dialog")).toHaveCount(0);
-        await expect(active.page.getByText("end turn!")).toBeVisible();
-        await holdButton(active.page, END_TURN_CROWN);
-        await active.page.getByRole("button", { name: "Yes" }).click();
 
         // The turn passes on: the other crown shakes, this one is plain again.
         await expect(other.page.getByRole("button", { name: SHAKING_CROWN })).toBeVisible();

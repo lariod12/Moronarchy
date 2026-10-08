@@ -47,7 +47,6 @@ const playTurn = async (players: Player[]): Promise<void> => {
   await active.page.getByRole("button", { name: "Tap to Roll" }).click();
   await resolveUntilSettled(active.page, other.page);
   await holdButton(active.page, END_TURN_CROWN);
-  await active.page.getByRole("button", { name: "Yes" }).click();
   await expect(other.page.getByRole("button", { name: SHAKING_CROWN })).toBeVisible();
 };
 

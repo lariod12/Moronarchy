@@ -97,7 +97,6 @@ const GAME_ENTRY_IDS = [
   "dialog-owner",
   "dialog-waiting",
   "dialog-lucky-die",
-  "dialog-end-turn",
   "dialog-own-plot",
   "dialog-notice",
   "cards-pick",

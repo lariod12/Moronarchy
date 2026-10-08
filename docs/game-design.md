@@ -52,7 +52,7 @@ Chờ lượt ──► Crown rung (tới lượt mình)
                  └─ nếu đi qua/đến ô 01 → dừng tạm ở Start Station (mục 6) → đi nốt số bước còn lại
            ──► Giải quyết ô đích (mục 7–9)
            ──► [Tự do] Dùng Item
-           ──► Nhấn giữ Crown → popup "End of turn… Are you sure?" → Yes → chuyển người kế
+           ──► Nhấn giữ Crown → kết thúc lượt ngay (không popup xác nhận) → chuyển người kế
 ```
 
 - Chưa đổ xúc xắc thì không kết thúc lượt được.

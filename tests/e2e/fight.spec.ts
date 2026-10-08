@@ -79,9 +79,6 @@ const tryAnswerDialog = async (page: Page, who: string, log: FightLog, turn: num
     return true;
   };
 
-  if (title === "End of turn") {
-    return false;
-  }
   if (/^Plot \d+$/.test(title)) {
     const price = Number(/for (\d+) coin/.exec(body)?.[1]);
     if ((await readCoin(page)) - price >= COIN_RESERVE && (await click("Buy"))) {
@@ -336,9 +333,8 @@ test.describe("fighting", () => {
           extraTurnsPlayed += 1;
         }
 
-        // End the turn normally (the Crown asks, Yes ends it).
+        // End the turn normally (holding the Crown ends it).
         await holdButton(active.page, END_TURN_CROWN);
-        await active.page.getByRole("button", { name: "Yes" }).click();
         await expect(other.page.getByRole("button", { name: SHAKING_CROWN })).toBeVisible();
         await expect(active.page.getByText("end turn!")).toHaveCount(0);
 
