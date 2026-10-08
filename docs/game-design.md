@@ -45,7 +45,7 @@ Moronarchy là board game multiplayer online cho điện thoại. 2–6 vị vua
 
 ```text
 Chờ lượt ──► Crown rung (tới lượt mình)
-           ──► Nhấn giữ Crown = nhận lượt → Crown đổi màu, bong bóng "your turn!"
+           ──► Nhấn giữ Crown = nhận lượt → bong bóng "your turn!" (Crown không đổi màu)
            ──► [Tự do] Dùng Item (bao nhiêu lần cũng được, trong giới hạn item)
            ──► Đổ xúc xắc (bắt buộc, đúng 1 lần, ở màn Map: nút "Tap to Roll")
            ──► Di chuyển từng ô

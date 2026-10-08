@@ -41,7 +41,7 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 | --- | --- | --- |
 | Không phải lượt mình | Crown trắng | Chạm: tới Map (đang ở Map thì về Home) |
 | Tới lượt, chưa nhận | Crown **rung** | Nhấn giữ: nhận lượt |
-| Đang trong lượt | Crown **đổi màu** (nền tối, crown trắng) + bong bóng "your turn!" | Chạm: tới Map (đang ở Map thì về Home). Lúc rung có bong bóng "hold me!"; lúc rung hoặc "hold to end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
+| Đang trong lượt | Crown giữ nền trắng (không tô màu, góp ý chơi thử 2026-10-08) + bong bóng "your turn!" | Chạm: tới Map (đang ở Map thì về Home). Lúc rung có bong bóng "hold me!"; lúc rung hoặc "hold to end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
 | Đã đổ xúc xắc, có thể kết thúc | Bong bóng "hold to end turn!" | Nhấn giữ → kết thúc lượt ngay, không popup xác nhận (chạm một lần chỉ hiện gợi ý "hold to end your turn") |
 | Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": tới Map / về Home như Crown (không bao giờ rung) |
 

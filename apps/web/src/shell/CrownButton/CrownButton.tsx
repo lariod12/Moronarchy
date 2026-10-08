@@ -71,7 +71,6 @@ export const CrownButton = ({ state, onPress, onLongPress, className }: CrownBut
   };
 
   const bubble = hint ?? BUBBLES[state];
-  const inverted = state === "active" || state === "canEndTurn";
 
   return (
     <div className={cx("shell-crown", className)}>
@@ -84,7 +83,7 @@ export const CrownButton = ({ state, onPress, onLongPress, className }: CrownBut
         aria-label={LABELS[state]}
         onPress={handlePress}
         onLongPress={onLongPress}
-        className={cx("shell-crown__button", inverted && "shell-crown__button--inverted", state === "shaking" && "shell-crown__button--shaking")}
+        className={cx("shell-crown__button", state === "shaking" && "shell-crown__button--shaking")}
       >
         <CrownIcon className="shell-crown__icon" />
       </LongPressButton>

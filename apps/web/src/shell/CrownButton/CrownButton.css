@@ -14,11 +14,6 @@
   height: auto;
 }
 
-.shell-crown .shell-crown__button--inverted {
-  background: var(--shade);
-  color: var(--paper);
-}
-
 .shell-crown .shell-crown__bubble {
   position: absolute;
   right: 0;
