@@ -30,13 +30,11 @@ describe("in-game info pages", () => {
     }
   });
 
-  it("brings the player from any info page back to the live Map with the Crown, then Home", () => {
+  it("stays on the info page when the Crown is tapped (navigation is the Back arrow's job)", () => {
     const { game, viewerId } = scenarios.infoGame();
     const view = renderGame(game, viewerId, { page: "items" });
     fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
-    expect(view.path()).toBe("/room/R001/map");
-    fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
-    expect(view.path()).toBe("/room/R001/home");
+    expect(view.path()).toBe("/room/R001/items");
   });
 
   it("opens my Players Info from the HUD avatar, and cycles through the kings in turn order", () => {

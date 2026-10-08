@@ -39,11 +39,11 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 
 | Trạng thái | Hiển thị | Thao tác |
 | --- | --- | --- |
-| Không phải lượt mình | Crown trắng | Chạm: tới Map (đang ở Map thì về Home) |
+| Không phải lượt mình | Crown trắng | Chạm: không làm gì (chuyển trang dùng nút Back) |
 | Tới lượt, chưa nhận | Crown **rung** | Nhấn giữ: nhận lượt |
-| Đang trong lượt | Crown giữ nền trắng (không tô màu, góp ý chơi thử 2026-10-08) + bong bóng "your turn!" | Chạm: tới Map (đang ở Map thì về Home). Lúc rung có bong bóng "hold me!"; lúc rung hoặc "hold to end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
+| Đang trong lượt | Crown giữ nền trắng (không tô màu, góp ý chơi thử 2026-10-08) + bong bóng "your turn!" | Chạm: không chuyển trang. Lúc rung có bong bóng "hold me!"; lúc rung hoặc "hold to end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
 | Đã đổ xúc xắc, có thể kết thúc | Bong bóng "hold to end turn!" | Nhấn giữ → kết thúc lượt ngay, không popup xác nhận (chạm một lần chỉ hiện gợi ý "hold to end your turn") |
-| Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": tới Map / về Home như Crown (không bao giờ rung) |
+| Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": về Home (người bị loại không có nút Back) |
 
 - Nhấn giữ (long-press) cần có phản hồi tiến trình (vòng nạp hoặc rung) để người chơi biết đang giữ. Thời gian giữ: Đề xuất 600 ms.
 - Không có popup "End of turn" (màn 12 trong thiết kế): theo góp ý chơi thử 2026-10-08, nhấn giữ Crown chính là xác nhận.
@@ -53,7 +53,7 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 ```text
 Welcome ──Create/Join──► Lobby ──Start (chủ phòng) + đếm ngược──► Game Shell
                                                                     │
-     Home hub ◄── chạm Crown khi đang ở Map (ở trang khác: chạm Crown → Map) ┤
+     Home hub ◄── nút Back (Crown không chuyển trang)                     ┤
        ├─ Stats ─► Players Info                                     │
        ├─ Plots ─► Plots table / grid ─► Plot detail ─► Upgrade      │
        ├─ Map ─► tab Positions (vị trí mọi vua)                     │
@@ -130,7 +130,7 @@ Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/s
   - Dừng trên đất của mình (hoặc vừa mua xong): popup "Your plot (Plot 12)" với **Manage** (mở `/manage/12`, màn kiểu Start Station chỉ có đất đó, không có Shop) hoặc **Done**.
   - Nhặt được item / gặp event cá nhân / nhận phí / bị hạ gục / mất đất / bị loại: popup thông báo, nút Done. Popup của một lần đã xem được nhớ trong `sessionStorage` nên tải lại trang không hiện lại.
   - Trả phí: người trả chỉ thấy dòng trong activity line; chủ đất nhận popup "Fee received".
-- Vào Map: ô **Map** ở Home, chạm Crown từ bất kỳ trang nào, và nhận lượt cũng mở Map. Map có hai tab **Board** / **Positions**; Positions là màn Steps (mục 13).
+- Vào Map: ô **Map** ở Home, và nhận lượt cũng tự mở Map. Map có hai tab **Board** / **Positions**; Positions là màn Steps (mục 13).
 
 ## 7. Stats / Players Info — [20](ui/20-player-stats.png)
 

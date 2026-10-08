@@ -55,7 +55,7 @@ describe("GameLayout", () => {
     expect(view.path()).toBe("/room/R001/map");
   });
 
-  it("opens the Map from its tile, goes Back to Home, and the crown toggles between Map and Home", () => {
+  it("opens the Map from its tile and goes Back to Home; a crown tap does not navigate", () => {
     const { game, viewerId } = scenarios.mapStart();
     const view = renderGame(game, viewerId, { page: "home" });
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
@@ -67,9 +67,6 @@ describe("GameLayout", () => {
     expect(view.path()).toBe("/room/R001/home");
 
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
-    fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
-    expect(view.path()).toBe("/room/R001/home");
-    // From Home (or any other page) a tap brings the player back to the live game.
     fireEvent.click(screen.getByRole("button", { name: /^Crown/ }));
     expect(view.path()).toBe("/room/R001/map");
   });

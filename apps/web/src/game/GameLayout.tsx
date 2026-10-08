@@ -35,8 +35,9 @@ export const GameLayout = () => {
   }, [forced, pageName, navigate, roomCode]);
 
   const goHome = () => navigate(roomPath(roomCode, "home"));
-  // Tapping the crown brings the player back to the live game (the Map); on the Map itself it goes Home.
-  const handleCrownPress = () => navigate(roomPath(roomCode, pageName === "map" ? "home" : "map"));
+  // A crown tap does not navigate (the Back arrow next to it does that); only a spectator's "Game Over" goes Home,
+  // because an eliminated king has no Back button.
+  const handleCrownPress = crownState === "eliminated" ? goHome : undefined;
   // The avatar in the HUD opens my own Players Info (replacing the entry when already looking at one).
   const openMyStats = () => navigate(roomPath(roomCode, `stats/${viewerId}`), { replace: pageName === "stats" });
 

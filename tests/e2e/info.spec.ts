@@ -21,21 +21,19 @@ const clearDialogs = async (page: Page): Promise<void> => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
 };
 
-// A crown tap goes to the Map, or Home when already on the Map.
-const goHomeWithCrown = async (page: Page): Promise<void> => {
-  const crown = page.getByRole("button", { name: /^Crown/ });
-  const wasOnMap = /\/map$/.test(page.url());
-  await crown.click();
-  if (!wasOnMap) {
-    await expect(page).toHaveURL(/\/map$/);
-    await crown.click();
+// Walks back with the Back arrow until Home (the Crown does not navigate).
+const goHomeWithBack = async (page: Page): Promise<void> => {
+  const back = page.getByRole("button", { name: "Back" });
+  for (let step = 0; step < 8 && !/\/home$/.test(page.url()); step += 1) {
+    await back.click();
+    await page.waitForTimeout(100);
   }
   await expect(page).toHaveURL(/\/home$/);
 };
 
 const openFromHome = async (page: Page, tile: string): Promise<void> => {
   await clearDialogs(page);
-  await goHomeWithCrown(page);
+  await goHomeWithBack(page);
   await page.getByRole("button", { name: tile, exact: true }).click();
 };
 
@@ -61,7 +59,7 @@ const walkInfoPages = async (player: Player, me: string, them: string, overflowC
 
   // I1: every tile is enabled on Home.
   await clearDialogs(page);
-  await goHomeWithCrown(page);
+  await goHomeWithBack(page);
   for (const tile of ["Map", "Stats", "Plots", "Residents", "Items", "Events"]) {
     await expect(page.getByRole("button", { name: tile, exact: true })).toBeEnabled();
   }

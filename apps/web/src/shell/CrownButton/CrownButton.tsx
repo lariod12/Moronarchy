@@ -15,9 +15,9 @@ export interface CrownButtonProps {
 }
 
 const LABELS: Record<"idle" | "shaking" | "active" | "canEndTurn", string> = {
-  idle: "Crown: tap to watch the Map or go Home",
+  idle: "Crown: not your turn",
   shaking: "Crown: hold to take your turn",
-  active: "Crown: tap to watch the Map or go Home",
+  active: "Crown: your turn",
   canEndTurn: "Crown: hold to end your turn"
 };
 

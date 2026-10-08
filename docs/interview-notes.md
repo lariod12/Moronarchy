@@ -137,3 +137,4 @@ Biên bản phỏng vấn chủ dự án, ghi theo từng phần. Đây là inpu
 - Chạm vương miện đang rung mà không có gì xảy ra → thêm bong bóng "hold me!" và gợi ý nhấn giữ khi chỉ chạm.
 - Cần đường quay lại xem ván đang diễn ra → chạm Crown đưa về Map (đang ở Map thì về Home); ô "Dice Status" ở Home đổi tên thành "Map" (icon bàn cờ, như màn 14).
 - Bỏ popup "End of turn… Are you sure?": nhấn giữ vương miện là kết thúc lượt ngay (chạm một lần chỉ hiện gợi ý).
+- Bỏ việc chạm Crown để chuyển Map/Home: đã có nút Back bên cạnh. Map đứng đầu Home hub; Crown không tô màu trong lượt; bong bóng "hold to end turn!".

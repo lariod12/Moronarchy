@@ -57,7 +57,7 @@ Chờ lượt ──► Crown rung (tới lượt mình)
 
 - Chưa đổ xúc xắc thì không kết thúc lượt được.
 - **Ngoài lượt mình:** xem được mọi màn nhưng mọi nút hành động bị khóa. Chỉ được trả lời popup hỏi mình (vd chủ đất quyết định thu phí hay tấn công).
-- Nhấn một lần vào Crown = tới Map để xem ván (đang ở Map thì về Home). Lúc Crown đang chờ nhấn giữ thì nhấn một lần chỉ hiện gợi ý. Nút Back = về trang trước.
+- Nhấn một lần vào Crown không chuyển trang (lúc Crown đang chờ nhấn giữ thì chỉ hiện gợi ý). Chuyển trang dùng nút Back và các ô ở Home.
 
 ## 5. Bản đồ
 
