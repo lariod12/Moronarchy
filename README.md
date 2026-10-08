@@ -65,7 +65,9 @@ pnpm dev
 
 Rooms live in server memory, so restarting the server closes them.
 
-**Phones on the LAN need both ports open.** The web app (5173) and the game server (8000) are separate. If a phone loads the page but hangs or shows "Cannot reach the server" on Create/Join, Windows Firewall is blocking port 8000 for your network profile (check it with `Get-NetConnectionProfile`). Allow it from an Administrator PowerShell, and remove the rule when you are done:
+**Play from anywhere while the PC is on (Cloudflare tunnel):** `pnpm dev:tunnel` (or double-click `dev-tunnel.bat`) starts the game server and the web app with hot reload, opens a Cloudflare Quick Tunnel (needs `cloudflared`, no account) and prints a public `https://<random>.trycloudflare.com` URL. Open it (or `/solo`) on a phone from any network; code edits reload live, multiplayer works through the same URL (Vite proxies `/games` and `/socket.io` to the game server). The URL changes every run and stops working when the window is closed. The GitHub Pages solo build stays available as the always-on backup.
+
+**LAN phones:** in dev the web app proxies the game server, so only port 5173 must be reachable (older builds also needed 8000). The web app (5173) and the game server (8000) are separate processes. If a phone loads the page but hangs or shows "Cannot reach the server" on Create/Join, Windows Firewall is blocking port 8000 for your network profile (check it with `Get-NetConnectionProfile`). Allow it from an Administrator PowerShell, and remove the rule when you are done:
 
 ```powershell
 New-NetFirewallRule -DisplayName "Moronarchy-Dev-TCP-8000" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private

@@ -9,6 +9,7 @@
     "build:solo": "pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/web build:solo",
     "dev:web": "pnpm --filter @moronarchy/web dev",
     "dev:server": "pnpm --filter @moronarchy/server dev",
+    "dev:tunnel": "node scripts/dev-tunnel.mjs",
     "build": "pnpm --filter @moronarchy/core build && pnpm --filter @moronarchy/server build && pnpm --filter @moronarchy/web build",
     "test": "pnpm --filter @moronarchy/core build && pnpm --recursive test",
     "e2e": "playwright test --pass-with-no-tests",

@@ -3,9 +3,11 @@ import { sanitizePlayerName as sanitizeCoreName } from "@moronarchy/core/match";
 
 export const GAME_NAME = "moronarchy";
 const ROOM_PLAYER_COUNT = 6;
+// In dev the Vite server proxies /games and /socket.io to the game server, so the page's own origin works everywhere
+// (localhost, LAN IP, Cloudflare tunnel). A production build without VITE_GAME_SERVER_URL falls back to port 8000.
 const getDefaultGameServerUrl = (): string => {
-  const { protocol, hostname } = window.location;
-  return `${protocol}//${hostname}:8000`;
+  const { protocol, hostname, origin } = window.location;
+  return import.meta.env.DEV ? origin : `${protocol}//${hostname}:8000`;
 };
 
 export const GAME_SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL ?? getDefaultGameServerUrl();
