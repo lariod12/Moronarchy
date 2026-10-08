@@ -62,7 +62,7 @@ const walkInfoPages = async (player: Player, me: string, them: string, overflowC
   // I1: every tile is enabled on Home.
   await clearDialogs(page);
   await goHomeWithCrown(page);
-  for (const tile of ["Stats", "Plots", "Map", "Residents", "Items", "Events"]) {
+  for (const tile of ["Map", "Stats", "Plots", "Residents", "Items", "Events"]) {
     await expect(page.getByRole("button", { name: tile, exact: true })).toBeEnabled();
   }
   await noOverflow("home");

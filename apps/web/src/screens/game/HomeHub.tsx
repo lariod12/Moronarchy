@@ -14,9 +14,9 @@ export const HomeHub = ({ onOpen }: HomeHubProps) => {
   const disabled = onOpen === undefined;
   return (
     <TileGrid>
+      <Tile title="Map" icon={<Grid3x3 size={56} />} onClick={open("map")} disabled={disabled} />
       <Tile title="Stats" icon={<SlidersHorizontal size={56} />} onClick={open("stats")} disabled={disabled} />
       <Tile title="Plots" icon={<Castle size={56} />} onClick={open("plots")} disabled={disabled} />
-      <Tile title="Map" icon={<Grid3x3 size={56} />} onClick={open("map")} disabled={disabled} />
       <Tile title="Residents" icon={<UserRound size={56} />} onClick={open("residents")} disabled={disabled} />
       <Tile title="Items" icon={<Boxes size={56} />} onClick={open("items")} disabled={disabled} />
       <Tile title="Events" icon={<Atom size={56} />} onClick={open("events")} disabled={disabled} />

@@ -9,7 +9,7 @@ describe("GameHomeView", () => {
     expect(screen.getByText("Round 1")).toBeInTheDocument();
     expect(screen.getByText("RABCD")).toBeInTheDocument();
     expect(screen.getAllByText("Home").length).toBeGreaterThan(0);
-    for (const title of ["Stats", "Plots", "Map", "Residents", "Items", "Events"]) {
+    for (const title of ["Map", "Stats", "Plots", "Residents", "Items", "Events"]) {
       expect(screen.getByRole("button", { name: title })).toBeDisabled();
     }
   });

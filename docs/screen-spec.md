@@ -106,7 +106,7 @@ Route trong phòng là `/room/<MÃ>/home` (mặc định), `/map`, `/cards`, `/s
 ## 5. Home hub — [10](ui/10-home-hub.png), [11](ui/11-home-your-turn.png), [12](ui/12-home-end-turn-confirm.png), [13](ui/13-home-end-turn-hint.png)
 
 - TopBar: tên trang "Home".
-- Lưới 2 × 3 ô vuông, mỗi ô có tiêu đề và icon: **Stats**, **Plots**, **Map** (icon bàn cờ, như màn 14), **Residents**, **Items**, **Events**. Ô này trước đây tên "Dice Status"; đổi tên theo góp ý chơi thử 2026-10-08 để người chơi biết đây là nơi xem ván đang diễn ra.
+- Lưới 2 × 3 ô vuông, mỗi ô có tiêu đề và icon: **Map** (đứng đầu, icon bàn cờ, như màn 14), **Stats**, **Plots**, **Residents**, **Items**, **Events**. Ô này trước đây tên "Dice Status"; đổi tên theo góp ý chơi thử 2026-10-08 để người chơi biết đây là nơi xem ván đang diễn ra.
 - Cả 6 ô đều bật (bước 6): Stats mở `/stats/<mình>`, Plots, Map, Residents, Items, Events. Chạm avatar ở HUD cũng mở trang Stats của mình.
 - [14](ui/14-home-hub-old-with-map.png) là phiên bản cũ có ô **Map** thay cho Stats và "Steps Status" thay cho Dice Status (xem câu hỏi mở).
 

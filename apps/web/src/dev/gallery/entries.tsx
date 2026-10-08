@@ -96,9 +96,9 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
     render: (log) => (
       <Stack>
         <TileGrid>
+          <Tile title="Map" icon={<Grid3x3 size={56} />} onClick={() => log("Map")} />
           <Tile title="Stats" icon={<SlidersHorizontal size={56} />} onClick={() => log("Stats")} />
           <Tile title="Plots" icon={<Castle size={56} />} onClick={() => log("Plots")} />
-          <Tile title="Map" icon={<Grid3x3 size={56} />} onClick={() => log("Map")} />
           <Tile title="Residents" icon={<UserRound size={56} />} onClick={() => log("Residents")} />
           <Tile title="Items" icon={<Boxes size={56} />} badge="x4" onClick={() => log("Items")} />
           <Tile title="Events" icon={<Atom size={56} />} badge="Level: 2" disabled />
