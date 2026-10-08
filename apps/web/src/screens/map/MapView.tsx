@@ -36,12 +36,8 @@ export const getMapHint = (game: GameState, viewerId: PlayerId): string => {
     return `${turnKing?.name ?? "Someone"}'s turn`;
   }
   switch (game.turn.step) {
-    case "awaitClaim":
-      return "Hold the crown to take your turn";
     case "preRoll":
       return "Your turn: roll the dice";
-    case "postMove":
-      return "Hold the crown to end your turn";
     case "fight":
       return "Fight in progress";
     default:

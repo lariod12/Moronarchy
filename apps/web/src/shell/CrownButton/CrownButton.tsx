@@ -24,7 +24,7 @@ const LABELS: Record<"idle" | "shaking" | "active" | "canEndTurn", string> = {
 const BUBBLES: Partial<Record<CrownButtonState, string>> = {
   shaking: "hold me!",
   active: "your turn!",
-  canEndTurn: "end turn!"
+  canEndTurn: "hold to end turn!"
 };
 
 // A plain tap is the natural first try, so in the two states where the crown is waiting for a hold, a tap explains

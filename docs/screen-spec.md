@@ -33,7 +33,7 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
   - `Bob disconnected — removed in ~25s`: khi ván đang chờ Bob (người giữ lượt / người phải quyết định / người chưa đổ xúc xắc trong trận) và server báo Bob mất kết nối. Đếm ngược 30 giây là **ước lượng phía máy khách** (bắt đầu khi máy này thấy cả hai điều kiện), nên ghi dấu `~`; về 0 thì ghi `removing…`. Bob nối lại thì hiện `Bob reconnected` khoảng 3 giây rồi tắt. Khi Bob bị loại thì thông báo cho người khác `Bob was removed (disconnected).` (popup Done) và activity line ghi `Bob left the game (disconnected)`.
 - **Đánh dấu offline:** vua mà server báo mất kết nối bị làm mờ: token trên Map mờ và viền nét đứt (nhãn `Bob (offline)` cho trình đọc màn hình), hàng trong bảng Positions mờ kèm tag `offline`, tiêu đề Players Info có tag `offline`. (Ô ở Lobby đã làm mờ từ trước.)
 - **Modal:** phủ nền xám lên toàn màn (cả TopBar/BottomHud), hộp thoại bo góc ở giữa, nút Yes/No hoặc Done/Close. Chỉ hiện một modal một lúc, ở bất kỳ trang nào người chơi đang xem (`ModalHost`): màn mặt buồn toàn khung khi bị loại (mục 15) → quyết định dành cho mình → chọn Lucky Die → "waiting for decision" → End of turn → thông báo (item, event cá nhân, nhận phí, bị hạ gục, mất đất) → lối tắt "Your plot". Mọi modal chờ đến khi vua đi xong.
-- **Tooltip / bong bóng:** bong bóng nói nhỏ trỏ vào phần tử (vd "your turn!", "end turn!", số xúc xắc).
+- **Tooltip / bong bóng:** bong bóng nói nhỏ trỏ vào phần tử (vd "your turn!", "hold to end turn!", số xúc xắc).
 
 ## 2. Nút Crown (theo Tutorial button.png)
 
@@ -41,8 +41,8 @@ Mọi màn trong ván (trừ Welcome, Lobby, Win/Lose, Ranking) dùng chung khun
 | --- | --- | --- |
 | Không phải lượt mình | Crown trắng | Chạm: tới Map (đang ở Map thì về Home) |
 | Tới lượt, chưa nhận | Crown **rung** | Nhấn giữ: nhận lượt |
-| Đang trong lượt | Crown **đổi màu** (nền tối, crown trắng) + bong bóng "your turn!" | Chạm: tới Map (đang ở Map thì về Home). Lúc rung có bong bóng "hold me!"; lúc rung hoặc "end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
-| Đã đổ xúc xắc, có thể kết thúc | Bong bóng "end turn!" | Nhấn giữ → kết thúc lượt ngay, không popup xác nhận (chạm một lần chỉ hiện gợi ý "hold to end your turn") |
+| Đang trong lượt | Crown **đổi màu** (nền tối, crown trắng) + bong bóng "your turn!" | Chạm: tới Map (đang ở Map thì về Home). Lúc rung có bong bóng "hold me!"; lúc rung hoặc "hold to end turn!" mà chỉ chạm thì hiện gợi ý nhấn giữ 2,5 s, không chuyển trang |
+| Đã đổ xúc xắc, có thể kết thúc | Bong bóng "hold to end turn!" | Nhấn giữ → kết thúc lượt ngay, không popup xác nhận (chạm một lần chỉ hiện gợi ý "hold to end your turn") |
 | Bị loại | HUD gạch chéo đỏ, "Game Over" thay cho Back/Crown | Chạm "Game Over": tới Map / về Home như Crown (không bao giờ rung) |
 
 - Nhấn giữ (long-press) cần có phản hồi tiến trình (vòng nạp hoặc rung) để người chơi biết đang giữ. Thời gian giữ: Đề xuất 600 ms.

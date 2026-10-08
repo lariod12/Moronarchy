@@ -78,7 +78,7 @@ describe("GameLayout", () => {
     const { game, viewerId } = scenarios.canEndTurn();
     const view = renderGame(game, viewerId, { page: "map" });
     const crown = screen.getByRole("button", { name: /hold to end your turn/ });
-    expect(screen.getByText("end turn!")).toBeInTheDocument();
+    expect(screen.getByText("hold to end turn!")).toBeInTheDocument();
 
     fireEvent.pointerDown(crown);
     fireEvent.pointerUp(crown);

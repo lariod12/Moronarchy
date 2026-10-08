@@ -28,7 +28,7 @@ describe("CrownButton", () => {
 
   it("shows the end turn bubble when the turn can end", () => {
     render(<CrownButton state="canEndTurn" />);
-    expect(screen.getByText("end turn!")).toBeInTheDocument();
+    expect(screen.getByText("hold to end turn!")).toBeInTheDocument();
   });
 
   it("explains the hold on a tap while shaking instead of navigating, then restores the bubble", () => {
