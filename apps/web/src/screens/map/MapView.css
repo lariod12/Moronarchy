@@ -121,22 +121,15 @@
   padding-right: 8px;
 }
 
-/* The die "speaks" its result: the bubble sits off the die's top-right corner with its tail slanting down-left
-   into that corner. */
+/* The die "speaks" its result: the bubble sits just above the die's top-right corner and its standard bottom-left
+   tail points down onto the die (same tail as the crown's bubble). */
 .map-center .map-center__bubble {
   position: absolute;
-  /* The die has rounded corners, so the bubble tucks into the empty corner for the tail to touch the die. */
-  bottom: calc(100% - 3px);
-  left: calc(100% - 13px);
+  bottom: calc(100% + 2px);
+  left: calc(100% - 42px);
   min-width: 36px;
   padding: 2px 8px;
   font-size: var(--text-sm);
-}
-
-.map-center .map-center__bubble::before {
-  bottom: -6px;
-  left: 4px;
-  transform: rotate(90deg);
 }
 
 .map-center__hint {

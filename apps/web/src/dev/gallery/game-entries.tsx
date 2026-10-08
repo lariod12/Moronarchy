@@ -291,6 +291,7 @@ export const GAME_ENTRIES: GalleryEntry[] = [
   mapEntry("map-start", "Map: four kings on Start, ready to roll", scenarios.mapStart),
   mapEntry("map-midgame", "Map: mid-game ownership and tokens", scenarios.mapMidgame),
   mapEntry("map-rolling", "Map: die rolling", scenarios.mapStart, true),
+  mapEntry("map-rolled", "Map: die result bubble after a roll", scenarios.canEndTurn),
   mapEntry("map-horse", "Map: Use Horse available", scenarios.mapHorse),
   dialogEntry("dialog-buy", "Dialog: buy plot", scenarios.buyDecision, (scenario, log) => {
     const { plotId, price } = pendingOf(scenario, "buyPlot");

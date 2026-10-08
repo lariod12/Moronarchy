@@ -174,10 +174,14 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
     title: "SpeechBubble",
     render: () => (
       <div className="gallery-bubbles">
-        <SpeechBubble tail="bottom-left">your turn!</SpeechBubble>
-        <SpeechBubble tail="bottom-right">end turn!</SpeechBubble>
-        <SpeechBubble tail="top-left">a tooltip</SpeechBubble>
-        <SpeechBubble tail="left">Do something ...</SpeechBubble>
+        <SpeechBubble tail="bottom-left">bottom-left</SpeechBubble>
+        <SpeechBubble tail="bottom-center">bottom-center</SpeechBubble>
+        <SpeechBubble tail="bottom-right">hold to end turn!</SpeechBubble>
+        <SpeechBubble tail="bottom-left" tailInset={6}>4</SpeechBubble>
+        <SpeechBubble tail="top-left">top-left</SpeechBubble>
+        <SpeechBubble tail="top-right">top-right</SpeechBubble>
+        <SpeechBubble tail="left">left: chat bubble</SpeechBubble>
+        <SpeechBubble tail="right">right</SpeechBubble>
       </div>
     )
   },
