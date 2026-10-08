@@ -121,16 +121,17 @@
   padding-right: 8px;
 }
 
-/* The die "speaks" its result: the bubble sits just above the die's top-right corner and its standard bottom-left
-   tail points down onto the die (same tail as the crown's bubble). */
+/* The die "speaks" its result: the bubble is centered above the die and its standard bottom-center tail points
+   straight down at the die. The lift matches the crown's bubble so the tail tip just meets the die's top edge.
+   (The dice wrapper has 8px of right padding, so the die's center is at (100% - 8px) / 2.) */
 .map-center .map-center__bubble {
   position: absolute;
-  /* Same 10px lift as the crown's bubble: the standard tail's tip then just meets the die's top edge. */
   bottom: calc(100% + 10px);
-  left: calc(100% - 60px);
+  left: calc((100% - 8px) / 2);
   min-width: 36px;
   padding: 2px 8px;
   font-size: var(--text-sm);
+  transform: translateX(-50%);
 }
 
 .map-center__hint {

@@ -60,7 +60,7 @@ export const MapView = ({ game, viewerId, positions, offlineIds, canRoll, canUse
           <div className="map-center__dice">
             <Dice value={dice && isDieValue(dice.value) ? dice.value : 1} rolling={rolling} size={64} />
             {dice ? (
-              <SpeechBubble tail="bottom-left" className="map-center__bubble">
+              <SpeechBubble tail="bottom-center" className="map-center__bubble">
                 <span data-testid="dice-total">{dice.value + dice.bonus}</span>
               </SpeechBubble>
             ) : null}
